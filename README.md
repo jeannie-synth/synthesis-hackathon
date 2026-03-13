@@ -14,7 +14,7 @@ The game that became Monopoly kept only the first rule set. We're bringing both 
 
 ## What
 
-Five AI agents play two parallel games on the same 40-space board derived from Magie's original design:
+Five AI agent archetypes — each as a twin pair — play two parallel games on the same 40-space board derived from Magie's original design:
 
 - **Game A** starts under Monopolist rules
 - **Game B** starts under Prosperity rules
@@ -47,15 +47,43 @@ docs/               Game rules reference, architecture
 
 ### Agent Strategies
 
-Five agents: 1 Monopolist, 1 Cooperative, 3 Balanced. Odd number ensures mode-switching votes always resolve.
+Five agent archetypes, grounded in experimental economics and game theory. Each plays on both boards as a twin pair — one twin under Monopolist rules, one under Prosperity rules. Odd number ensures mode-switching votes always resolve.
 
-| Strategy | Behavior |
-|----------|----------|
-| **Monopolist** | Always buy, maximize personal wealth, vote for competitive rules |
-| **Cooperative** | Buy strategically, optimize for collective outcome, vote for Prosperity |
-| **Balanced** | Adaptive — cooperate when behind, compete when ahead, swing vote on rule changes |
+| Strategy | Based On | Buy | Build | Vote |
+|----------|----------|-----|-------|------|
+| **Extractive** | Kelly's extractive ownership / Always Defect | Always | Always | Monopolist |
+| **Generative** | Kelly's generative ownership / Always Cooperate | With surplus | In Prosperity only | Prosperity |
+| **Conditional** | Fischbacher's conditional cooperator / Tit-for-Tat | Matches group behavior | Matches group behavior | With majority |
+| **Free Rider** | Fischbacher's free rider / Ostrom's rational egoist | Never | Never | Based on cash flow |
+| **Pavlov** | Nowak & Sigmund's Win-Stay, Lose-Shift | Repeats what worked | Repeats what worked | Keep mode if winning |
 
-The strategies are deliberately simple. The complexity comes from the system, not the agents. Three similar lines of code are better than a premature abstraction — and three simple strategies in two different structures produce more insight than one sophisticated strategy in one.
+Only Extractive and Generative have hardwired votes. The other three vote based on game dynamics — political outcomes are emergent, not predetermined.
+
+The strategies are deliberately simple. The complexity comes from the system, not the agents. Five well-grounded archetypes in two different structures produce more insight than one sophisticated strategy in one.
+
+## Theoretical Framework
+
+The agent archetypes aren't arbitrary. They map to empirically observed behavioral types in public goods experiments and game theory:
+
+- **Conditional cooperators** (~50% of humans in experiments) match others' cooperation levels with a self-serving bias — Fischbacher, Gachter & Fehr, "Are People Conditionally Cooperative?" (2001)
+- **Free riders** (~30%) contribute nothing regardless of what others do — the classic tragedy of the commons actor
+- **Win-Stay, Lose-Shift (Pavlov)** outperforms Tit-for-Tat in many settings and is the most human-like adaptive strategy — Nowak & Sigmund (1993)
+- **Extractive vs Generative** ownership maps to Marjorie Kelly's framework: same enterprise, different ownership design, opposite outcomes — Kelly, "Owning Our Future" (2012)
+- **Institutional rules determine which behavioral type dominates** — Elinor Ostrom, "Governing the Commons" (1990). The tragedy of the commons is not inevitable; it depends on the rules.
+
+Kate Raworth's Doughnut Economics provides the macro frame: degenerative/divisive systems vs regenerative/distributive systems. Our two rule sets map directly to this axis.
+
+Robert Axelrod's iterated prisoner's dilemma tournaments (1984) showed that simple, cooperative strategies (Tit-for-Tat) beat complex exploitative ones — but only under the right structural conditions. Our experiment asks the same question on a richer game board.
+
+### References
+
+- Raworth, K. — *Doughnut Economics: Seven Ways to Think Like a 21st-Century Economist* (2017)
+- Kelly, M. — *Owning Our Future: The Emerging Ownership Revolution* (2012)
+- Ostrom, E. — *Governing the Commons: The Evolution of Institutions for Collective Action* (1990)
+- Axelrod, R. — *The Evolution of Cooperation* (1984)
+- Fischbacher, U., Gachter, S. & Fehr, E. — "Are People Conditionally Cooperative?" (2001)
+- Nowak, M. & Sigmund, K. — "A strategy of win-stay, lose-shift that outperforms tit-for-tat" (1993)
+- Veritasium — ["What Game Theory Reveals About Life"](https://www.youtube.com/watch?v=mScpHTIi-kM) (Axelrod's tournament, explained)
 
 ## What It Proves
 
@@ -67,11 +95,12 @@ This has practical consequences. As AI agents begin participating in real econom
 
 The hackathon build is a benchmark — same players, two structures, compare equilibria. But the framework opens up:
 
-- **Incentive design**: What happens when you change the reward function, not just the rules?
+- **Tournament evolution**: 100-game tournaments where agents can switch strategies between games. Do agents converge toward cooperation or extraction? Does it depend on the starting rule set?
+- **Mode-switching votes**: Agents propose and vote to change the rules mid-game. Proposing costs your turn. Secret ballots via commit-reveal. Measures: when do agents change the system? Who benefits?
+- **Pre-vote signaling**: Agents broadcast voting intent before committing. Non-binding. Measures: promise-keeping rate under each rule set. Do extractive rules breed dishonesty?
+- **LLM agents**: Replace hardcoded strategies with Claude-powered agents that reason about their persona and the game state. Do LLM agents rediscover the same patterns that game theory predicts?
+- **Human players**: Open the mainnet deployment for humans to play alongside agents
 - **Nash equilibrium analysis**: Formally characterize the equilibrium points in each structure
-- **Human players**: Let humans play alongside agents — do mixed populations behave differently?
-- **Agent self-preservation**: Do agents take self-harming actions to prolong a game rather than let it end?
-- **Dynamic rule evolution**: Let the rules themselves evolve based on game outcomes
 
 ## Tech Stack
 
