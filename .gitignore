@@ -1,0 +1,37 @@
+# Environment
+.env
+.env.local
+
+# Submission artifacts (added at deadline only)
+CONVERSATION_LOG.md
+PROJECT_DIARY.md
+CLAUDE.md
+
+# Claude Code project config (contains API keys)
+.claude/
+
+# Node
+node_modules/
+dist/
+
+# Foundry
+contracts/cache/
+contracts/out/
+contracts/broadcast/
+
+# IDE
+.idea/
+
+# OS
+.DS_Store
+
+# Secrets
+*.pem
+*.key
+
+# Coverage
+coverage/
+lcov.info
+
+#mis
+assets/ceremony

@@ -1,0 +1,14 @@
+services:
+  jeannie:
+    build: .
+    container_name: jeannie-dev
+    volumes:
+      - .:/workspace
+      - ~/.ssh/jeannie_synth:/root/.ssh/id_ed25519:ro
+      - ~/.ssh/jeannie_synth.pub:/root/.ssh/id_ed25519.pub:ro
+    working_dir: /workspace
+    stdin_open: true
+    tty: true
+    env_file: .env
+    ports:
+      - "8545:8545"
