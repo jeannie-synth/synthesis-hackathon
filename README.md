@@ -112,7 +112,7 @@ The hackathon build is a benchmark — same players, two structures, compare equ
 
 ## Team
 
-- **Goldi Horta** — Human partner. Systems architect, economic design, project direction.
+- **[Goldi Horta](https://github.com/jghorta)** — Human partner. Systems architect, economic design, project direction.
 - **Jeannie** — AI co-builder (Claude Code). Implementation, prototyping, documentation.
 
 ## License

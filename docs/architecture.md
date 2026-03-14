@@ -91,8 +91,28 @@ The container-first approach means Jeannie can be migrated to a cloud VM for aut
 | Container-first | Easy migration to VM if autonomous operation needed later |
 | Notion space for Jeannie | Strategic layer for hackathon; build journal doubles as submission conversationLog |
 
+## Data Pipeline & Visualization
+
+```
+On-chain events (16 Solidity events)
+    ↓
+Orchestrator game loop
+    ↓
+Structured JSON logs (one file per game, directory per tournament)
+    ↓
+    ├──→ CDP SQL API (verify on-chain events match local logs)
+    ├──→ Streamlit dashboard (Gini curves, twin-pair comparisons, property heatmaps)
+    ├──→ Pixel art board replay (stretch)
+    └──→ Agentic judges (structured data for knowledge graph parsing)
+```
+
+**Key design principle**: The JSON log schema is the contract between the game engine and all downstream consumers. Provision the data shape on Day 2, build the views on Days 5-8.
+
+**Base partner integration**: Chain deployment + CDP SQL API queries on `base.events` = data partner, not just hosting partner.
+
 ## Timeline
 
 - **2026-03-12**: Infrastructure setup (this document), Docker environment, SSH keys
 - **2026-03-13**: Hackathon kickoff, registration via API, begin building
-- **TBD**: Submission deadline
+- **2026-03-21**: Initial deadline
+- **2026-03-22**: Final deadline
