@@ -118,16 +118,25 @@ Agent strategies are drawn from experimental economics and game theory:
 | F | Prosperity | Yes | Yes | Yes | 100 | 4 |
 
 ### Metrics (What We Measure)
-| Metric | What It Shows | Phase |
-|--------|---------------|-------|
-| Gini coefficient | Wealth inequality divergence | 1 |
-| Herfindahl index | Property concentration | 1 |
-| Rounds to completion | Game duration under each rule set | 1 |
-| Twin divergence | Same strategy, different rules → different outcomes | 1 |
-| Treasury flow rate | Redistribution dynamics | 1 |
-| Mode switch frequency | Political instability | 2 |
-| Promise-keeping rate | Signal vs actual vote | 3 |
-| Strategy convergence | What agents learn to become | 4 |
+| Metric | What It Shows | Phase | Status |
+|--------|---------------|-------|--------|
+| Gini coefficient (on net worth) | Wealth inequality divergence | 1 | Done |
+| Herfindahl index | Property concentration | 1 | Done |
+| Rounds to completion | Game duration under each rule set | 1 | Done |
+| Twin divergence | Same strategy, different rules → different outcomes | 1 | Done |
+| Treasury flow rate | Redistribution dynamics | 1 | Done |
+| Jail events per strategy | Commons exploitation detection (Free Rider signal) | 1 | Done |
+| Buy/build counts per strategy | Behavioral differences across rule sets | 1 | Done |
+| Proposal count + pass rate | Political activity under each rule set | 1 | Done |
+| Performance table + dominance flip | Which strategy wins under which rules | 1 | Done |
+| Liquidation events | Economic crises per game | 1 | Parked (needs tx receipt parsing) |
+| Gini curve over rounds | When inequality emerges (time-series) | 1 | Streamlit (from roundSnapshots) |
+| Treasury curve over rounds | Redistribution dynamics over time | 1 | Streamlit (from roundSnapshots) |
+| Rank volatility | Wealth mobility vs lock-in | 1 | Streamlit (from roundSnapshots) |
+| Nash/payoff heatmap | Strategy payoff matrix (5 × 2) | 3 | Placeholder |
+| Mode switch frequency | Political instability | 2 | — |
+| Promise-keeping rate | Signal vs actual vote | 3 | — |
+| Strategy convergence | What agents learn to become | 4 | — |
 
 ### Data Pipeline & Visualization — LOCKED
 
@@ -304,15 +313,35 @@ The JSON log schema is the contract between the game engine and all visualizatio
 
 ---
 
-## Day 3 — Mar 15 (TODAY): Tournament Runner
+## Day 3 — Mar 15 (TODAY): Tournament Runner + Metrics Expansion
 
-- [ ] tournament.ts: multi-game loop, fresh deploy per game, result aggregation
-- [ ] metrics.ts: Herfindahl, treasury flow, twin divergence, rounds to completion
-- [ ] results.ts: JSON + CSV output, console summary
+- [x] tournament.ts: multi-game loop, fresh deploy per game, result aggregation
+- [x] metrics.ts: Herfindahl, treasury flow, twin divergence, rounds to completion
+- [x] results.ts: JSON + CSV output, console summary
 - [x] All 5 strategies implemented (done in Session 3)
 - [x] Agent factory: strategies/index.ts with createAgentSet() (done in Session 3)
+- [x] Metrics expansion: event counters (jail/buy/build/proposals per strategy from turnLogs)
+- [x] Performance table + dominance flip analysis across rule sets
+- [x] Nash/payoff heatmap placeholder for Phase 3 (5 strategies x 2 rule sets)
+- [x] Gini computed on net worth (not just cash) — fixes inequality measurement
+- [x] Streamlit dashboard layout proposed (docs/streamlit-layout.md) — discuss before implementing
+- [ ] **PARTIAL**: Tournament run — 24 Monopolist games completed, Prosperity games hit issues
+- [ ] Full tournament run (100 games per board) — needs debugging of Prosperity game failures
 
-### Milestone: 100 games per board on Anvil, results in CSV, thesis visible in data
+### Partial results (24 Monopolist games on Anvil)
+- Gini: mean 0.254 (range 0.17-0.31)
+- Conditional wins 63% of games, Extractive 33%, FreeRider 4%
+- Generative always ends at $500 (never buys — starves under Monopolist rules)
+- Early Prosperity data (n=3): Generative thrives ($1082-1749), Extractive drops — dominance flip visible
+- Thesis directionally confirmed, needs full Prosperity sample for statistical claims
+
+### Decisions made
+- Time-series extraction (Gini curves, treasury curves) happens in Streamlit from raw JSON logs, not in metrics.ts
+- Performance table + dominance flip analysis for strategy comparison (not full Nash equilibria)
+- Liquidation counter parked (contract handles automatically, no turn log yet — needs tx receipt parsing)
+- Streamlit + Plotly confirmed as viz stack (Days 5-6)
+
+### Milestone: 100 games per board on Anvil, results in CSV, thesis visible in data — PARTIALLY MET
 
 ---
 
