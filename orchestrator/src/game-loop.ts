@@ -317,7 +317,17 @@ export async function runGameLoop(config: GameLoopConfig): Promise<GameLog> {
   // Final state
   rawState = await readGameState(publicClient, contractAddress, gameId);
   const finalBalances = rawState.players.map(p => Number(p.cash));
-  const giniCoeff = gini(finalBalances);
+  const netWorths = rawState.players.map((_, i) => {
+    let nw = Number(rawState.players[i].cash);
+    for (let pos = 0; pos < 40; pos++) {
+      if (rawState.properties[pos].owner === rawState.players[i].addr) {
+        nw += Number(boardSpaces[pos].price) + rawState.properties[pos].houses * 50;
+      }
+    }
+    return nw;
+  });
+  // Gini on net worth (wealth inequality), not just cash
+  const giniCoeff = gini(netWorths);
 
   finalizeGame(log, {
     winner: rawState.winner,
@@ -327,15 +337,7 @@ export async function runGameLoop(config: GameLoopConfig): Promise<GameLog> {
     giniCoefficient: giniCoeff,
     finalBalances,
     treasuryFinal: Number(rawState.treasury),
-    netWorths: rawState.players.map((_, i) => {
-      let nw = Number(rawState.players[i].cash);
-      for (let pos = 0; pos < 40; pos++) {
-        if (rawState.properties[pos].owner === rawState.players[i].addr) {
-          nw += Number(boardSpaces[pos].price) + rawState.properties[pos].houses * 50;
-        }
-      }
-      return nw;
-    }),
+    netWorths,
   });
 
   console.log(`  Winner: ${rawState.winner}`);
