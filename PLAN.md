@@ -325,15 +325,27 @@ The JSON log schema is the contract between the game engine and all visualizatio
 - [x] Nash/payoff heatmap placeholder for Phase 3 (5 strategies x 2 rule sets)
 - [x] Gini computed on net worth (not just cash) — fixes inequality measurement
 - [x] Streamlit dashboard layout proposed (docs/streamlit-layout.md) — discuss before implementing
-- [ ] **PARTIAL**: Tournament run — 24 Monopolist games completed, Prosperity games hit issues
-- [ ] Full tournament run (100 games per board) — needs debugging of Prosperity game failures
+- [x] HTML5 replay viewer: SVG board, dice animation, player cards, annotations, event ticker
+- [ ] **BLOCKED**: Tournament runs — game loop bugs prevent clean data
+- [ ] Fix game loop proposal/rejection handling (bugs 1+2, root cause identified)
+- [ ] Fix Generative proposal frequency (bug 1)
+- [ ] Fix ghost roll [0,0] (bug 3, cosmetic)
+- [ ] Validate all 5 agents with clean 5-game run
+- [ ] Run 30-game tournament (15 Monopolist + 15 Prosperity) — revised from 100/board
 
-### Partial results (24 Monopolist games on Anvil)
+### Known bugs (blocking tournament runs)
+1. Generative always proposes in Monopolist → never rolls (game-breaking)
+2. FreeRider infinite loop after rejected proposal → game hangs (game-breaking)
+3. Ghost roll [0,0] on first turn (cosmetic)
+4. Agent name matching in event counters (fixed)
+
+Root cause: game loop doesn't handle proposal-rejection turn advancement correctly.
+
+### Partial results (26 Monopolist games on Anvil — invalidated by Generative bug)
 - Gini: mean 0.254 (range 0.17-0.31)
 - Conditional wins 63% of games, Extractive 33%, FreeRider 4%
-- Generative always ends at $500 (never buys — starves under Monopolist rules)
-- Early Prosperity data (n=3): Generative thrives ($1082-1749), Extractive drops — dominance flip visible
-- Thesis directionally confirmed, needs full Prosperity sample for statistical claims
+- Generative always $500 (broken — never rolls)
+- These results cannot be used for thesis — need clean runs with all agents participating
 
 ### Decisions made
 - Time-series extraction (Gini curves, treasury curves) happens in Streamlit from raw JSON logs, not in metrics.ts

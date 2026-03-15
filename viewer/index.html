@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Landlord's Game — Replay Viewer</title>
+<style>
+  :root {
+    --bg: #0f0f1a;
+    --panel: #151525;
+    --border: #2a2a44;
+    --text: #d8d8e8;
+    --dim: #6a6a8a;
+    --accent: #e06040;
+    --gold: #dda030;
+    --green: #30b870;
+    --blue: #4488cc;
+    --danger: #cc3030;
+    --board-bg: #1a3028;
+    --space-bg: #e8dcc8;
+    --space-border: #7a6a50;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 16px;
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+  }
+  header .left { display: flex; align-items: center; gap: 12px; }
+  header h1 { font-size: 15px; font-weight: 600; color: var(--gold); letter-spacing: 1px; }
+  header .center { display: flex; align-items: center; gap: 10px; }
+  .mode-badge { padding: 2px 10px; border-radius: 3px; font-size: 12px; font-weight: 700; letter-spacing: 0.5px; }
+  .mode-monopolist { background: rgba(200,40,40,0.2); color: #e85050; border: 1px solid #a03030; }
+  .mode-prosperity { background: rgba(40,160,90,0.2); color: #40c080; border: 1px solid #308060; }
+
+  .header-btn {
+    background: transparent; color: var(--dim); border: 1px solid var(--border);
+    padding: 2px 10px; border-radius: 3px; cursor: pointer;
+    font-family: inherit; font-size: 11px; transition: all 0.15s;
+  }
+  .header-btn:hover { color: var(--text); border-color: var(--accent); }
+
+  .main-layout { display: flex; flex: 1; overflow: hidden; }
+
+  /* ─── Board ─── */
+  .board-container {
+    flex: 1; display: flex; align-items: center; justify-content: center;
+    padding: 10px; min-width: 0; position: relative;
+  }
+  svg.board { width: 100%; height: 100%; max-width: 680px; max-height: 680px; }
+
+  /* ─── Dice Overlay ─── */
+  .dice-overlay {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    display: flex; gap: 12px; pointer-events: none; z-index: 50;
+    opacity: 0; transition: opacity 0.12s;
+  }
+  .dice-overlay.visible { opacity: 1; }
+  .dice-face {
+    width: 52px; height: 52px; border: 2px solid var(--gold); border-radius: 8px;
+    background: rgba(15,15,26,0.94); display: flex; align-items: center; justify-content: center;
+    font-size: 28px; font-weight: 700; color: var(--gold);
+    box-shadow: 0 0 16px rgba(221,160,48,0.25);
+  }
+  .dice-face.rolling { animation: diceFlicker 0.07s infinite; }
+  .dice-face.settled { border-color: var(--accent); color: var(--accent);
+    box-shadow: 0 0 20px rgba(224,96,64,0.35); animation: diceSettle 0.25s ease-out; }
+  @keyframes diceFlicker { 0%{opacity:.7;transform:scale(1)} 50%{opacity:1;transform:scale(1.04)} 100%{opacity:.8;transform:scale(.97)} }
+  @keyframes diceSettle { 0%{transform:scale(1.12)} 50%{transform:scale(.96)} 100%{transform:scale(1)} }
+
+  /* ─── Board annotations ─── */
+  @keyframes annotFade { 0%{opacity:1} 70%{opacity:1} 100%{opacity:0} }
+  @keyframes spaceGlow { 0%{opacity:.4} 50%{opacity:.15} 100%{opacity:0} }
+
+  /* ─── Sidebar ─── */
+  .sidebar {
+    width: 320px; background: var(--panel); border-left: 1px solid var(--border);
+    display: flex; flex-direction: column; overflow: hidden;
+  }
+  .player-cards { padding: 8px; display: flex; flex-direction: column; gap: 5px; }
+  .player-card {
+    padding: 7px 9px; border-radius: 4px; border: 1px solid var(--border);
+    background: rgba(255,255,255,0.02); font-size: 12px;
+    transition: border-color 0.2s, background 0.2s;
+  }
+  .player-card.active { border-color: var(--accent); background: rgba(224,96,64,0.06); }
+  .player-card.winner { border-color: var(--gold); background: rgba(221,160,48,0.08); }
+
+  .player-name { font-weight: 600; font-size: 12px; display: flex; align-items: center; gap: 6px; }
+  .player-dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+  .player-badge { font-size: 10px; margin-left: auto; font-weight: 600; }
+  .badge-active { color: var(--accent); }
+  .badge-winner { color: var(--gold); }
+
+  .player-stats {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 1px 10px;
+    margin-top: 3px; color: var(--dim); font-size: 11px;
+  }
+  .player-stats .val { color: var(--text); font-weight: 500; }
+
+  .player-last-action {
+    margin-top: 3px; padding-top: 3px; border-top: 1px solid rgba(255,255,255,0.04);
+    font-size: 10px; color: var(--dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .player-last-action .act { color: var(--green); }
+
+  .wealth-bar-bg {
+    margin-top: 3px; height: 4px; background: rgba(255,255,255,0.05);
+    border-radius: 2px; overflow: hidden;
+  }
+  .wealth-bar { height: 100%; border-radius: 2px; transition: width 0.4s ease; }
+
+  /* ─── Info panel ─── */
+  .info-panel { padding: 6px 9px; border-top: 1px solid var(--border); font-size: 11px; }
+  .info-panel .label { color: var(--dim); }
+  .info-panel .row { display: flex; justify-content: space-between; margin: 1px 0; }
+
+  /* ─── Ticker ─── */
+  .ticker {
+    flex: 1; overflow-y: auto; padding: 6px 9px; border-top: 1px solid var(--border);
+    font-size: 11px; line-height: 1.5;
+  }
+  .ticker::-webkit-scrollbar { width: 5px; }
+  .ticker::-webkit-scrollbar-track { background: var(--bg); }
+  .ticker::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  .ticker-entry { padding: 1px 0; border-bottom: 1px solid rgba(255,255,255,0.03); }
+  .ticker-entry .agent-name { font-weight: 600; }
+  .ticker-entry.highlight { background: rgba(224,96,64,0.08); }
+
+  /* ─── Controls ─── */
+  .controls {
+    display: flex; align-items: center; gap: 8px; padding: 6px 16px;
+    background: var(--panel); border-top: 1px solid var(--border); font-size: 12px;
+  }
+  .controls button {
+    background: rgba(255,255,255,0.04); color: var(--text); border: 1px solid var(--border);
+    padding: 3px 12px; border-radius: 3px; cursor: pointer; font-family: inherit; font-size: 12px;
+    transition: all 0.15s;
+  }
+  .controls button:hover { background: rgba(224,96,64,0.15); border-color: var(--accent); }
+  .controls button.active-btn { background: rgba(224,96,64,0.2); border-color: var(--accent); color: var(--accent); }
+  .speed-control { display: flex; align-items: center; gap: 4px; }
+  .speed-control input[type=range] { width: 80px; accent-color: var(--green); }
+  .progress-bar { flex:1; height:3px; background:rgba(255,255,255,0.06); border-radius:2px; cursor:pointer; }
+  .progress-fill { height:100%; background:var(--accent); border-radius:2px; transition:width 0.1s; }
+  .turn-label { color: var(--dim); min-width: 90px; text-align: right; }
+
+  /* ─── Load screen ─── */
+  .load-screen {
+    display: flex; flex-direction: column; align-items: center;
+    justify-content: center; height: 100vh; gap: 16px;
+  }
+  .load-screen h1 { color: var(--gold); font-size: 22px; letter-spacing: 2px; }
+  .load-screen p { color: var(--dim); font-size: 13px; }
+  .load-screen button {
+    background: rgba(224,96,64,0.15); color: var(--accent); border: 1px solid var(--accent);
+    padding: 8px 22px; border-radius: 4px; cursor: pointer; font-family: inherit; font-size: 13px;
+    transition: all 0.15s;
+  }
+  .load-screen button:hover { background: rgba(224,96,64,0.3); }
+  .load-screen .or { color: var(--dim); font-size: 11px; }
+  .drop-zone {
+    border: 2px dashed var(--border); padding: 28px 44px; border-radius: 8px;
+    color: var(--dim); font-size: 13px; text-align: center; transition: all 0.15s;
+  }
+  .drop-zone.dragover { border-color: var(--accent); color: var(--text); }
+</style>
+</head>
+<body>
+
+<div id="load-screen" class="load-screen">
+  <h1>THE LANDLORD'S GAME</h1>
+  <p>Replay Viewer</p>
+  <div class="drop-zone" id="drop-zone">Drop a game JSON file here</div>
+  <span class="or">or</span>
+  <button onclick="document.getElementById('file-input').click()">Choose File</button>
+  <input type="file" id="file-input" accept=".json" style="display:none">
+  <p style="font-size:10px; margin-top:12px; color:var(--dim)">
+    Load from URL: <code>?game=path/to/game.json</code>
+  </p>
+</div>
+
+<div id="game-viewer" style="display:none; flex-direction:column; height:100vh;">
+<header>
+  <div class="left">
+    <h1>THE LANDLORD'S GAME</h1>
+    <button id="btn-load-another" class="header-btn">Load Game</button>
+    <input type="file" id="file-input-header" accept=".json" style="display:none">
+  </div>
+  <div class="center">
+    <span id="round-label" style="color:var(--dim); font-size:12px;">Round 0</span>
+    <span id="mode-badge" class="mode-badge">Monopolist</span>
+  </div>
+  <div style="font-size:12px; color:var(--dim);">
+    <span id="treasury-label">Treasury: $0</span>
+  </div>
+</header>
+
+<div class="main-layout">
+  <div class="board-container">
+    <svg class="board" id="board-svg" viewBox="0 0 720 720"></svg>
+    <div class="dice-overlay" id="dice-overlay">
+      <div class="dice-face" id="dice-1">-</div>
+      <div class="dice-face" id="dice-2">-</div>
+    </div>
+  </div>
+  <div class="sidebar">
+    <div class="player-cards" id="player-cards"></div>
+    <div class="info-panel" id="info-panel"></div>
+    <div class="ticker" id="ticker"></div>
+  </div>
+</div>
+
+<div class="controls">
+  <button id="btn-prev">&#9664;&#9664;</button>
+  <button id="btn-play">&#9654;</button>
+  <button id="btn-next">&#9654;&#9654;</button>
+  <div class="speed-control">
+    <span style="color:var(--dim); font-size:10px;">Speed:</span>
+    <input type="range" id="speed-slider" min="1" max="50" value="8">
+    <span id="speed-label" style="font-size:10px; color:var(--dim);">8x</span>
+  </div>
+  <div class="progress-bar" id="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+  <span class="turn-label" id="turn-label">Turn 0 / 0</span>
+</div>
+</div>
+
+<script>
+const BOARD = [
+  {pos:0,name:"Mother Earth",type:"Go",price:0,group:0},{pos:1,name:"Poverty Place",type:"Lot",price:60,group:1},
+  {pos:2,name:"Community Chest",type:"Chest",price:0,group:0},{pos:3,name:"Easy Street",type:"Lot",price:60,group:1},
+  {pos:4,name:"Absolute Necessity",type:"Tax",price:50,group:0},{pos:5,name:"Soakum Lighting Co.",type:"Utility",price:150,group:0},
+  {pos:6,name:"Lonely Lane",type:"Lot",price:100,group:2},{pos:7,name:"Family Emergency",type:"Expense",price:50,group:0},
+  {pos:8,name:"Boomtown",type:"Lot",price:100,group:2},{pos:9,name:"Slambang Trolley",type:"Railroad",price:200,group:0},
+  {pos:10,name:"Jail",type:"Jail",price:0,group:0},{pos:11,name:"Beggarman's Court",type:"Lot",price:120,group:3},
+  {pos:12,name:"Rubeville",type:"Lot",price:120,group:3},{pos:13,name:"The Bowery",type:"Lot",price:140,group:4},
+  {pos:14,name:"Community Bounty",type:"Windfall",price:50,group:0},{pos:15,name:"Rickety Row",type:"Lot",price:140,group:4},
+  {pos:16,name:"Grand Boulevard RR",type:"Railroad",price:200,group:0},{pos:17,name:"Lord Blueblood's",type:"Lot",price:160,group:5},
+  {pos:18,name:"Chance",type:"Chance",price:0,group:0},{pos:19,name:"Crooked Lane",type:"Lot",price:160,group:5},
+  {pos:20,name:"Public Park",type:"Parking",price:0,group:0},{pos:21,name:"La Swelle Hotel",type:"Lot",price:180,group:6},
+  {pos:22,name:"Aqua Pura Water Co.",type:"Utility",price:150,group:0},{pos:23,name:"Gambling Den",type:"Lot",price:180,group:6},
+  {pos:24,name:"Broken Leg RR",type:"Railroad",price:200,group:0},{pos:25,name:"Calamity Avenue",type:"Lot",price:200,group:7},
+  {pos:26,name:"Chance",type:"Chance",price:0,group:0},{pos:27,name:"Easy Money",type:"Lot",price:220,group:7},
+  {pos:28,name:"Luxury Tax",type:"Tax",price:75,group:0},{pos:29,name:"Wall Street",type:"Lot",price:220,group:7},
+  {pos:30,name:"Go to Jail",type:"GoToJail",price:0,group:0},{pos:31,name:"Fairhope Avenue",type:"Lot",price:240,group:8},
+  {pos:32,name:"Arden Avenue",type:"Lot",price:240,group:8},{pos:33,name:"Community Chest",type:"Chest",price:0,group:0},
+  {pos:34,name:"Franceswayland Ave",type:"Lot",price:260,group:8},{pos:35,name:"Coxeyville Short Line",type:"Railroad",price:200,group:0},
+  {pos:36,name:"Chance",type:"Chance",price:0,group:0},{pos:37,name:"The Estates",type:"Lot",price:300,group:8},
+  {pos:38,name:"Supertax",type:"Tax",price:100,group:0},{pos:39,name:"Prosperity Place",type:"Lot",price:400,group:8},
+];
+
+const GROUP_COLORS = {0:'#888',1:'#8B5814',2:'#5BA0C0',3:'#D06090',4:'#D08828',5:'#CC2828',6:'#C4A028',7:'#288838',8:'#3838CC'};
+const PLAYER_COLORS = ['#e94560','#4ecca3','#3498db','#f5c842','#9b59b6'];
+const STRATEGY_NAMES = ['Extractive','Generative','Conditional','FreeRider','Pavlov'];
+const SVG_NS = 'http://www.w3.org/2000/svg';
+const BS = 720, CORNER = 50, SC = 9;
+const SW = (BS - 2*CORNER) / SC, SH = 68;
+
+function spaceCoords(p) {
+  if(p===0) return {x:BS-CORNER,y:BS-CORNER,w:CORNER,h:CORNER,side:'corner'};
+  if(p===10) return {x:0,y:BS-CORNER,w:CORNER,h:CORNER,side:'corner'};
+  if(p===20) return {x:0,y:0,w:CORNER,h:CORNER,side:'corner'};
+  if(p===30) return {x:BS-CORNER,y:0,w:CORNER,h:CORNER,side:'corner'};
+  if(p>=1&&p<=9){const i=p-1; return {x:BS-CORNER-(i+1)*SW,y:BS-SH,w:SW,h:SH,side:'bottom'};}
+  if(p>=11&&p<=19){const i=p-11; return {x:0,y:BS-CORNER-(i+1)*SW,w:SH,h:SW,side:'left'};}
+  if(p>=21&&p<=29){const i=p-21; return {x:CORNER+i*SW,y:0,w:SW,h:SH,side:'top'};}
+  if(p>=31&&p<=39){const i=p-31; return {x:BS-SH,y:CORNER+i*SW,w:SH,h:SW,side:'right'};}
+}
+function spaceCenter(p){const c=spaceCoords(p);return{x:c.x+c.w/2,y:c.y+c.h/2};}
+function tokenOffset(i,n){const a=(i/n)*Math.PI*2-Math.PI/2,r=14;return{dx:Math.cos(a)*r,dy:Math.sin(a)*r};}
+
+function renderBoard(svg) {
+  svg.innerHTML = '';
+  // Board background
+  const bg = document.createElementNS(SVG_NS,'rect');
+  bg.setAttribute('width',BS); bg.setAttribute('height',BS);
+  bg.setAttribute('fill','#1a3828'); bg.setAttribute('rx','6');
+  svg.appendChild(bg);
+
+  // Center text
+  const ct = document.createElementNS(SVG_NS,'text');
+  ct.setAttribute('x',BS/2); ct.setAttribute('y',BS/2-8);
+  ct.setAttribute('text-anchor','middle'); ct.setAttribute('fill','#ffffff');
+  ct.setAttribute('font-size','14'); ct.setAttribute('opacity','0.08');
+  ct.setAttribute('font-family','system-ui, sans-serif'); ct.setAttribute('letter-spacing','3');
+  ct.textContent = "THE LANDLORD'S GAME"; svg.appendChild(ct);
+
+  const cs = document.createElementNS(SVG_NS,'text');
+  cs.setAttribute('x',BS/2); cs.setAttribute('y',BS/2+12);
+  cs.setAttribute('text-anchor','middle'); cs.setAttribute('font-size','11');
+  cs.setAttribute('font-family','system-ui, sans-serif');
+  cs.setAttribute('id','center-mode-label'); cs.setAttribute('opacity','0.2');
+  cs.textContent=''; svg.appendChild(cs);
+
+  // Spaces
+  for(const space of BOARD){
+    const c=spaceCoords(space.pos), g=document.createElementNS(SVG_NS,'g');
+    g.id='space-'+space.pos;
+
+    const rect=document.createElementNS(SVG_NS,'rect');
+    rect.setAttribute('x',c.x); rect.setAttribute('y',c.y);
+    rect.setAttribute('width',c.w); rect.setAttribute('height',c.h);
+    rect.setAttribute('fill','#e8dcc8'); rect.setAttribute('stroke','#7a6a50');
+    rect.setAttribute('stroke-width','1'); g.appendChild(rect);
+
+    // Color band
+    if(space.type==='Lot'&&space.group>0){
+      const b=document.createElementNS(SVG_NS,'rect'), bs2=10;
+      if(c.side==='bottom'){b.setAttribute('x',c.x);b.setAttribute('y',c.y);b.setAttribute('width',c.w);b.setAttribute('height',bs2);}
+      else if(c.side==='top'){b.setAttribute('x',c.x);b.setAttribute('y',c.y+c.h-bs2);b.setAttribute('width',c.w);b.setAttribute('height',bs2);}
+      else if(c.side==='left'){b.setAttribute('x',c.x+c.w-bs2);b.setAttribute('y',c.y);b.setAttribute('width',bs2);b.setAttribute('height',c.h);}
+      else if(c.side==='right'){b.setAttribute('x',c.x);b.setAttribute('y',c.y);b.setAttribute('width',bs2);b.setAttribute('height',c.h);}
+      else{b.setAttribute('x',c.x);b.setAttribute('y',c.y);b.setAttribute('width',c.w);b.setAttribute('height',bs2);}
+      b.setAttribute('fill',GROUP_COLORS[space.group]); g.appendChild(b);
+    }
+
+    // Owner bar
+    const ow=document.createElementNS(SVG_NS,'rect'); ow.id='owner-'+space.pos;
+    ow.setAttribute('x',c.x+2); ow.setAttribute('y',c.y+c.h-5);
+    ow.setAttribute('width',c.w-4); ow.setAttribute('height',3);
+    ow.setAttribute('rx','1'); ow.setAttribute('fill','transparent'); g.appendChild(ow);
+
+    // Houses
+    const hg=document.createElementNS(SVG_NS,'g'); hg.id='houses-'+space.pos; g.appendChild(hg);
+
+    // Name
+    const ctr=spaceCenter(space.pos);
+    const lbl=document.createElementNS(SVG_NS,'text');
+    lbl.setAttribute('x',ctr.x); lbl.setAttribute('y',ctr.y-2);
+    lbl.setAttribute('text-anchor','middle'); lbl.setAttribute('dominant-baseline','middle');
+    lbl.setAttribute('fill','#2a2a2a'); lbl.setAttribute('font-weight','600');
+    lbl.setAttribute('font-size',c.side==='corner'?'7':'8.5');
+    lbl.setAttribute('font-family','system-ui, sans-serif');
+    let dn=space.name; if(dn.length>16&&c.side!=='corner') dn=dn.slice(0,14)+'..';
+    lbl.textContent=dn; g.appendChild(lbl);
+
+    // Price
+    if(space.price>0&&c.side!=='corner'){
+      const pl=document.createElementNS(SVG_NS,'text');
+      pl.setAttribute('x',ctr.x); pl.setAttribute('y',ctr.y+11);
+      pl.setAttribute('text-anchor','middle'); pl.setAttribute('fill','#666');
+      pl.setAttribute('font-size','7.5'); pl.setAttribute('font-family','system-ui, sans-serif');
+      pl.textContent='$'+space.price; g.appendChild(pl);
+    }
+    svg.appendChild(g);
+  }
+
+  // Annotation layer
+  const al=document.createElementNS(SVG_NS,'g'); al.id='annotation-layer'; svg.appendChild(al);
+  // Token layer
+  const tl=document.createElementNS(SVG_NS,'g'); tl.id='token-layer'; svg.appendChild(tl);
+}
+
+// ─── State ───
+let gameData=null, turnIndex=-1, playing=false, playTimer=null, speed=8;
+let playerLastActions={}, diceAnimTimer=null, diceHideTimer=null;
+let state={players:[],properties:{},treasury:0,mode:'',round:0};
+
+function initState(){
+  state.players=gameData.playerAddresses.map((a,i)=>({address:a,cash:500,position:0,inJail:false,netWorth:500,strategy:STRATEGY_NAMES[i]||'Agent-'+i}));
+  state.properties={}; state.treasury=0; state.mode=gameData.mode; state.round=0; playerLastActions={};
+}
+
+function findPlayer(name){return STRATEGY_NAMES.findIndex(s=>name.startsWith(s));}
+
+// ─── Last action formatting ───
+function fmtAction(t){
+  switch(t.action){
+    case 'roll':{const d=t.details;return'Rolled ['+(d.dice?d.dice[0]+'+'+d.dice[1]:'?')+'] -> '+(d.spaceName||'pos '+d.position);}
+    case 'buy':return'Bought '+(BOARD[t.details.position]?.name||'pos '+t.details.position)+' ($'+t.details.price+')';
+    case 'build':return'Built on '+(BOARD[t.details.position]?.name||'pos '+t.details.position);
+    case 'proposeModeSwitch':return'Proposed switch from '+t.details.currentMode;
+    case 'vote':return'Voted '+(t.details.inFavor?'YES':'NO');
+    case 'proposalRejected':return'Proposal REJECTED';
+    case 'proposalPassed':return'Proposal PASSED -> '+(t.details.newMode||'?');
+    case 'jailWait':return'Waiting in jail (turn '+(t.details.turnsServed||'?')+')';
+    case 'jailBuyout':return'Paid $'+(t.details.cost||'?')+' to leave jail';
+    case 'jailBuyoutFailed':return'Buyout failed';
+    default:return t.action;
+  }
+}
+
+// ─── Board annotation ───
+function showAnnotation(turn){
+  const al=document.getElementById('annotation-layer'); if(!al) return; al.innerHTML='';
+  let pos=-1, txt='';
+  if(turn.action==='roll'&&turn.details.position!==undefined) pos=turn.details.position;
+  else if(turn.action==='buy'&&turn.details.position!==undefined){pos=turn.details.position;txt='BOUGHT';}
+  else if(turn.action==='build'&&turn.details.position!==undefined){pos=turn.details.position;txt='BUILT';}
+  if(pos<0||pos>=40) return;
+  const c=spaceCoords(pos), ctr=spaceCenter(pos);
+  const gl=document.createElementNS(SVG_NS,'rect');
+  gl.setAttribute('x',c.x); gl.setAttribute('y',c.y); gl.setAttribute('width',c.w); gl.setAttribute('height',c.h);
+  gl.setAttribute('fill','#f0c040'); gl.setAttribute('opacity','0.2');
+  gl.style.animation='spaceGlow 1.5s ease-out forwards'; al.appendChild(gl);
+  if(txt){
+    const pi=findPlayer(turn.agent), col=pi>=0?PLAYER_COLORS[pi]:'#e06040';
+    const dx=(BS/2-ctr.x)*0.25, dy=(BS/2-ctr.y)*0.25;
+    const te=document.createElementNS(SVG_NS,'text');
+    te.setAttribute('x',ctr.x+dx); te.setAttribute('y',ctr.y+dy);
+    te.setAttribute('text-anchor','middle'); te.setAttribute('dominant-baseline','middle');
+    te.setAttribute('fill',col); te.setAttribute('font-size','10'); te.setAttribute('font-weight','bold');
+    te.setAttribute('font-family','system-ui, sans-serif');
+    te.style.animation='annotFade 2.5s ease-out forwards';
+    te.textContent=txt; al.appendChild(te);
+  }
+}
+
+// ─── Dice animation ───
+function showDice(d1,d2){
+  const ov=document.getElementById('dice-overlay'),e1=document.getElementById('dice-1'),e2=document.getElementById('dice-2');
+  if(diceAnimTimer)clearInterval(diceAnimTimer); if(diceHideTimer)clearTimeout(diceHideTimer);
+  ov.classList.add('visible'); e1.className='dice-face rolling'; e2.className='dice-face rolling';
+  const dur=speed>20?100:speed>10?200:400; let elapsed=0;
+  diceAnimTimer=setInterval(()=>{
+    elapsed+=50; e1.textContent=Math.floor(Math.random()*6)+1; e2.textContent=Math.floor(Math.random()*6)+1;
+    if(elapsed>=dur){clearInterval(diceAnimTimer);diceAnimTimer=null;
+      e1.textContent=d1; e2.textContent=d2; e1.className='dice-face settled'; e2.className='dice-face settled';
+      const dt=speed>20?200:speed>10?400:800;
+      diceHideTimer=setTimeout(()=>{ov.classList.remove('visible');diceHideTimer=null;},dt);
+    }
+  },50);
+}
+function hideDice(){if(diceAnimTimer){clearInterval(diceAnimTimer);diceAnimTimer=null;}if(diceHideTimer){clearTimeout(diceHideTimer);diceHideTimer=null;}const o=document.getElementById('dice-overlay');if(o)o.classList.remove('visible');}
+
+// ─── Apply turn ───
+function applyTurn(turn){
+  const pi=findPlayer(turn.agent);
+  if(pi>=0) playerLastActions[pi]=fmtAction(turn);
+  switch(turn.action){
+    case 'roll':
+      if(pi>=0&&turn.details.position!==undefined){
+        state.players[pi].position=turn.details.position;
+        if(turn.details.cash!=null) state.players[pi].cash=turn.details.cash;
+        state.players[pi].inJail=false;
+      }
+      if(turn.details.dice&&(turn.details.dice[0]>0||turn.details.dice[1]>0)) showDice(turn.details.dice[0],turn.details.dice[1]);
+      break;
+    case 'buy':
+      if(pi>=0&&turn.details.position!==undefined){state.properties[turn.details.position]={owner:pi,houses:0};state.players[pi].cash-=(turn.details.price||0);}
+      break;
+    case 'build':
+      if(turn.details.position!==undefined&&state.properties[turn.details.position]){state.properties[turn.details.position].houses++;if(pi>=0)state.players[pi].cash-=50;}
+      break;
+    case 'jailWait':case 'jailBuyout':if(pi>=0)state.players[pi].inJail=true;break;
+    case 'proposalPassed':state.mode=turn.details.newMode||(state.mode==='Monopolist'?'Prosperity':'Monopolist');break;
+  }
+  const snap=findSnapshot(turnIndex);
+  if(snap){
+    state.round=snap.round; state.treasury=snap.treasury; state.mode=snap.mode;
+    for(let i=0;i<snap.players.length&&i<state.players.length;i++){
+      state.players[i].cash=snap.players[i].cash; state.players[i].position=snap.players[i].position;
+      state.players[i].inJail=snap.players[i].inJail; state.players[i].netWorth=snap.players[i].netWorth;
+    }
+  }
+  for(let i=0;i<state.players.length;i++){
+    let nw=state.players[i].cash;
+    for(const[pos,pr] of Object.entries(state.properties)){if(pr.owner===i)nw+=(BOARD[pos]?.price||0)+pr.houses*50;}
+    state.players[i].netWorth=nw;
+  }
+  showAnnotation(turn);
+}
+
+function findSnapshot(ti){
+  if(!gameData.roundSnapshots.length)return null;
+  const tpr=gameData.turns.length/(gameData.roundSnapshots.length||1);
+  return gameData.roundSnapshots[Math.min(Math.floor(ti/tpr),gameData.roundSnapshots.length-1)];
+}
+
+// ─── UI ───
+function updateBoard(){
+  const tl=document.getElementById('token-layer'); tl.innerHTML='';
+  for(let i=0;i<state.players.length;i++){
+    const p=state.players[i],ctr=spaceCenter(p.position),off=tokenOffset(i,state.players.length);
+    const cx=ctr.x+off.dx,cy=ctr.y+off.dy;
+    // Glow
+    const gl=document.createElementNS(SVG_NS,'circle');
+    gl.setAttribute('cx',cx);gl.setAttribute('cy',cy);gl.setAttribute('r','11');
+    gl.setAttribute('fill','none');gl.setAttribute('stroke',PLAYER_COLORS[i]);
+    gl.setAttribute('stroke-width','1');gl.setAttribute('opacity',p.inJail?'0.15':'0.35');
+    tl.appendChild(gl);
+    // Token
+    const ci=document.createElementNS(SVG_NS,'circle');
+    ci.setAttribute('cx',cx);ci.setAttribute('cy',cy);ci.setAttribute('r','8');
+    ci.setAttribute('fill',PLAYER_COLORS[i]);ci.setAttribute('stroke',p.inJail?'#cc3030':'#000');
+    ci.setAttribute('stroke-width',p.inJail?'2':'1');ci.setAttribute('opacity',p.inJail?'0.5':'1');
+    tl.appendChild(ci);
+    // Number
+    const nm=document.createElementNS(SVG_NS,'text');
+    nm.setAttribute('x',cx);nm.setAttribute('y',cy+1);nm.setAttribute('text-anchor','middle');
+    nm.setAttribute('dominant-baseline','middle');nm.setAttribute('fill','#fff');
+    nm.setAttribute('font-size','8');nm.setAttribute('font-weight','bold');
+    nm.setAttribute('font-family','system-ui, sans-serif');nm.textContent=i;tl.appendChild(nm);
+  }
+  // Properties
+  for(let pos=0;pos<40;pos++){
+    const oe=document.getElementById('owner-'+pos);
+    if(oe){const pr=state.properties[pos];oe.setAttribute('fill',pr!==undefined?PLAYER_COLORS[pr.owner]:'transparent');}
+    const hg=document.getElementById('houses-'+pos);
+    if(hg){hg.innerHTML='';const pr=state.properties[pos];
+      if(pr&&pr.houses>0){const c=spaceCoords(pos);
+        for(let h=0;h<pr.houses;h++){const hr=document.createElementNS(SVG_NS,'rect');
+          hr.setAttribute('x',c.x+3+h*10);hr.setAttribute('y',c.y+3);
+          hr.setAttribute('width',8);hr.setAttribute('height',8);hr.setAttribute('fill','#30a060');
+          hr.setAttribute('stroke','#208040');hr.setAttribute('stroke-width','0.5');hr.setAttribute('rx','1');
+          hg.appendChild(hr);
+        }
+      }
+    }
+  }
+  const badge=document.getElementById('mode-badge');
+  badge.textContent=state.mode; badge.className='mode-badge mode-'+state.mode.toLowerCase();
+  const cl=document.getElementById('center-mode-label');
+  cl.textContent=state.mode.toUpperCase()+' RULES';
+  cl.setAttribute('fill',state.mode==='Monopolist'?'#cc4040':'#40a070');
+  document.getElementById('round-label').textContent='Round '+state.round;
+  document.getElementById('treasury-label').textContent='Treasury: $'+state.treasury;
+}
+
+function updateCards(){
+  const ct=document.getElementById('player-cards');
+  const cur=turnIndex>=0&&turnIndex<gameData.turns.length?gameData.turns[turnIndex]:null;
+  const ai=cur?findPlayer(cur.agent):-1;
+  const maxNW=Math.max(...state.players.map(p=>p.netWorth),1);
+  const over=turnIndex>=gameData.turns.length-1&&gameData.result;
+  ct.innerHTML='';
+  for(let i=0;i<state.players.length;i++){
+    const p=state.players[i];
+    const win=over&&gameData.result.winner.toLowerCase()===p.address.toLowerCase();
+    const act=i===ai;
+    const card=document.createElement('div');
+    card.className='player-card'+(act?' active':'')+(win?' winner':'');
+    const badge=win?'<span class="player-badge badge-winner">WINNER</span>':act?'<span class="player-badge badge-active">ACTIVE</span>':'';
+    const jail=p.inJail?' <span style="color:#cc3030">[JAIL]</span>':'';
+    const la=playerLastActions[i]?'<div class="player-last-action">Last: <span class="act">'+playerLastActions[i]+'</span></div>':'';
+    let pc=0;for(const k in state.properties)if(state.properties[k].owner===i)pc++;
+    card.innerHTML=`<div class="player-name"><span class="player-dot" style="background:${PLAYER_COLORS[i]}"></span>${p.strategy}${jail}${badge}</div>
+      <div class="player-stats"><span class="label">Cash:</span><span class="val">$${p.cash}</span><span class="label">Net worth:</span><span class="val">$${p.netWorth}</span><span class="label">Position:</span><span class="val">${BOARD[p.position]?.name||p.position}</span><span class="label">Properties:</span><span class="val">${pc}</span></div>
+      <div class="wealth-bar-bg"><div class="wealth-bar" style="width:${(p.netWorth/maxNW*100).toFixed(1)}%;background:${PLAYER_COLORS[i]}"></div></div>${la}`;
+    ct.appendChild(card);
+  }
+}
+
+function addTicker(turn,hl=false){
+  const tk=document.getElementById('ticker'), en=document.createElement('div');
+  const pi=findPlayer(turn.agent), col=pi>=0?PLAYER_COLORS[pi]:'#888';
+  let txt='',hi=hl;
+  switch(turn.action){
+    case 'roll':{const d=turn.details;const dc=d.dice?'['+d.dice[0]+'+'+d.dice[1]+']':'';txt=dc+' lands on '+(d.spaceName||'pos '+d.position);break;}
+    case 'buy':txt='buys '+(BOARD[turn.details.position]?.name||'pos '+turn.details.position)+' ($'+turn.details.price+')';hi=true;break;
+    case 'build':txt='builds house on '+(BOARD[turn.details.position]?.name||'pos '+turn.details.position);hi=true;break;
+    case 'proposeModeSwitch':txt='proposes switch from '+turn.details.currentMode;hi=true;break;
+    case 'vote':txt='votes '+(turn.details.inFavor?'YES':'NO');break;
+    case 'proposalRejected':txt='proposal REJECTED (turn lost)';hi=true;break;
+    case 'proposalPassed':txt='proposal PASSED -> '+(turn.details.newMode||'?');hi=true;break;
+    case 'jailWait':txt='waits in jail (turn '+(turn.details.turnsServed||'?')+')';break;
+    case 'jailBuyout':txt='pays $'+(turn.details.cost||'?')+' to leave jail';hi=true;break;
+    case 'jailBuyoutFailed':txt='buyout failed';break;
+    default:txt=turn.action;
+  }
+  en.className='ticker-entry'+(hi?' highlight':'');
+  en.innerHTML='<span class="agent-name" style="color:'+col+'">'+turn.agent+'</span> '+txt;
+  tk.appendChild(en); tk.scrollTop=tk.scrollHeight;
+}
+
+function updateControls(){
+  const tot=gameData?gameData.turns.length:0;
+  document.getElementById('turn-label').textContent='Turn '+(turnIndex+1)+' / '+tot;
+  document.getElementById('progress-fill').style.width=tot>0?((turnIndex+1)/tot*100)+'%':'0%';
+  document.getElementById('btn-play').innerHTML=playing?'&#9646;&#9646;':'&#9654;';
+  document.getElementById('btn-play').classList.toggle('active-btn',playing);
+}
+
+// ─── Playback ───
+function goToTurn(idx){
+  if(!gameData)return; idx=Math.max(-1,Math.min(idx,gameData.turns.length-1));
+  if(idx<turnIndex){initState();document.getElementById('ticker').innerHTML='';hideDice();turnIndex=-1;
+    for(let i=0;i<=idx;i++){turnIndex=i;applyTurn(gameData.turns[i]);addTicker(gameData.turns[i]);}
+  } else {while(turnIndex<idx){turnIndex++;applyTurn(gameData.turns[turnIndex]);addTicker(gameData.turns[turnIndex]);}}
+  updateBoard();updateCards();updateControls();
+}
+function nextTurn(){if(turnIndex>=gameData.turns.length-1){stopPlay();return;}goToTurn(turnIndex+1);}
+function prevTurn(){goToTurn(turnIndex-1);}
+function startPlay(){if(playing)return;playing=true;updateControls();tick();}
+function stopPlay(){playing=false;clearTimeout(playTimer);updateControls();}
+function togglePlay(){playing?stopPlay():startPlay();}
+function tick(){if(!playing)return;playTimer=setTimeout(()=>{nextTurn();if(playing)tick();},Math.max(20,1000/speed));}
+
+// ─── Load ───
+function loadGame(data){
+  gameData=data;turnIndex=-1;stopPlay();hideDice();initState();
+  document.getElementById('load-screen').style.display='none';
+  document.getElementById('game-viewer').style.display='flex';
+  renderBoard(document.getElementById('board-svg'));
+  updateBoard();updateCards();updateControls();
+  document.getElementById('ticker').innerHTML='';
+  const info=document.getElementById('info-panel');
+  const winnerIdx=data.result?data.playerAddresses.findIndex(a=>a.toLowerCase()===data.result.winner.toLowerCase()):-1;
+  const winnerName=winnerIdx>=0?STRATEGY_NAMES[winnerIdx]:'?';
+  info.innerHTML=`<div class="row"><span class="label">Game:</span><span>#${data.gameId} ${data.mode}</span></div>
+    <div class="row"><span class="label">Turns:</span><span>${data.turns.length}</span></div>
+    <div class="row"><span class="label">Result:</span><span>${data.result?winnerName+' wins (R'+data.result.rounds+')':'In progress'}</span></div>
+    <div class="row"><span class="label">Gini:</span><span>${data.result?data.result.giniCoefficient.toFixed(4):'--'}</span></div>`;
+}
+
+// ─── Events ───
+document.addEventListener('DOMContentLoaded',()=>{
+  document.getElementById('btn-play').addEventListener('click',togglePlay);
+  document.getElementById('btn-next').addEventListener('click',nextTurn);
+  document.getElementById('btn-prev').addEventListener('click',prevTurn);
+  const sl=document.getElementById('speed-slider');
+  sl.addEventListener('input',()=>{speed=parseInt(sl.value);document.getElementById('speed-label').textContent=speed+'x';});
+  document.getElementById('progress-bar').addEventListener('click',e=>{if(!gameData)return;const r=e.currentTarget.getBoundingClientRect();goToTurn(Math.floor((e.clientX-r.left)/r.width*gameData.turns.length)-1);});
+  document.addEventListener('keydown',e=>{if(e.key===' '){e.preventDefault();togglePlay();}if(e.key==='ArrowRight')nextTurn();if(e.key==='ArrowLeft')prevTurn();});
+
+  function handleFile(e){const f=e.target.files[0];if(f){const r=new FileReader();r.onload=ev=>{stopPlay();loadGame(JSON.parse(ev.target.result));};r.readAsText(f);}}
+  document.getElementById('file-input').addEventListener('change',handleFile);
+  document.getElementById('file-input-header').addEventListener('change',handleFile);
+  document.getElementById('btn-load-another').addEventListener('click',()=>document.getElementById('file-input-header').click());
+
+  const dz=document.getElementById('drop-zone');
+  dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('dragover');});
+  dz.addEventListener('dragleave',()=>dz.classList.remove('dragover'));
+  dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('dragover');const f=e.dataTransfer.files[0];if(f){const r=new FileReader();r.onload=ev=>loadGame(JSON.parse(ev.target.result));r.readAsText(f);}});
+
+  const params=new URLSearchParams(window.location.search);
+  const gu=params.get('game');
+  if(gu) fetch(gu).then(r=>r.json()).then(loadGame).catch(e=>console.error('Load failed:',e));
+});
+</script>
+</body>
+</html>
