@@ -25,6 +25,13 @@ export interface GameMetrics {
   treasuryFinal: number;
   winner: string;
   propertiesPerPlayer: number[];
+  // Event counters (extracted from turnLogs)
+  jailEvents: number[];       // jail entries per strategy
+  liquidationEvents: number;  // total liquidations
+  buyCount: number[];         // purchases per strategy
+  buildCount: number[];       // houses built per strategy
+  proposalCount: number;      // mode switch proposals
+  proposalPassCount: number;  // proposals that passed
 }
 
 /** Aggregate stats for a set of games (one tournament) */
@@ -38,6 +45,13 @@ export interface TournamentMetrics {
   treasuryFlowRate: AggStat;
   netWorthByStrategy: { strategy: string; stat: AggStat }[];
   winsByStrategy: { strategy: string; wins: number; winRate: number }[];
+  // Event counter aggregates
+  jailEventsByStrategy: { strategy: string; stat: AggStat }[];
+  liquidationEvents: AggStat;
+  buyCountByStrategy: { strategy: string; stat: AggStat }[];
+  buildCountByStrategy: { strategy: string; stat: AggStat }[];
+  proposals: AggStat;
+  proposalPassRate: number;
 }
 
 /** Twin divergence: compare same strategy across two rule sets */
@@ -59,6 +73,55 @@ export interface AggStat {
 }
 
 const STRATEGY_NAMES = ["Extractive", "Generative", "Conditional", "FreeRider", "Pavlov"];
+
+// ─── Event extraction from turnLogs ─────────────────────────────────
+
+/** Extract event counters from a GameLog's turn entries */
+function extractEventCounters(log: GameLog): {
+  jailEvents: number[];
+  liquidationEvents: number;
+  buyCount: number[];
+  buildCount: number[];
+  proposalCount: number;
+  proposalPassCount: number;
+} {
+  const n = STRATEGY_NAMES.length;
+  const jailEvents = new Array(n).fill(0);
+  const buyCount = new Array(n).fill(0);
+  const buildCount = new Array(n).fill(0);
+  let liquidationEvents = 0;
+  let proposalCount = 0;
+  let proposalPassCount = 0;
+
+  for (const turn of log.turns) {
+    const idx = STRATEGY_NAMES.findIndex(s => turn.agent.startsWith(s));
+    if (idx < 0) continue;
+
+    switch (turn.action) {
+      case "jailWait":
+      case "jailBuyout":
+        jailEvents[idx]++;
+        break;
+      case "buy":
+        buyCount[idx]++;
+        break;
+      case "build":
+        buildCount[idx]++;
+        break;
+      case "proposeModeSwitch":
+        proposalCount++;
+        break;
+      case "proposalPassed":
+        proposalPassCount++;
+        break;
+    }
+
+    // Liquidation: contract handles automatically, no turn log yet.
+    // TODO: detect from PropertyLiquidated events when event log parsing is added.
+  }
+
+  return { jailEvents, liquidationEvents, buyCount, buildCount, proposalCount, proposalPassCount };
+}
 
 // ─── Per-game metrics ────────────────────────────────────────────────
 
@@ -95,6 +158,7 @@ function treasuryFlowRate(log: GameLog): number {
 export function computeGameMetrics(log: GameLog, propertyCounts?: number[]): GameMetrics {
   const result = log.result!;
   const propCounts = propertyCounts ?? countProperties(log);
+  const events = extractEventCounters(log);
 
   return {
     gameId: log.gameId,
@@ -109,6 +173,7 @@ export function computeGameMetrics(log: GameLog, propertyCounts?: number[]): Gam
     treasuryFinal: result.treasuryFinal,
     winner: result.winner,
     propertiesPerPlayer: propCounts,
+    ...events,
   };
 }
 
@@ -165,6 +230,29 @@ export function computeTournamentMetrics(
     winRate: games.length > 0 ? winCounts[i] / games.length : 0,
   }));
 
+  // Event counter aggregates
+  const jailEventsByStrategy = STRATEGY_NAMES.map((strategy, i) => ({
+    strategy,
+    stat: aggStat(games.map(g => g.jailEvents[i])),
+  }));
+
+  const liquidationEventsStat = aggStat(games.map(g => g.liquidationEvents));
+
+  const buyCountByStrategy = STRATEGY_NAMES.map((strategy, i) => ({
+    strategy,
+    stat: aggStat(games.map(g => g.buyCount[i])),
+  }));
+
+  const buildCountByStrategy = STRATEGY_NAMES.map((strategy, i) => ({
+    strategy,
+    stat: aggStat(games.map(g => g.buildCount[i])),
+  }));
+
+  const proposalsStat = aggStat(games.map(g => g.proposalCount));
+  const totalProposals = games.reduce((s, g) => s + g.proposalCount, 0);
+  const totalPassed = games.reduce((s, g) => s + g.proposalPassCount, 0);
+  const proposalPassRate = totalProposals > 0 ? totalPassed / totalProposals : 0;
+
   return {
     tournamentId,
     mode,
@@ -175,6 +263,12 @@ export function computeTournamentMetrics(
     treasuryFlowRate: flowStat,
     netWorthByStrategy,
     winsByStrategy,
+    jailEventsByStrategy,
+    liquidationEvents: liquidationEventsStat,
+    buyCountByStrategy,
+    buildCountByStrategy,
+    proposals: proposalsStat,
+    proposalPassRate,
   };
 }
 
@@ -243,5 +337,72 @@ function rankOf(netWorths: number[], playerIndex: number): number {
   }
   return rank;
 }
+
+// ─── Performance table + dominance analysis ─────────────────────────
+
+export interface StrategyPerformance {
+  strategy: string;
+  monopolistMeanNetWorth: number;
+  prosperityMeanNetWorth: number;
+  monopolistRank: number;   // 1 = highest earner
+  prosperityRank: number;
+  dominatesUnder: "Monopolist" | "Prosperity" | "Both" | "Neither";
+}
+
+/** Compute performance table: which strategy earns most under each rule set?
+ *  Dominance flip (top performer changes between rule sets) = thesis proved. */
+export function computePerformanceTable(
+  monopolistGames: GameMetrics[],
+  prosperityGames: GameMetrics[],
+): StrategyPerformance[] {
+  const mMeans = STRATEGY_NAMES.map((_, i) => {
+    const vals = monopolistGames.map(g => g.netWorths[i]);
+    return vals.length > 0 ? vals.reduce((a, b) => a + b, 0) / vals.length : 0;
+  });
+
+  const pMeans = STRATEGY_NAMES.map((_, i) => {
+    const vals = prosperityGames.map(g => g.netWorths[i]);
+    return vals.length > 0 ? vals.reduce((a, b) => a + b, 0) / vals.length : 0;
+  });
+
+  // Rank by mean net worth (1 = highest)
+  const mRanked = [...mMeans].map((v, i) => ({ i, v })).sort((a, b) => b.v - a.v);
+  const pRanked = [...pMeans].map((v, i) => ({ i, v })).sort((a, b) => b.v - a.v);
+
+  const mRanks = new Array(STRATEGY_NAMES.length);
+  const pRanks = new Array(STRATEGY_NAMES.length);
+  mRanked.forEach((entry, rank) => { mRanks[entry.i] = rank + 1; });
+  pRanked.forEach((entry, rank) => { pRanks[entry.i] = rank + 1; });
+
+  return STRATEGY_NAMES.map((strategy, i) => {
+    const isTopM = mRanks[i] === 1;
+    const isTopP = pRanks[i] === 1;
+    const dominatesUnder = isTopM && isTopP ? "Both"
+      : isTopM ? "Monopolist"
+      : isTopP ? "Prosperity"
+      : "Neither";
+
+    return {
+      strategy,
+      monopolistMeanNetWorth: mMeans[i],
+      prosperityMeanNetWorth: pMeans[i],
+      monopolistRank: mRanks[i],
+      prosperityRank: pRanks[i],
+      dominatesUnder,
+    };
+  });
+}
+
+// ─── Nash / payoff placeholder ──────────────────────────────────────
+//
+// Phase 3 TODO: Strategy payoff heatmap
+// Dimensions: 5 strategies × 2 rule sets
+// Each cell = mean net worth for that strategy under that rule set
+// The thesis shows up as a dominance flip: the top-performing strategy
+// changes between Monopolist and Prosperity columns.
+// With voting/signaling data (Phase 3), this extends to include
+// political payoffs (proposal success rate, vote alignment reward).
+// Visualization: Streamlit heatmap with diverging colormap.
+//
 
 export { aggStat, STRATEGY_NAMES };

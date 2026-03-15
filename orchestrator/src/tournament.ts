@@ -8,13 +8,14 @@ import { setup, createGame } from "./setup.js";
 import { runGameLoop } from "./game-loop.js";
 import { saveGameLog } from "./logger.js";
 import { createAgentSet, STRATEGY_ORDER } from "../../agents/src/strategies/index.js";
-import { computeGameMetrics, computeTournamentMetrics, computeTwinDivergence } from "./metrics.js";
+import { computeGameMetrics, computeTournamentMetrics, computeTwinDivergence, computePerformanceTable } from "./metrics.js";
 import {
   saveTournamentJSON,
   saveGameCSV,
   saveTwinCSV,
   printTournamentSummary,
   printHeadlineComparison,
+  printDominanceAnalysis,
 } from "./results.js";
 import type { GameMetrics } from "./metrics.js";
 import type { Address } from "viem";
@@ -120,17 +121,20 @@ async function main() {
   const monopolistTournament = computeTournamentMetrics("A", "Monopolist", monopolistMetrics);
   const prosperityTournament = computeTournamentMetrics("B", "Prosperity", prosperityMetrics);
   const twinDivergence = computeTwinDivergence(monopolistMetrics, prosperityMetrics);
+  const performanceTable = computePerformanceTable(monopolistMetrics, prosperityMetrics);
 
   // 5. Print results
   printTournamentSummary(monopolistTournament);
   printTournamentSummary(prosperityTournament);
   printHeadlineComparison(monopolistTournament, prosperityTournament, twinDivergence);
+  printDominanceAnalysis(performanceTable);
 
   // 6. Save results
   const jsonPath = saveTournamentJSON({
     timestamp: new Date().toISOString(),
     tournaments: [monopolistTournament, prosperityTournament],
     twinDivergence,
+    performanceTable,
     games: { monopolist: monopolistMetrics, prosperity: prosperityMetrics },
   }, logDir);
 

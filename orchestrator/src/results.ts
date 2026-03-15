@@ -3,7 +3,7 @@
  */
 
 import { writeFileSync, mkdirSync } from "fs";
-import type { TournamentMetrics, TwinDivergence, GameMetrics, AggStat } from "./metrics.js";
+import type { TournamentMetrics, TwinDivergence, GameMetrics, AggStat, StrategyPerformance } from "./metrics.js";
 
 // ─── JSON output ─────────────────────────────────────────────────────
 
@@ -11,6 +11,7 @@ export interface TournamentOutput {
   timestamp: string;
   tournaments: TournamentMetrics[];
   twinDivergence: TwinDivergence[];
+  performanceTable: StrategyPerformance[];
   games: { monopolist: GameMetrics[]; prosperity: GameMetrics[] };
 }
 
@@ -32,6 +33,10 @@ export function saveGameCSV(games: GameMetrics[], dir: string, filename: string)
     "gameId", "mode", "rounds", "turnsTaken", "gini", "herfindahl", "treasuryFlowRate", "treasuryFinal",
     ...strategies.map(s => `netWorth_${s}`),
     ...strategies.map(s => `cash_${s}`),
+    ...strategies.map(s => `jail_${s}`),
+    ...strategies.map(s => `buys_${s}`),
+    ...strategies.map(s => `builds_${s}`),
+    "liquidations", "proposals", "proposalsPassed",
     "winner",
   ];
 
@@ -41,6 +46,10 @@ export function saveGameCSV(games: GameMetrics[], dir: string, filename: string)
     g.treasuryFlowRate.toFixed(2), g.treasuryFinal,
     ...g.netWorths.map(nw => nw),
     ...g.finalBalances.map(b => b),
+    ...g.jailEvents,
+    ...g.buyCount,
+    ...g.buildCount,
+    g.liquidationEvents, g.proposalCount, g.proposalPassCount,
     g.winner,
   ]);
 
@@ -96,6 +105,13 @@ export function printTournamentSummary(t: TournamentMetrics): void {
     const bar = "█".repeat(Math.round(winRate * 20));
     console.log(`║    ${strategy.padEnd(12)} ${String(wins).padStart(3)} (${(winRate * 100).toFixed(0)}%) ${bar}`);
   }
+  console.log(`║`);
+  console.log(`║  Jail events (mean per game):`);
+  for (const { strategy, stat } of t.jailEventsByStrategy) {
+    console.log(`║    ${strategy.padEnd(12)} ${stat.mean.toFixed(1)}`);
+  }
+  console.log(`║  Liquidations:     ${fmtStat(t.liquidationEvents, 1)}`);
+  console.log(`║  Proposals:        ${fmtStat(t.proposals, 1)}  (pass rate: ${(t.proposalPassRate * 100).toFixed(0)}%)`);
   console.log(`╚══════════════════════════════════════════════════════╝`);
 }
 
@@ -136,5 +152,30 @@ export function printHeadlineComparison(
   const giniDivergence = monopolist.gini.mean - prosperity.gini.mean;
   console.log(`\n  THESIS: "${giniDivergence > 0 ? "Monopolist rules produce greater inequality" : "Prosperity rules produce greater inequality"}"`);
   console.log(`  Gini divergence: ${giniDivergence.toFixed(4)} across ${monopolist.gamesPlayed + prosperity.gamesPlayed} games`);
+  console.log(`${"═".repeat(60)}\n`);
+}
+
+export function printDominanceAnalysis(performance: StrategyPerformance[]): void {
+  console.log(`\n${"═".repeat(60)}`);
+  console.log(`  DOMINANCE ANALYSIS: Which strategy wins under which rules?`);
+  console.log(`${"═".repeat(60)}`);
+
+  console.log(`\n  ${"Strategy".padEnd(14)} ${"M rank".padStart(8)} ${"P rank".padStart(8)} ${"M net worth".padStart(12)} ${"P net worth".padStart(12)} ${"Dominates".padStart(12)}`);
+  console.log(`  ${"─".repeat(56)}`);
+  for (const p of performance) {
+    console.log(`  ${p.strategy.padEnd(14)} ${String(p.monopolistRank).padStart(8)} ${String(p.prosperityRank).padStart(8)} ${p.monopolistMeanNetWorth.toFixed(0).padStart(12)} ${p.prosperityMeanNetWorth.toFixed(0).padStart(12)} ${p.dominatesUnder.padStart(12)}`);
+  }
+
+  const mTop = performance.find(p => p.monopolistRank === 1);
+  const pTop = performance.find(p => p.prosperityRank === 1);
+  const flip = mTop && pTop && mTop.strategy !== pTop.strategy;
+
+  console.log(`\n  Monopolist top earner: ${mTop?.strategy ?? "?"}`);
+  console.log(`  Prosperity top earner: ${pTop?.strategy ?? "?"}`);
+  if (flip) {
+    console.log(`  DOMINANCE FLIP: Rules determine which strategy wins.`);
+  } else {
+    console.log(`  No dominance flip — same strategy tops both rule sets.`);
+  }
   console.log(`${"═".repeat(60)}\n`);
 }
