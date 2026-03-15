@@ -1,25 +1,16 @@
-/**
- * Setup — deploy contract and create agent wallets.
- * * 1. Derive 5 agent wallets from mnemonic (HD paths m/44'/60'/0'/0/{0..4})
- * 2. Fund each agent wallet with gas ETH from deployer
- * 3. Deploy LandlordsGame contract
- * 4. Call createGame() with the 5 agent addresses
- *
- * The deployer wallet (PRIVATE_KEY) is the game master.
- * Agents each have their own wallet, own nonce, own on-chain identity.
- * No token needed — game economy is internal (uint256 in contract storage).
- * Agents only spend real ETH on gas.
- */
-
-import { createClient, createAgentWallet, deriveAgentWallets, NUM_AGENTS } from "../../agents/src/chain/client.js";
+import { readFileSync } from "fs";
+import { dirname, resolve } from "path";
+import { fileURLToPath } from "url";
 import { parseEther, type Address } from "viem";
+import { createClient, createAgentWallet, deriveAgentWallets } from "../../agents/src/chain/client.js";
+import { LANDLORDS_GAME_ABI } from "../../agents/src/chain/abi.js";
 
-/** Minimum gas balance per agent — enough for ~500 transactions on Base */
-const AGENT_GAS_FUND = parseEther("0.005");
+const AGENT_GAS_FUND = parseEther("0.01");
 
 export interface SetupResult {
-  deployer: Address;
-  agents: { name: string; address: Address }[];
+  publicClient: any;
+  deployerWallet: any;
+  agentWallets: { name: string; address: Address; wallet: any }[];
   contractAddress: Address;
 }
 
@@ -38,38 +29,86 @@ export async function setup(
   const agentWallets = deriveAgentWallets(mnemonic, network, rpcUrl);
 
   for (const { name, account } of agentWallets) {
-    console.log(`Agent ${name}: ${account.address}`);
+    console.log(`  Agent ${name}: ${account.address}`);
   }
 
-  // 2. Fund agent wallets from deployer
-  for (const { name, account } of agentWallets) {
-    const balance = await publicClient.getBalance({ address: account.address });
-    if (balance < AGENT_GAS_FUND) {
-      const needed = AGENT_GAS_FUND - balance;
-      const hash = await deployerWallet.sendTransaction({
-        to: account.address,
-        value: needed,
-      });
-      console.log(`Funded ${name} with ${needed} wei — tx: ${hash}`);
-    } else {
-      console.log(`${name} already funded (${balance} wei)`);
+  // 2. Fund agents (Anvil accounts are pre-funded, but Sepolia needs this)
+  if (network === "base-sepolia") {
+    for (const { name, account } of agentWallets) {
+      const balance = await publicClient.getBalance({ address: account.address });
+      if (balance < AGENT_GAS_FUND) {
+        const needed = AGENT_GAS_FUND - balance;
+        const hash = await (deployerWallet as any).sendTransaction({
+          to: account.address,
+          value: needed,
+          account: deployerAccount,
+        });
+        await publicClient.waitForTransactionReceipt({ hash });
+        console.log(`  Funded ${name} with ${needed} wei`);
+      }
     }
   }
 
-  // 3. Deploy contract — TODO: wire up after contract compilation
-  // const contractAddress = await deployContract(deployerWallet, ...);
-  const contractAddress = "0x0" as Address; // placeholder
-
-  // 4. Create game — TODO: call createGame() with agent addresses
-  // const agentAddresses = agentWallets.map(a => a.account.address);
-  // await createGame(contractAddress, agentAddresses);
+  // 3. Deploy contract
+  console.log("Deploying LandlordsGame...");
+  const bytecode = getBytecode();
+  const deployHash = await (deployerWallet as any).deployContract({
+    abi: LANDLORDS_GAME_ABI,
+    bytecode,
+    account: deployerAccount,
+  });
+  const receipt = await publicClient.waitForTransactionReceipt({ hash: deployHash });
+  const contractAddress = receipt.contractAddress!;
+  console.log(`  Contract deployed: ${contractAddress}`);
 
   return {
-    deployer: deployerAccount.address,
-    agents: agentWallets.map(({ name, account }) => ({
+    publicClient,
+    deployerWallet,
+    agentWallets: agentWallets.map(({ name, account, wallet }) => ({
       name,
       address: account.address,
+      wallet,
     })),
     contractAddress,
   };
+}
+
+function getBytecode(): `0x${string}` {
+  const __dirname = dirname(fileURLToPath(import.meta.url));
+  const artifactPath = resolve(__dirname, "../../contracts/out/LandlordsGame.sol/LandlordsGame.json");
+  const artifact = JSON.parse(readFileSync(artifactPath, "utf-8"));
+  return artifact.bytecode.object as `0x${string}`;
+}
+
+/** Create a game on the deployed contract */
+export async function createGame(
+  publicClient: any,
+  deployerWallet: any,
+  contractAddress: Address,
+  tournamentId: number,
+  mode: 0 | 1, // 0 = Monopolist, 1 = Prosperity
+  playerAddresses: Address[],
+  monopolistThreshold = 0,
+  prosperityThreshold = 0,
+): Promise<bigint> {
+  const hash = await deployerWallet.writeContract({
+    address: contractAddress,
+    abi: LANDLORDS_GAME_ABI,
+    functionName: "createGame",
+    args: [
+      BigInt(tournamentId),
+      mode,
+      playerAddresses,
+      BigInt(monopolistThreshold),
+      BigInt(prosperityThreshold),
+    ],
+  });
+  const receipt = await publicClient.waitForTransactionReceipt({ hash });
+
+  // Parse GameCreated event to get gameId
+  const gameCreatedLog = receipt.logs[0];
+  // gameId is the first indexed topic (after event signature)
+  const gameId = BigInt(gameCreatedLog.topics[1]!);
+  console.log(`  Game ${gameId} created (tournament ${tournamentId}, mode ${mode === 0 ? "Monopolist" : "Prosperity"})`);
+  return gameId;
 }

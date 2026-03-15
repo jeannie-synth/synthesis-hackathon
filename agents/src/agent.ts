@@ -1,36 +1,54 @@
 import type { Address } from "viem";
 
-/** Game state visible to agents for decision-making */
-export interface GameState {
-  mode: "Monopolist" | "Prosperity";
-  round: number;
-  currentPosition: number;
-  cash: number;
-  players: PlayerState[];
-  properties: PropertyState[];
-  treasury: number;
-  spaceName: string;
-  spaceType: string;
-  spacePrice: number;
-  inJail: boolean;
-}
+/** Game mode enum matching Solidity */
+export type GameMode = "Monopolist" | "Prosperity";
 
+/** Player state visible to agents */
 export interface PlayerState {
   address: Address;
   cash: number;
   position: number;
-  bankrupt: boolean;
+  inJail: boolean;
+  turnsInJail: number;
+  lastContributionRound: number;
+  dividendsReceived: number;
+  netWorth: number;
 }
 
+/** Property state */
 export interface PropertyState {
   owner: Address;
   houses: number;
   position: number;
+  price: number;
+}
+
+/** Full game state visible to agents for decision-making */
+export interface GameState {
+  gameId: number;
+  mode: GameMode;
+  round: number;
+  turnsTaken: number;
+  currentPlayerIndex: number;
+  treasury: number;
+  players: PlayerState[];
+  properties: PropertyState[];
+  modeSwitchCount: number;
+  modeSwitchProposed: boolean;
+  // Convenience: current player's view
+  myIndex: number;
+  myPosition: number;
+  myCash: number;
+  myNetWorth: number;
+  spaceType: number;
+  spacePrice: number;
+  spaceName: string;
 }
 
 /** All agents implement this interface */
 export interface Agent {
   name: string;
+  strategyName: string;
   address: Address;
 
   /** Should we buy the property we just landed on? */
@@ -39,9 +57,32 @@ export interface Agent {
   /** Which properties should we build houses on? Returns positions. */
   decideBuild(state: GameState): number[];
 
-  /** Should we propose a mode switch? */
-  proposeSwitch(state: GameState): boolean;
+  /** Should we propose a mode switch before rolling? */
+  decidePropose(state: GameState): boolean;
 
   /** How do we vote on a proposed mode switch? */
-  voteOnModeSwitch(state: GameState): boolean;
+  decideVote(state: GameState): boolean;
+
+  /** Should we pay to leave jail early? (Monopolist only) */
+  decideJailBuyout(state: GameState, buyoutCost: number): boolean;
 }
+
+// SpaceType enum values matching Solidity
+export const SpaceType = {
+  Go: 0,
+  Lot: 1,
+  Railroad: 2,
+  Utility: 3,
+  Tax: 4,
+  Chance: 5,
+  CommunityChest: 6,
+  Jail: 7,
+  GoToJail: 8,
+  FreeParking: 9,
+  Windfall: 10,
+  Expense: 11,
+} as const;
+
+export const HOUSE_COST = 50;
+export const MAX_HOUSES = 4;
+export const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000" as Address;

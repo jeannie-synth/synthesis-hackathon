@@ -1,7 +1,7 @@
-import type { Address, Abi } from "viem";
+import type { Address } from "viem";
+import { LANDLORDS_GAME_ABI } from "./abi.js";
 
-/** ABI will be generated from forge build output — placeholder for now */
-export const LANDLORDS_GAME_ABI: Abi = [];
+export { LANDLORDS_GAME_ABI };
 
 /** Contract address — set after deployment */
 export let contractAddress: Address = "0x0000000000000000000000000000000000000000";

@@ -201,9 +201,9 @@ The JSON log schema is the contract between the game engine and all visualizatio
 
 ### Step 4: Code Review + Contract/TS Work (NEXT — after Goldi review)
 - [ ] Goldi reviews scaffolded contracts, agents, orchestrator
-- [ ] Extract ABI → `agents/src/chain/abi.ts` (unblocks all TS work)
+- [x] Extract ABI → `agents/src/chain/abi.ts` (unblocks all TS work)
 - [ ] Expand contract test coverage (rent, bankruptcy, treasury, win conditions, jail)
-- [ ] Add `getFullState()` batch view function
+- [x] Add `getFullState()` batch view function
 - [ ] Begin TypeScript wiring: setup.ts, game-loop.ts
 
 ### Milestone: Wallet funded, architecture locked ✅, code review + implementation next
@@ -218,45 +218,45 @@ The JSON log schema is the contract between the game engine and all visualizatio
 **Session 2 (Stream C)**: Contract hardening — ABI extraction, expand tests, getFullState()
 **Session 3 (Stream T)**: TypeScript wiring — setup.ts, game-loop.ts against Anvil
 
-### Stream C tasks (parallel session)
-- [ ] **Refactor to multi-game contract**: `mapping(uint256 => Game) public games`, `nextGameId` counter
+### Stream C tasks (parallel session) — ✅ COMPLETE (Session 3)
+- [x] **Refactor to multi-game contract**: `mapping(uint256 => Game) public games`, `nextGameId` counter
   - Wrap all per-game state into `Game` struct (players, properties, treasury, round, etc.)
   - Per-game mappings (`properties`, `hasVotedOnSwitch`) become `mapping(uint256 => mapping(...))` keyed by gameId
   - `createGame(uint256 tournamentId, GameMode mode, address[] players)` returns `gameId`
   - All functions take `gameId` as first param
   - All events include `gameId`; `GameCreated` includes `tournamentId` and player addresses
   - `joinGame(uint256 gameId)` for mainnet open registration
-- [ ] Replace bankruptcy with debt-jail mechanic (both modes):
+- [x] Replace bankruptcy with debt-jail mechanic (both modes):
   - No player elimination. Cash floors at $0. No debt (can't go negative).
   - Can't pay rent/tax → forced property liquidation: properties return to unowned at face value, proceeds pay creditor first, debtor keeps change
   - If after liquidating ALL properties still can't pay → creditor gets whatever was available, debtor goes to jail with $0
   - Destitute players stay in game: Monopolist lifeline = GO salary only. Prosperity lifeline = GO salary + treasury dividends.
   - `_deduct()` returns actual amount deducted; callers credit only that (fixes money-creation bug)
   - Post-hackathon enhancement: player-to-player property sale instead of return-to-unowned
-- [ ] Board changes:
+- [x] Board changes:
   - Add second utility: pos 22 → "Aqua Pura Water Co." ($150, Utility) — replaces Community Chest
   - Add windfall space: one Community Chest → "Community Bounty" — collect $50 (both modes)
   - Add expense space: one Chance → "Family Emergency" — pay $50 (Monopolist: to bank, Prosperity: to treasury)
   - Remaining Chance/Community Chest stay as no-ops (5 dead spaces out of 40)
-- [ ] Mode-conditional space behavior:
+- [x] Mode-conditional space behavior:
   - Lord Blueblood's Estate (pos 17): Prosperity → FreeParking (public park, no rent)
   - GoToJail (pos 30): Prosperity → commons exploitation check (see jail rules below)
   - Monopoly bonus: already Monopolist-only ✓
-- [ ] Jail redesign (mode-dependent):
+- [x] Jail redesign (mode-dependent):
   - Monopolist: landing on GoToJail always sends to jail. 3-turn duration (punitive). Buyout option: pay `JAIL_FEE * (MAX_JAIL_TURNS - turnsInJail)` to leave early ($150/$100/$50). Rich buy freedom, poor wait it out.
   - Prosperity: GoToJail triggers jail ONLY if player has received dividends AND `round - lastContributionRound >= playerCount` (free riding the commons). 1-turn duration (rehabilitative). No buyout.
   - Track `lastContributionRound` per player — updated on any treasury contribution (buy, rent, tax)
   - Track `dividendsReceived` per player — incremented on dividend distribution
-- [ ] Simplify `_nextTurn()`: no bankruptcy skipping needed. `turnsTaken++`, simple modular index, `round++` on wraparound to player 0
-- [ ] Add `getFullState(uint256 gameId)` batch view function
-- [ ] Add `modeSwitchCount` per game
-- [ ] Win conditions redesign:
+- [x] Simplify `_nextTurn()`: no bankruptcy skipping needed. `turnsTaken++`, simple modular index, `round++` on wraparound to player 0
+- [x] Add `getFullState(uint256 gameId)` batch view function
+- [x] Add `modeSwitchCount` per game
+- [x] Win conditions redesign:
   - Net worth = cash + property face values + (houses × HOUSE_COST). No more cash-only threshold.
   - Monopolist: first player to net worth threshold wins
   - Prosperity: poorest player's net worth reaches threshold wins (collective)
   - Thresholds as configurable params in `createGame()`, not constants. Original Magie values as defaults, tunable per game.
   - No MAX_ROUNDS — games end on win condition only (known end = gameable)
-- [ ] Mode switch redesign (Option C — propose-and-risk):
+- [x] Mode switch redesign (Option C — propose-and-risk):
   - Proposer calls `proposeModeSwitch()` → all other players vote → outcome determines if proposer rolls or loses turn
   - Vote passes: mode switches, proposer rolls normally
   - Vote rejected: proposer's turn ends (`_nextTurn()`)
@@ -264,7 +264,7 @@ The JSON log schema is the contract between the game engine and all visualizatio
   - Jailed players CAN propose (nothing to lose — political action from prison)
   - No vote timer for hackathon (orchestrator guarantees all votes submitted)
   - Post-hackathon (mainnet): add block-based vote deadline, abstain = vote against (status quo bias)
-- [ ] Complete event redesign (19 events, all include gameId):
+- [x] Complete event redesign (19 events, all include gameId):
   - GameCreated(gameId, tournamentId, mode, players[], thresholds)
   - TurnStarted(gameId, player, round, turnsTaken)
   - PlayerMoved(gameId, player, fromPos, toPos, dice1, dice2)
@@ -285,40 +285,32 @@ The JSON log schema is the contract between the game engine and all visualizatio
   - ModeSwitchRejected(gameId, proposer, round, votesFor, votesAgainst)
   - GameWon(gameId, winner, mode, round, turnsTaken, winnerNetWorth, allPlayerNetWorths[], finalTreasury)
   - Removed: PlayerBankrupt (no bankruptcy), DebtForgiven (no debt forgiveness)
-- [ ] Integrate Pyth Entropy for fair dice (proper 2d6 distribution)
-- [ ] Expand contract tests to 15+ (rent, bankruptcy, treasury, win conditions, jail, multi-game, Pyth dice)
-- [ ] Extract ABI → `agents/src/chain/abi.ts` (LAST — after all contract changes are done)
+- [ ] Integrate Pyth Entropy for fair dice — DEFERRED to Day 7 (using keccak256 with proper 2d6 for now)
+- [x] Expand contract tests to 46 (rent, treasury, win conditions, jail, multi-game, liquidation, mode switch)
+- [x] Extract ABI → `agents/src/chain/abi.ts` (LAST — after all contract changes are done)
 
-### Stream T tasks (parallel session)
-- [ ] `npm install` in agents/ and orchestrator/
-- [ ] Wire ABI into agents/src/chain/contracts.ts
-- [ ] Update Agent interface:
-  - Add `decideJailBuyout(state: GameState, buyoutCost: number): boolean`
-  - Add `decideLiquidation(state: GameState, debtAmount: number): number[]` (which properties to sell first)
-  - Update `GameState` with: turnsInJail, jailTurnsRemaining, lastContributionRound, netWorth per player
-- [ ] Rename MonopolistAgent → ExtractiveAgent, CooperativeAgent → GenerativeAgent, delete BalancedAgent
-- [ ] Implement all 5 strategies:
-  - Extractive: always buy, always build, always vote Monopolist, always pay jail buyout
-  - Generative: buy with surplus, build in Prosperity, always vote Prosperity, wait out jail
-  - Conditional: mirror group behavior on all decisions including jail buyout
-  - Free Rider: never buy, never build, vote on cash flow, never pay buyout. Will be exposed by Prosperity jail (feature).
-  - Pavlov: win-stay/lose-shift on all decisions. Recommend multi-turn cash memory for cleaner signals.
-- [ ] Implement setup.ts: deploy on Anvil, create 5-agent games on both boards (sequential, same 5 wallets)
-- [ ] Implement game-loop.ts: new turn flow: propose? → vote → roll → land → pay → liquidate? → jail? → buy? → build? → next
-- [ ] Define structured JSON log schema in logger.ts (mirrors 19 Solidity events + game metadata)
-- [ ] Game loop writes one JSON file per game to `data/games/` directory
+### Stream T tasks (parallel session) — ✅ COMPLETE (Session 3)
+- [x] `npm install` in agents/ and orchestrator/
+- [x] Wire ABI into agents/src/chain/contracts.ts
+- [x] Update Agent interface: decideBuy, decideBuild, decidePropose, decideVote, decideJailBuyout
+- [x] Delete old strategies (MonopolistAgent, CooperativeAgent, BalancedAgent)
+- [x] Implement all 5 strategies: Extractive, Generative, Conditional, FreeRider, Pavlov
+- [x] Implement setup.ts: deploy via viem, create games on both boards
+- [x] Implement game-loop.ts: full turn flow with proposal/vote/roll/buy/build/jail
+- [x] Define structured JSON log schema in logger.ts
+- [x] Game loop writes one JSON file per game to `data/games/` directory
 
-### Milestone: `npm run start` completes two games on Anvil, writes structured JSON logs, prints Gini comparison
+### Milestone: ✅ `npx tsx src/index.ts` completes two games on Anvil, writes structured JSON logs, prints Gini comparison
 
 ---
 
-## Day 3 — Mar 15: Tournament Runner + Strategies
+## Day 3 — Mar 15 (TODAY): Tournament Runner
 
 - [ ] tournament.ts: multi-game loop, fresh deploy per game, result aggregation
 - [ ] metrics.ts: Herfindahl, treasury flow, twin divergence, rounds to completion
 - [ ] results.ts: JSON + CSV output, console summary
-- [ ] Implement strategies 4 and 5 (from design session)
-- [ ] Agent factory: index.ts mapping addresses → strategy pairs
+- [x] All 5 strategies implemented (done in Session 3)
+- [x] Agent factory: strategies/index.ts with createAgentSet() (done in Session 3)
 
 ### Milestone: 100 games per board on Anvil, results in CSV, thesis visible in data
 

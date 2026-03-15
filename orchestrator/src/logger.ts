@@ -1,36 +1,38 @@
+import { writeFileSync, mkdirSync } from "fs";
+import type { Address } from "viem";
+import type { Agent } from "../../agents/src/agent.js";
+
 export interface GameLog {
+  gameId: number;
   mode: string;
-  rounds: RoundLog[];
+  playerAddresses: Address[];
+  turns: TurnLog[];
+  roundSnapshots: RoundSnapshot[];
   result: GameResult | null;
 }
 
-export interface RoundLog {
-  round: number;
-  turns: TurnLog[];
-  snapshot: PlayerSnapshot[];
-  treasury: number;
-}
-
 export interface TurnLog {
-  player: string;
+  agent: string;
   action: string;
   details: Record<string, unknown>;
+  timestamp: number;
 }
 
-export interface PlayerSnapshot {
-  address: string;
-  cash: number;
-  position: number;
-  properties: number;
-  bankrupt: boolean;
+export interface RoundSnapshot {
+  round: number;
+  players: { address: string; cash: number; position: number; inJail: boolean; netWorth: number }[];
+  treasury: number;
+  mode: string;
 }
 
 export interface GameResult {
-  winner: string;
+  winner: Address;
   mode: string;
   rounds: number;
+  turnsTaken: number;
   giniCoefficient: number;
   finalBalances: number[];
+  netWorths: number[];
   treasuryFinal: number;
 }
 
@@ -53,6 +55,39 @@ export function gini(values: number[]): number {
   return sumDiff / (2 * n * n * mean);
 }
 
-export function createGameLog(mode: string): GameLog {
-  return { mode, rounds: [], result: null };
+export function createGameLog(gameId: number, mode: string, playerAddresses: Address[]): GameLog {
+  return { gameId, mode, playerAddresses, turns: [], roundSnapshots: [], result: null };
+}
+
+export function addTurnLog(log: GameLog, agent: string, action: string, details: Record<string, unknown>) {
+  log.turns.push({ agent, action, details, timestamp: Date.now() });
+}
+
+export function addRoundSnapshot(log: GameLog, rawState: any, agents: Agent[]) {
+  const players = rawState.players.map((p: any, i: number) => ({
+    address: p.addr,
+    cash: Number(p.cash),
+    position: Number(p.position),
+    inJail: p.inJail,
+    netWorth: Number(p.cash), // Simplified — full net worth calculated elsewhere
+  }));
+
+  log.roundSnapshots.push({
+    round: Number(rawState.round),
+    players,
+    treasury: Number(rawState.treasury),
+    mode: rawState.mode === 0 ? "Monopolist" : "Prosperity",
+  });
+}
+
+export function finalizeGame(log: GameLog, result: GameResult) {
+  log.result = result;
+}
+
+/** Write game log to JSON file */
+export function saveGameLog(log: GameLog, dir: string) {
+  mkdirSync(dir, { recursive: true });
+  const filename = `${dir}/game-${log.gameId}-${log.mode.toLowerCase()}.json`;
+  writeFileSync(filename, JSON.stringify(log, null, 2));
+  console.log(`  Log saved: ${filename}`);
 }

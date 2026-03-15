@@ -94,9 +94,9 @@ The container-first approach means Jeannie can be migrated to a cloud VM for aut
 ## Data Pipeline & Visualization
 
 ```
-On-chain events (16 Solidity events)
+On-chain events (19 Solidity events, all keyed by gameId)
     ↓
-Orchestrator game loop
+Orchestrator game loop (TypeScript + viem)
     ↓
 Structured JSON logs (one file per game, directory per tournament)
     ↓
@@ -109,6 +109,34 @@ Structured JSON logs (one file per game, directory per tournament)
 **Key design principle**: The JSON log schema is the contract between the game engine and all downstream consumers. Provision the data shape on Day 2, build the views on Days 5-8.
 
 **Base partner integration**: Chain deployment + CDP SQL API queries on `base.events` = data partner, not just hosting partner.
+
+## Contract Architecture (Day 2)
+
+Multi-game contract: one deploy, unlimited games. All state keyed by `gameId`.
+
+```
+LandlordsGame.sol (~480 lines)
+├── Multi-game: mapping(uint256 => GameCore), nextGameId counter
+├── createGame(tournamentId, mode, players[], thresholds) → gameId
+├── joinGame(gameId) — mainnet open registration
+├── Turn flow: rollAndMove → buyProperty? → buildHouse? → endTurn
+├── Jail: Monopolist 3-turn/buyout, Prosperity 1-turn/commons check
+├── Mode switch: propose-and-risk (rejected = lose turn)
+├── Win: net worth threshold (Monopolist: first to X, Prosperity: poorest to X)
+├── Debt-jail: no bankruptcy, auto-liquidation, jail if destitute
+├── 19 events with complete parameters
+└── getFullState(gameId) — batch view for orchestrator
+```
+
+## Agent Strategies (Day 2)
+
+| # | Strategy | Buy | Build | Vote | Jail Buyout |
+|---|----------|-----|-------|------|-------------|
+| 1 | Extractive | Always | Always | Always Monopolist | Always pay |
+| 2 | Generative | If 2x surplus | Prosperity only | Always Prosperity | Wait |
+| 3 | Conditional | Mirror majority | Mirror majority | Mirror last vote | Mirror group |
+| 4 | Free Rider | Never | Never | Cash trend | Never pay |
+| 5 | Pavlov | Win-stay/lose-shift | Win-stay/lose-shift | Win-stay/lose-shift | Win-stay/lose-shift |
 
 ## Timeline
 
