@@ -22,6 +22,9 @@ export class ConditionalAgent implements Agent {
   private othersTotalLastRound = 0;
   private othersBuiltLastRound = 0;
   private lastVoteMajorityWasProsperity = false;
+  // Pragmatist: only propose after observing political action
+  private hasObservedProposal = false;
+  private lastProposalNetWorth = -1;
 
   constructor(name: string, address: Address) {
     this.name = name;
@@ -64,8 +67,18 @@ export class ConditionalAgent implements Agent {
     return positions;
   }
 
-  decidePropose(_state: GameState): boolean {
-    return false; // Conditional cooperators follow, they don't lead
+  /** Pragmatist: call when any proposal is observed */
+  observeProposal() {
+    this.hasObservedProposal = true;
+  }
+
+  decidePropose(state: GameState): boolean {
+    if (!this.hasObservedProposal) return false; // Don't lead — wait for someone else to initiate
+    const avgNetWorth = state.players.reduce((s, p) => s + p.netWorth, 0) / state.players.length;
+    if (state.myNetWorth >= avgNetWorth) return false;
+    if (state.myNetWorth === this.lastProposalNetWorth) return false;
+    this.lastProposalNetWorth = state.myNetWorth;
+    return true;
   }
 
   decideVote(state: GameState): boolean {

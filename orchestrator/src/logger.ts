@@ -12,6 +12,7 @@ export interface GameLog {
 }
 
 export interface TurnLog {
+  turnNumber: number; // Matches contract turnsTaken — groups actions in same turn (HACKATHON: flat array + turnNumber; correct arch is nested Turn { actions[] })
   agent: string;
   action: string;
   details: Record<string, unknown>;
@@ -59,8 +60,8 @@ export function createGameLog(gameId: number, mode: string, playerAddresses: Add
   return { gameId, mode, playerAddresses, turns: [], roundSnapshots: [], result: null };
 }
 
-export function addTurnLog(log: GameLog, agent: string, action: string, details: Record<string, unknown>) {
-  log.turns.push({ agent, action, details, timestamp: Date.now() });
+export function addTurnLog(log: GameLog, turnNumber: number, agent: string, action: string, details: Record<string, unknown>) {
+  log.turns.push({ turnNumber, agent, action, details, timestamp: Date.now() });
 }
 
 export function addRoundSnapshot(log: GameLog, rawState: any, agents: Agent[]) {

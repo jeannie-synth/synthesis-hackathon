@@ -16,6 +16,8 @@ export class ExtractiveAgent implements Agent {
   strategyName = "Extractive";
   address: Address;
 
+  private lastProposalNetWorth = -1;
+
   constructor(name: string, address: Address) {
     this.name = name;
     this.address = address;
@@ -36,7 +38,13 @@ export class ExtractiveAgent implements Agent {
   }
 
   decidePropose(state: GameState): boolean {
-    return state.mode === "Prosperity"; // Always want Monopolist
+    if (state.mode !== "Prosperity") return false; // Only push toward Monopolist
+    // Self-preservation: only propose when falling behind
+    const avgNetWorth = state.players.reduce((s, p) => s + p.netWorth, 0) / state.players.length;
+    if (state.myNetWorth >= avgNetWorth) return false;
+    if (state.myNetWorth === this.lastProposalNetWorth) return false;
+    this.lastProposalNetWorth = state.myNetWorth;
+    return true;
   }
 
   decideVote(state: GameState): boolean {

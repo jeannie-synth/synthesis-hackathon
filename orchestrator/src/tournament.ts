@@ -25,6 +25,7 @@ async function main() {
   const gamesPerBoard = parseInt(process.env.GAMES ?? "100", 10);
   const network = (process.env.NETWORK as "anvil" | "base-sepolia") ?? "anvil";
   const rpcUrl = process.env.RPC_URL;
+  const votingEnabled = process.env.VOTING === "true"; // Phase 1: false (default), Phase 2+: VOTING=true
 
   // Anvil defaults
   const anvilDeployerKey = "0x2a871d0798f97d79848a013d4936a73bf4cc922c825d33c1cf7073dff6d409c6" as `0x${string}`;
@@ -40,6 +41,7 @@ async function main() {
   console.log(`║  Games/board: ${gamesPerBoard}`);
   console.log(`║  Total games: ${gamesPerBoard * 2}`);
   console.log(`║  Strategies: ${STRATEGY_ORDER.join(", ")}`);
+  console.log(`║  Voting:     ${votingEnabled ? "enabled (Phase 2+)" : "disabled (Phase 1)"}`);
   console.log("╚══════════════════════════════════════════════════════╝\n");
 
   // 1. Single deploy — all games share one contract
@@ -62,7 +64,7 @@ async function main() {
       const agents = createAgentSet(playerAddresses);
 
       // Create game on-chain
-      const gameId = await createGame(publicClient, deployerWallet, contractAddress, tournamentId, 0, playerAddresses);
+      const gameId = await createGame(publicClient, deployerWallet, contractAddress, tournamentId, 0, playerAddresses, 0, 0, votingEnabled);
 
       // Run game
       const log = await runGameLoop({
@@ -95,7 +97,7 @@ async function main() {
       // Fresh agents per game
       const agents = createAgentSet(playerAddresses);
 
-      const gameId = await createGame(publicClient, deployerWallet, contractAddress, tournamentId, 1, playerAddresses);
+      const gameId = await createGame(publicClient, deployerWallet, contractAddress, tournamentId, 1, playerAddresses, 0, 0, votingEnabled);
 
       const log = await runGameLoop({
         publicClient,

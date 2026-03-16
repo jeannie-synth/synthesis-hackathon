@@ -1,3 +1,4 @@
+// Auto-generated from contracts/out/LandlordsGame.sol/LandlordsGame.json
 export const LANDLORDS_GAME_ABI = [
   {
     "type": "constructor",
@@ -232,6 +233,11 @@ export const LANDLORDS_GAME_ABI = [
         "name": "prosperityThreshold",
         "type": "uint256",
         "internalType": "uint256"
+      },
+      {
+        "name": "votingEnabled",
+        "type": "bool",
+        "internalType": "bool"
       }
     ],
     "outputs": [
@@ -329,6 +335,11 @@ export const LANDLORDS_GAME_ABI = [
       },
       {
         "name": "hasRolled",
+        "type": "bool",
+        "internalType": "bool"
+      },
+      {
+        "name": "votingEnabled",
         "type": "bool",
         "internalType": "bool"
       },
@@ -443,6 +454,11 @@ export const LANDLORDS_GAME_ABI = [
           },
           {
             "name": "modeSwitchProposed",
+            "type": "bool",
+            "internalType": "bool"
+          },
+          {
+            "name": "votingEnabled",
             "type": "bool",
             "internalType": "bool"
           },
@@ -1662,6 +1678,11 @@ export const LANDLORDS_GAME_ABI = [
   {
     "type": "error",
     "name": "VotePending",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "VotingDisabled",
     "inputs": []
   }
 ] as const;

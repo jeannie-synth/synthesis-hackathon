@@ -16,6 +16,8 @@ export class GenerativeAgent implements Agent {
   strategyName = "Generative";
   address: Address;
 
+  private lastProposalNetWorth = -1; // -1 = never proposed
+
   constructor(name: string, address: Address) {
     this.name = name;
     this.address = address;
@@ -39,7 +41,14 @@ export class GenerativeAgent implements Agent {
   }
 
   decidePropose(state: GameState): boolean {
-    return state.mode === "Monopolist"; // Always want Prosperity
+    if (state.mode !== "Monopolist") return false; // Only push toward Prosperity
+    // Self-preservation: only propose when falling behind
+    const avgNetWorth = state.players.reduce((s, p) => s + p.netWorth, 0) / state.players.length;
+    if (state.myNetWorth >= avgNetWorth) return false;
+    // Don't re-propose until situation has changed (prevents back-to-back proposals after rejection)
+    if (state.myNetWorth === this.lastProposalNetWorth) return false;
+    this.lastProposalNetWorth = state.myNetWorth;
+    return true;
   }
 
   decideVote(state: GameState): boolean {

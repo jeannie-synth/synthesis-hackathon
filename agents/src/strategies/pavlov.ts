@@ -21,6 +21,9 @@ export class PavlovAgent implements Agent {
   private lastBuilt = false;
   private lastVotedForSwitch = false;
   private lastPaidBuyout = false;
+  // Pragmatist: only propose after observing political action
+  private hasObservedProposal = false;
+  private lastProposalNetWorth = -1;
 
   constructor(name: string, address: Address) {
     this.name = name;
@@ -73,10 +76,19 @@ export class PavlovAgent implements Agent {
     return positions;
   }
 
+  /** Pragmatist: call when any proposal is observed */
+  observeProposal() {
+    this.hasObservedProposal = true;
+  }
+
   decidePropose(state: GameState): boolean {
-    // Propose switch if current mode isn't working (cash declining)
+    if (!this.hasObservedProposal) return false; // Don't lead
+    // Lose-shift: propose switch if current mode isn't working
     const lookback = Math.max(0, this.cashHistory.length - 4);
-    return state.myCash < (this.cashHistory[lookback] ?? 500);
+    if (state.myCash >= (this.cashHistory[lookback] ?? 500)) return false; // Winning — stay
+    if (state.myNetWorth === this.lastProposalNetWorth) return false; // Nothing changed
+    this.lastProposalNetWorth = state.myNetWorth;
+    return true;
   }
 
   decideVote(state: GameState): boolean {

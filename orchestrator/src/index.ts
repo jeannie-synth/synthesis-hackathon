@@ -34,8 +34,9 @@ async function main() {
 
   // 3. Create two games: Monopolist and Prosperity (same 5 agents)
   console.log("\nCreating games...");
-  const gameIdM = await createGame(publicClient, deployerWallet, contractAddress, 1, 0, playerAddresses);
-  const gameIdP = await createGame(publicClient, deployerWallet, contractAddress, 1, 1, playerAddresses);
+  const votingEnabled = process.env.VOTING === "true";
+  const gameIdM = await createGame(publicClient, deployerWallet, contractAddress, 1, 0, playerAddresses, 0, 0, votingEnabled);
+  const gameIdP = await createGame(publicClient, deployerWallet, contractAddress, 1, 1, playerAddresses, 0, 0, votingEnabled);
 
   // 4. Run games sequentially (same wallets, no nonce conflicts)
   const logM = await runGameLoop({

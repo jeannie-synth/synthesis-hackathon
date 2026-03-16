@@ -90,6 +90,7 @@ export async function createGame(
   playerAddresses: Address[],
   monopolistThreshold = 0,
   prosperityThreshold = 0,
+  votingEnabled = false,
 ): Promise<bigint> {
   const hash = await deployerWallet.writeContract({
     address: contractAddress,
@@ -101,6 +102,7 @@ export async function createGame(
       playerAddresses,
       BigInt(monopolistThreshold),
       BigInt(prosperityThreshold),
+      votingEnabled,
     ],
   });
   const receipt = await publicClient.waitForTransactionReceipt({ hash });

@@ -30,6 +30,7 @@ interface ContractGameState {
   lastDice2: bigint;
   modeSwitchCount: bigint;
   modeSwitchProposed: boolean;
+  votingEnabled: boolean;
   monopolistWinThreshold: bigint;
   prosperityWinThreshold: bigint;
   players: {
@@ -89,6 +90,7 @@ function toAgentState(raw: ContractGameState, agentIndex: number, boardSpaces: {
     properties,
     modeSwitchCount: Number(raw.modeSwitchCount),
     modeSwitchProposed: raw.modeSwitchProposed,
+    votingEnabled: raw.votingEnabled,
     myIndex: agentIndex,
     myPosition: myPos,
     myCash: myPlayer.cash,
@@ -126,6 +128,7 @@ async function readGameState(
     lastDice2: result.lastDice2,
     modeSwitchCount: result.modeSwitchCount,
     modeSwitchProposed: result.modeSwitchProposed,
+    votingEnabled: result.votingEnabled,
     monopolistWinThreshold: result.monopolistWinThreshold,
     prosperityWinThreshold: result.prosperityWinThreshold,
     players: result.players,
@@ -191,6 +194,7 @@ export async function runGameLoop(config: GameLoopConfig): Promise<GameLog> {
     const wallet = agentWallets[currentIdx];
     const player = rawState.players[currentIdx];
     const agentState = toAgentState(rawState, currentIdx, boardSpaces);
+    const tn = Number(rawState.turnsTaken); // turnNumber for logging
 
     turnCount++;
 
@@ -203,7 +207,7 @@ export async function runGameLoop(config: GameLoopConfig): Promise<GameLog> {
       if (rawState.mode === 0 && agent.decideJailBuyout(agentState, buyoutCost)) {
         try {
           await writeContract(publicClient, wallet, contractAddress, "payJailBuyout", [gameId]);
-          addTurnLog(log, agent.name, "jailBuyout", { cost: buyoutCost });
+          addTurnLog(log, tn, agent.name, "jailBuyout", { cost: buyoutCost });
 
           // After buyout, player can roll
           await writeContract(publicClient, wallet, contractAddress, "rollAndMove", [gameId]);
@@ -214,7 +218,7 @@ export async function runGameLoop(config: GameLoopConfig): Promise<GameLog> {
 
           // Buy/build if not jailed during landing
           if (!rawState.players[currentIdx].inJail) {
-            await tryBuyAndBuild(publicClient, wallet, contractAddress, gameId, agent, newAgentState, log);
+            await tryBuyAndBuild(publicClient, wallet, contractAddress, gameId, agent, newAgentState, log, tn);
           }
 
           if (!rawState.gameOver) {
@@ -226,23 +230,32 @@ export async function runGameLoop(config: GameLoopConfig): Promise<GameLog> {
             }
           }
         } catch (e: any) {
-          addTurnLog(log, agent.name, "jailBuyoutFailed", { error: e.message?.slice(0, 100) });
+          addTurnLog(log, tn, agent.name, "jailBuyoutFailed", { error: e.message?.slice(0, 100) });
           // Fall back to waiting
           await writeContract(publicClient, wallet, contractAddress, "waitInJail", [gameId]);
-          addTurnLog(log, agent.name, "jailWait", { turnsServed: player.turnsInJail + 1 });
+          addTurnLog(log, tn, agent.name, "jailWait", { turnsServed: player.turnsInJail + 1 });
         }
       } else {
         await writeContract(publicClient, wallet, contractAddress, "waitInJail", [gameId]);
-        addTurnLog(log, agent.name, "jailWait", { turnsServed: player.turnsInJail + 1 });
+        addTurnLog(log, tn, agent.name, "jailWait", { turnsServed: player.turnsInJail + 1 });
       }
     } else {
       // === NORMAL TURN ===
 
-      // 1. Optional mode switch proposal (before roll)
-      if (agent.decidePropose(agentState)) {
+      // 1. Optional mode switch proposal (before roll) — only if voting enabled
+      let proposed = false;
+      if (rawState.votingEnabled && agent.decidePropose(agentState)) {
         try {
           await writeContract(publicClient, wallet, contractAddress, "proposeModeSwitch", [gameId]);
-          addTurnLog(log, agent.name, "proposeModeSwitch", { currentMode: agentState.mode });
+          proposed = true;
+          addTurnLog(log, tn, agent.name, "proposeModeSwitch", { currentMode: agentState.mode });
+
+          // Notify all agents that a proposal occurred (pragmatists track this)
+          for (const a of agents) {
+            if (typeof (a as any).observeProposal === "function") {
+              (a as any).observeProposal();
+            }
+          }
 
           // All other agents vote
           for (let i = 0; i < agents.length; i++) {
@@ -250,21 +263,28 @@ export async function runGameLoop(config: GameLoopConfig): Promise<GameLog> {
             const voterState = toAgentState(rawState, i, boardSpaces);
             const vote = agents[i].decideVote(voterState);
             await writeContract(publicClient, agentWallets[i], contractAddress, "voteModeSwitch", [gameId, vote]);
-            addTurnLog(log, agents[i].name, "vote", { inFavor: vote });
+            addTurnLog(log, tn, agents[i].name, "vote", { inFavor: vote });
           }
-
-          // Re-read: check if turn was skipped (rejected proposal)
-          rawState = await readGameState(publicClient, contractAddress, gameId);
-          if (rawState.gameOver) break;
-          if (Number(rawState.currentPlayerIndex) !== currentIdx) {
-            addTurnLog(log, agent.name, "proposalRejected", {});
-            continue; // Turn was skipped, state already re-read
-          }
-
-          addTurnLog(log, agent.name, "proposalPassed", { newMode: rawState.mode === 0 ? "Monopolist" : "Prosperity" });
         } catch (e: any) {
-          addTurnLog(log, agent.name, "proposeFailed", { error: e.message?.slice(0, 100) });
+          addTurnLog(log, tn, agent.name, "proposeFailed", { error: e.message?.slice(0, 100) });
         }
+      }
+
+      // After any proposal attempt, verify state before rolling
+      if (proposed) {
+        rawState = await readGameState(publicClient, contractAddress, gameId);
+        if (rawState.gameOver) break;
+        if (Number(rawState.currentPlayerIndex) !== currentIdx) {
+          // Proposal was rejected — turn was skipped by contract
+          addTurnLog(log, tn, agent.name, "proposalRejected", {});
+          continue;
+        }
+        if (rawState.modeSwitchProposed) {
+          // Vote stuck (incomplete voting) — can't roll, skip turn gracefully
+          console.error(`  [${agent.name}] vote stuck (modeSwitchProposed still true), skipping`);
+          continue;
+        }
+        addTurnLog(log, tn, agent.name, "proposalPassed", { newMode: rawState.mode === 0 ? "Monopolist" : "Prosperity" });
       }
 
       // 2. Roll and move
@@ -279,8 +299,10 @@ export async function runGameLoop(config: GameLoopConfig): Promise<GameLog> {
       rawState = await readGameState(publicClient, contractAddress, gameId);
 
       const postRollState = toAgentState(rawState, currentIdx, boardSpaces);
-      addTurnLog(log, agent.name, "roll", {
-        dice: [Number(rawState.lastDice1), Number(rawState.lastDice2)],
+      const dice1 = Number(rawState.lastDice1);
+      const dice2 = Number(rawState.lastDice2);
+      addTurnLog(log, tn, agent.name, "roll", {
+        dice: (dice1 === 0 && dice2 === 0) ? null : [dice1, dice2], // Ghost roll guard: [0,0] = uninitialized
         position: Number(rawState.players[currentIdx].position),
         spaceName: boardSpaces[Number(rawState.players[currentIdx].position)].name,
         cash: Number(rawState.players[currentIdx].cash),
@@ -290,7 +312,7 @@ export async function runGameLoop(config: GameLoopConfig): Promise<GameLog> {
 
       // 3. Buy/build (if not jailed during landing)
       if (!rawState.players[currentIdx].inJail) {
-        await tryBuyAndBuild(publicClient, wallet, contractAddress, gameId, agent, postRollState, log);
+        await tryBuyAndBuild(publicClient, wallet, contractAddress, gameId, agent, postRollState, log, tn);
       }
 
       // 4. End turn (only if we're still the current player — might have changed due to liquidation/jail)
@@ -357,12 +379,13 @@ async function tryBuyAndBuild(
   agent: Agent,
   state: GameState,
   log: GameLog,
+  turnNumber: number,
 ) {
   // Buy?
   if (agent.decideBuy(state)) {
     try {
       await writeContract(publicClient, wallet, contractAddress, "buyProperty", [gameId]);
-      addTurnLog(log, agent.name, "buy", { position: state.myPosition, price: state.spacePrice });
+      addTurnLog(log, turnNumber, agent.name, "buy", { position: state.myPosition, price: state.spacePrice });
     } catch {
       // Can't buy — not a property space, already owned, etc. Silent fail.
     }
@@ -373,7 +396,7 @@ async function tryBuyAndBuild(
   for (const pos of buildPositions) {
     try {
       await writeContract(publicClient, wallet, contractAddress, "buildHouse", [gameId, BigInt(pos)]);
-      addTurnLog(log, agent.name, "build", { position: pos });
+      addTurnLog(log, turnNumber, agent.name, "build", { position: pos });
     } catch {
       // Can't build — not enough cash, max houses, etc. Silent fail.
     }

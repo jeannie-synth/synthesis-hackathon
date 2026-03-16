@@ -44,6 +44,7 @@ contract LandlordsGame {
         uint256 modeSwitchCount;
         bool hasRolled;
         // Mode switch voting
+        bool votingEnabled;
         bool modeSwitchProposed;
         address modeSwitchProposer;
         uint256 modeSwitchVotesFor;
@@ -110,6 +111,7 @@ contract LandlordsGame {
     error VotePending();
     error NoBuyoutInProsperity();
     error CantBuyInProsperityPark();
+    error VotingDisabled();
 
     // ============ Constructor ============
     constructor() {
@@ -129,7 +131,8 @@ contract LandlordsGame {
         GameMode mode,
         address[] calldata playerAddrs,
         uint256 monopolistThreshold,
-        uint256 prosperityThreshold
+        uint256 prosperityThreshold,
+        bool votingEnabled
     ) external returns (uint256 gameId) {
         require(playerAddrs.length >= 2 && playerAddrs.length <= 6, "2-6 players");
 
@@ -138,6 +141,7 @@ contract LandlordsGame {
         g.tournamentId = tournamentId;
         g.mode = mode;
         g.playerCount = playerAddrs.length;
+        g.votingEnabled = votingEnabled;
         g.monopolistWinThreshold = monopolistThreshold > 0 ? monopolistThreshold : DEFAULT_MONOPOLIST_WIN;
         g.prosperityWinThreshold = prosperityThreshold > 0 ? prosperityThreshold : DEFAULT_PROSPERITY_WIN;
 
@@ -340,6 +344,7 @@ contract LandlordsGame {
     function proposeModeSwitch(uint256 gameId) external {
         GameCore storage g = games[gameId];
         if (g.gameOver) revert GameNotActive();
+        if (!g.votingEnabled) revert VotingDisabled();
         Player storage player = gamePlayers[gameId][g.currentPlayerIndex];
         if (player.addr != msg.sender) revert NotYourTurn();
         if (g.hasRolled) revert AlreadyRolled(); // Must propose before rolling
@@ -391,8 +396,8 @@ contract LandlordsGame {
         if (g.modeSwitchVotesFor + g.modeSwitchVotesAgainst == expectedVotes) {
             g.modeSwitchProposed = false;
 
-            if (g.modeSwitchVotesFor > g.modeSwitchVotesAgainst) {
-                // Vote passed — switch mode, proposer rolls normally
+            if (g.modeSwitchVotesFor + 1 > g.modeSwitchVotesAgainst) {
+                // Vote passed — proposer's implicit vote (+1) included. No ties with odd total.
                 GameMode oldMode = g.mode;
                 g.mode = g.mode == GameMode.Monopolist ? GameMode.Prosperity : GameMode.Monopolist;
                 g.modeSwitchCount++;
@@ -427,6 +432,7 @@ contract LandlordsGame {
         state.lastDice2 = g.lastDice2;
         state.modeSwitchCount = g.modeSwitchCount;
         state.modeSwitchProposed = g.modeSwitchProposed;
+        state.votingEnabled = g.votingEnabled;
         state.monopolistWinThreshold = g.monopolistWinThreshold;
         state.prosperityWinThreshold = g.prosperityWinThreshold;
 
@@ -681,17 +687,23 @@ contract LandlordsGame {
                 }
             }
         } else {
-            // Prosperity: poorest player's net worth reaches threshold
+            // Prosperity: poorest player's net worth reaches threshold (collective floor)
+            // Winner is the richest player (same incentive as Monopolist — keeps experiment clean)
             uint256 poorest = type(uint256).max;
+            uint256 richest = 0;
+            uint256 richestIdx = 0;
             for (uint256 i = 0; i < players.length; i++) {
                 uint256 nw = _calculateNetWorth(gameId, i);
                 if (nw < poorest) {
                     poorest = nw;
                 }
+                if (nw > richest) {
+                    richest = nw;
+                    richestIdx = i;
+                }
             }
             if (poorest >= g.prosperityWinThreshold) {
-                // Collective win — first player is representative
-                _declareWinner(gameId, 0);
+                _declareWinner(gameId, richestIdx);
             }
         }
     }

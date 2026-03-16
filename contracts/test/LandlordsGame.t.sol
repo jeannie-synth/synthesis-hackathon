@@ -91,11 +91,11 @@ contract LandlordsGameTest is Test {
     }
 
     function _createMonopolist() internal returns (uint256) {
-        return game.createGame(1, GameMode.Monopolist, players, 0, 0);
+        return game.createGame(1, GameMode.Monopolist, players, 0, 0, true);
     }
 
     function _createProsperity() internal returns (uint256) {
-        return game.createGame(2, GameMode.Prosperity, players, 0, 0);
+        return game.createGame(2, GameMode.Prosperity, players, 0, 0, true);
     }
 
     /// @dev Helper to do a full turn for the current player (roll + end)
@@ -131,7 +131,7 @@ contract LandlordsGameTest is Test {
     }
 
     function test_createGame_customThresholds() public {
-        uint256 gid = game.createGame(1, GameMode.Monopolist, players, 5000, 3000);
+        uint256 gid = game.createGame(1, GameMode.Monopolist, players, 5000, 3000, true);
         GameState memory s = game.getFullState(gid);
         assertEq(s.monopolistWinThreshold, 5000);
         assertEq(s.prosperityWinThreshold, 3000);
@@ -141,7 +141,7 @@ contract LandlordsGameTest is Test {
         address[] memory solo = new address[](1);
         solo[0] = alice;
         vm.expectRevert("2-6 players");
-        game.createGame(1, GameMode.Monopolist, solo, 0, 0);
+        game.createGame(1, GameMode.Monopolist, solo, 0, 0, true);
     }
 
     // ======== 2. Multi-Game Independence ========
@@ -634,7 +634,7 @@ contract LandlordsGameTest is Test {
         address[] memory initial = new address[](2);
         initial[0] = alice;
         initial[1] = bob;
-        uint256 gid = game.createGame(1, GameMode.Monopolist, initial, 0, 0);
+        uint256 gid = game.createGame(1, GameMode.Monopolist, initial, 0, 0, true);
 
         vm.prank(charlie);
         game.joinGame(gid);

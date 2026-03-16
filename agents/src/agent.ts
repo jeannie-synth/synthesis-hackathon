@@ -35,6 +35,7 @@ export interface GameState {
   properties: PropertyState[];
   modeSwitchCount: number;
   modeSwitchProposed: boolean;
+  votingEnabled: boolean;
   // Convenience: current player's view
   myIndex: number;
   myPosition: number;

@@ -20,6 +20,9 @@ export class FreeRiderAgent implements Agent {
   address: Address;
 
   private previousCash: number = 500; // Starting cash
+  // Pragmatist: only propose after observing political action
+  private hasObservedProposal = false;
+  private lastProposalCash = -1;
 
   constructor(name: string, address: Address) {
     this.name = name;
@@ -34,11 +37,18 @@ export class FreeRiderAgent implements Agent {
     return []; // Never build
   }
 
+  /** Pragmatist: call when any proposal is observed */
+  observeProposal() {
+    this.hasObservedProposal = true;
+  }
+
   decidePropose(state: GameState): boolean {
-    // Propose switch only if cash is trending down
+    if (!this.hasObservedProposal) return false; // Don't lead
     const cashTrend = state.myCash - this.previousCash;
-    this.previousCash = state.myCash;
-    return cashTrend < 0;
+    if (cashTrend >= 0) return false; // Doing fine
+    if (state.myCash === this.lastProposalCash) return false; // Nothing changed
+    this.lastProposalCash = state.myCash;
+    return true;
   }
 
   decideVote(state: GameState): boolean {
