@@ -284,50 +284,28 @@ function spaceCoords(p) {
 function spaceCenter(p){const c=spaceCoords(p);return{x:c.x+c.w/2,y:c.y+c.h/2};}
 function tokenOffset(i,n){const a=(i/n)*Math.PI*2-Math.PI/2,r=14;return{dx:Math.cos(a)*r,dy:Math.sin(a)*r};}
 
-function renderBoard(svg) {
+// Board art paths (relative to viewer/)
+const BOARD_ART = {
+  Monopolist: '../assets/boards/Monopoly (1600 x 1600 px) (1).png',
+  Prosperity: '../assets/boards/Prosperity (1600 x 1600 px).png'
+};
+
+function renderBoard(svg, mode) {
   svg.innerHTML = '';
-  // Board background
-  const bg = document.createElementNS(SVG_NS,'rect');
-  bg.setAttribute('width',BS); bg.setAttribute('height',BS);
-  bg.setAttribute('fill','#1a3828'); bg.setAttribute('rx','6');
-  svg.appendChild(bg);
 
-  // Center text
-  const ct = document.createElementNS(SVG_NS,'text');
-  ct.setAttribute('x',BS/2); ct.setAttribute('y',BS/2-8);
-  ct.setAttribute('text-anchor','middle'); ct.setAttribute('fill','#ffffff');
-  ct.setAttribute('font-size','14'); ct.setAttribute('opacity','0.08');
-  ct.setAttribute('font-family','system-ui, sans-serif'); ct.setAttribute('letter-spacing','3');
-  ct.textContent = "THE LANDLORD'S GAME"; svg.appendChild(ct);
+  // Board background image (Orli's art)
+  const artSrc = BOARD_ART[mode] || BOARD_ART.Monopolist;
+  const img = document.createElementNS(SVG_NS,'image');
+  img.setAttribute('x',0); img.setAttribute('y',0);
+  img.setAttribute('width',BS); img.setAttribute('height',BS);
+  img.setAttributeNS('http://www.w3.org/1999/xlink','href',artSrc);
+  img.setAttribute('id','board-art');
+  svg.appendChild(img);
 
-  const cs = document.createElementNS(SVG_NS,'text');
-  cs.setAttribute('x',BS/2); cs.setAttribute('y',BS/2+12);
-  cs.setAttribute('text-anchor','middle'); cs.setAttribute('font-size','11');
-  cs.setAttribute('font-family','system-ui, sans-serif');
-  cs.setAttribute('id','center-mode-label'); cs.setAttribute('opacity','0.2');
-  cs.textContent=''; svg.appendChild(cs);
-
-  // Spaces
+  // Game overlay elements per space (owner bars + houses only — art has labels)
   for(const space of BOARD){
     const c=spaceCoords(space.pos), g=document.createElementNS(SVG_NS,'g');
     g.id='space-'+space.pos;
-
-    const rect=document.createElementNS(SVG_NS,'rect');
-    rect.setAttribute('x',c.x); rect.setAttribute('y',c.y);
-    rect.setAttribute('width',c.w); rect.setAttribute('height',c.h);
-    rect.setAttribute('fill','#e8dcc8'); rect.setAttribute('stroke','#7a6a50');
-    rect.setAttribute('stroke-width','1'); g.appendChild(rect);
-
-    // Color band
-    if(space.type==='Lot'&&space.group>0){
-      const b=document.createElementNS(SVG_NS,'rect'), bs2=10;
-      if(c.side==='bottom'){b.setAttribute('x',c.x);b.setAttribute('y',c.y);b.setAttribute('width',c.w);b.setAttribute('height',bs2);}
-      else if(c.side==='top'){b.setAttribute('x',c.x);b.setAttribute('y',c.y+c.h-bs2);b.setAttribute('width',c.w);b.setAttribute('height',bs2);}
-      else if(c.side==='left'){b.setAttribute('x',c.x+c.w-bs2);b.setAttribute('y',c.y);b.setAttribute('width',bs2);b.setAttribute('height',c.h);}
-      else if(c.side==='right'){b.setAttribute('x',c.x);b.setAttribute('y',c.y);b.setAttribute('width',bs2);b.setAttribute('height',c.h);}
-      else{b.setAttribute('x',c.x);b.setAttribute('y',c.y);b.setAttribute('width',c.w);b.setAttribute('height',bs2);}
-      b.setAttribute('fill',GROUP_COLORS[space.group]); g.appendChild(b);
-    }
 
     // Owner bar
     const ow=document.createElementNS(SVG_NS,'rect'); ow.id='owner-'+space.pos;
@@ -338,25 +316,6 @@ function renderBoard(svg) {
     // Houses
     const hg=document.createElementNS(SVG_NS,'g'); hg.id='houses-'+space.pos; g.appendChild(hg);
 
-    // Name
-    const ctr=spaceCenter(space.pos);
-    const lbl=document.createElementNS(SVG_NS,'text');
-    lbl.setAttribute('x',ctr.x); lbl.setAttribute('y',ctr.y-2);
-    lbl.setAttribute('text-anchor','middle'); lbl.setAttribute('dominant-baseline','middle');
-    lbl.setAttribute('fill','#2a2a2a'); lbl.setAttribute('font-weight','600');
-    lbl.setAttribute('font-size',c.side==='corner'?'7':'8.5');
-    lbl.setAttribute('font-family','system-ui, sans-serif');
-    let dn=space.name; if(dn.length>16&&c.side!=='corner') dn=dn.slice(0,14)+'..';
-    lbl.textContent=dn; g.appendChild(lbl);
-
-    // Price
-    if(space.price>0&&c.side!=='corner'){
-      const pl=document.createElementNS(SVG_NS,'text');
-      pl.setAttribute('x',ctr.x); pl.setAttribute('y',ctr.y+11);
-      pl.setAttribute('text-anchor','middle'); pl.setAttribute('fill','#666');
-      pl.setAttribute('font-size','7.5'); pl.setAttribute('font-family','system-ui, sans-serif');
-      pl.textContent='$'+space.price; g.appendChild(pl);
-    }
     svg.appendChild(g);
   }
 
@@ -523,11 +482,14 @@ function updateBoard(){
       }
     }
   }
+  // Swap board art if mode changed
+  const artEl=document.getElementById('board-art');
+  if(artEl){const expected=BOARD_ART[state.mode]||BOARD_ART.Monopolist;
+    if(artEl.getAttributeNS('http://www.w3.org/1999/xlink','href')!==expected)
+      artEl.setAttributeNS('http://www.w3.org/1999/xlink','href',expected);
+  }
   const badge=document.getElementById('mode-badge');
   badge.textContent=state.mode; badge.className='mode-badge mode-'+state.mode.toLowerCase();
-  const cl=document.getElementById('center-mode-label');
-  cl.textContent=state.mode.toUpperCase()+' RULES';
-  cl.setAttribute('fill',state.mode==='Monopolist'?'#cc4040':'#40a070');
   document.getElementById('round-label').textContent='Round '+state.round;
   document.getElementById('treasury-label').textContent='Treasury: $'+state.treasury;
 }
@@ -606,7 +568,7 @@ function loadGame(data){
   gameData=data;turnIndex=-1;stopPlay();hideDice();initState();
   document.getElementById('load-screen').style.display='none';
   document.getElementById('game-viewer').style.display='flex';
-  renderBoard(document.getElementById('board-svg'));
+  renderBoard(document.getElementById('board-svg'), data.mode || 'Monopolist');
   updateBoard();updateCards();updateControls();
   document.getElementById('ticker').innerHTML='';
   const info=document.getElementById('info-panel');
