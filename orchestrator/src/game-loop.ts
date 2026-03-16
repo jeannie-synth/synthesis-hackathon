@@ -102,17 +102,94 @@ function toAgentState(raw: ContractGameState, agentIndex: number, boardSpaces: {
   };
 }
 
-/** Read full game state from contract */
-async function readGameState(
+/** Read full game state from contract. Alias for readGameStateAt without block pinning. */
+function readGameState(publicClient: any, contractAddress: Address, gameId: bigint) {
+  return readGameStateAt(publicClient, contractAddress, gameId);
+}
+
+/** Load board spaces once (shared across all games) */
+async function loadBoardSpaces(
+  publicClient: any,
+  contractAddress: Address,
+): Promise<{ name: string; spaceType: number; price: any }[]> {
+  const spaces: { name: string; spaceType: number; price: any }[] = [];
+  for (let i = 0; i < 40; i++) {
+    const space = await publicClient.readContract({
+      address: contractAddress,
+      abi: LANDLORDS_GAME_ABI,
+      functionName: "getSpace",
+      args: [BigInt(i)],
+    }) as any;
+    spaces.push({ name: space.name, spaceType: space.spaceType, price: space.price });
+  }
+  return spaces;
+}
+
+/**
+ * Nonce manager — tracks nonces locally to avoid stale RPC reads on Sepolia.
+ * Public RPCs return stale nonces between rapid sequential txs from the same wallet.
+ */
+class NonceManager {
+  private nonces = new Map<string, number>();
+
+  async getNonce(publicClient: any, address: string): Promise<number> {
+    if (!this.nonces.has(address)) {
+      const count = await publicClient.getTransactionCount({ address });
+      this.nonces.set(address, Number(count));
+    }
+    return this.nonces.get(address)!;
+  }
+
+  increment(address: string) {
+    const current = this.nonces.get(address) ?? 0;
+    this.nonces.set(address, current + 1);
+  }
+}
+
+const nonceManager = new NonceManager();
+
+/** Write a contract call and wait for receipt.
+ *  Returns the confirmed block number for read-after-write consistency. */
+async function writeContract(
+  publicClient: any,
+  wallet: any,
+  contractAddress: Address,
+  functionName: string,
+  args: any[],
+): Promise<bigint> {
+  if (!wallet.account) {
+    throw new Error(`writeContract(${functionName}): wallet has no account!`);
+  }
+  const address = wallet.account.address;
+  const nonce = await nonceManager.getNonce(publicClient, address);
+
+  const hash = await wallet.writeContract({
+    address: contractAddress,
+    abi: LANDLORDS_GAME_ABI,
+    functionName,
+    args,
+    account: wallet.account,
+    nonce,
+  });
+  nonceManager.increment(address);
+  const receipt = await publicClient.waitForTransactionReceipt({ hash });
+  return receipt.blockNumber;
+}
+
+/** Read game state at a specific block (or latest if not specified).
+ *  Passing the block number from a confirmed tx ensures read-after-write consistency on Sepolia. */
+async function readGameStateAt(
   publicClient: any,
   contractAddress: Address,
   gameId: bigint,
+  blockNumber?: bigint,
 ): Promise<ContractGameState> {
   const result = await publicClient.readContract({
     address: contractAddress,
     abi: LANDLORDS_GAME_ABI,
     functionName: "getFullState",
     args: [gameId],
+    ...(blockNumber ? { blockNumber } : {}),
   }) as any;
 
   return {
@@ -138,41 +215,6 @@ async function readGameState(
   };
 }
 
-/** Load board spaces once (shared across all games) */
-async function loadBoardSpaces(
-  publicClient: any,
-  contractAddress: Address,
-): Promise<{ name: string; spaceType: number; price: any }[]> {
-  const spaces: { name: string; spaceType: number; price: any }[] = [];
-  for (let i = 0; i < 40; i++) {
-    const space = await publicClient.readContract({
-      address: contractAddress,
-      abi: LANDLORDS_GAME_ABI,
-      functionName: "getSpace",
-      args: [BigInt(i)],
-    }) as any;
-    spaces.push({ name: space.name, spaceType: space.spaceType, price: space.price });
-  }
-  return spaces;
-}
-
-/** Write a contract call and wait for receipt */
-async function writeContract(
-  publicClient: any,
-  wallet: any,
-  contractAddress: Address,
-  functionName: string,
-  args: any[],
-): Promise<void> {
-  const hash = await wallet.writeContract({
-    address: contractAddress,
-    abi: LANDLORDS_GAME_ABI,
-    functionName,
-    args,
-  });
-  await publicClient.waitForTransactionReceipt({ hash });
-}
-
 /** Run a complete game and return the log */
 export async function runGameLoop(config: GameLoopConfig): Promise<GameLog> {
   const { publicClient, contractAddress, gameId, agents, agentWallets } = config;
@@ -181,11 +223,27 @@ export async function runGameLoop(config: GameLoopConfig): Promise<GameLog> {
   const boardSpaces = await loadBoardSpaces(publicClient, contractAddress);
 
   // Read initial state
-  let rawState = await readGameState(publicClient, contractAddress, gameId);
+  let rawState = await freshRead();
   const mode: GameMode = rawState.mode === 0 ? "Monopolist" : "Prosperity";
   const log = createGameLog(Number(gameId), mode, agents.map(a => a.address));
 
   console.log(`\n--- Game ${gameId} (${mode}) ---`);
+
+  // Track last confirmed block for read-after-write consistency on Sepolia.
+  // Public RPCs may return stale state if we read at "latest" immediately after a tx confirms.
+  // Using var (not let) to avoid temporal dead zone issues with closures defined below.
+  var lastBlock: bigint | undefined = undefined;
+
+  /** Write + read: sends tx, waits for receipt, reads state at confirmed block */
+  async function sendAndRead(w: any, fn: string, args: any[]): Promise<ContractGameState> {
+    lastBlock = await writeContract(publicClient, w, contractAddress, fn, args);
+    return readGameStateAt(publicClient, contractAddress, gameId, lastBlock);
+  }
+
+  /** Read state at last known block (or latest if no writes yet) */
+  async function freshRead(): Promise<ContractGameState> {
+    return readGameStateAt(publicClient, contractAddress, gameId, lastBlock);
+  }
 
   let turnCount = 0;
   const MAX_TURNS = 2000; // Safety limit
@@ -200,6 +258,11 @@ export async function runGameLoop(config: GameLoopConfig): Promise<GameLog> {
 
     turnCount++;
 
+    // Diagnostic: verify wallet matches contract player (first 3 turns only)
+    if (turnCount <= 3) {
+      console.log(`  [DIAG] Turn ${turnCount}: player=${currentIdx} contract_addr=${player.addr} wallet_addr=${wallet.account?.address} match=${wallet.account?.address?.toLowerCase() === player.addr.toLowerCase()}`);
+    }
+
     if (player.inJail) {
       // === JAIL TURN ===
       const buyoutCost = rawState.mode === 0
@@ -208,37 +271,37 @@ export async function runGameLoop(config: GameLoopConfig): Promise<GameLog> {
 
       if (rawState.mode === 0 && agent.decideJailBuyout(agentState, buyoutCost)) {
         try {
-          await writeContract(publicClient, wallet, contractAddress, "payJailBuyout", [gameId]);
+          lastBlock = await writeContract(publicClient, wallet, contractAddress, "payJailBuyout", [gameId]);
           addTurnLog(log, tn, agent.name, "jailBuyout", { cost: buyoutCost });
 
           // After buyout, player can roll
-          await writeContract(publicClient, wallet, contractAddress, "rollAndMove", [gameId]);
+          lastBlock = await writeContract(publicClient, wallet, contractAddress, "rollAndMove", [gameId]);
 
           // Re-read state after roll
-          rawState = await readGameState(publicClient, contractAddress, gameId);
+          rawState = await freshRead();
           const newAgentState = toAgentState(rawState, currentIdx, boardSpaces);
 
           // Buy/build if not jailed during landing
           if (!rawState.players[currentIdx].inJail) {
-            await tryBuyAndBuild(publicClient, wallet, contractAddress, gameId, agent, newAgentState, log, tn);
+            lastBlock = await tryBuyAndBuild(publicClient, wallet, contractAddress, gameId, agent, newAgentState, log, tn) ?? lastBlock;
           }
 
           if (!rawState.gameOver) {
             try {
-              await writeContract(publicClient, wallet, contractAddress, "endTurn", [gameId]);
+              lastBlock = await writeContract(publicClient, wallet, contractAddress, "endTurn", [gameId]);
             } catch (e2: any) {
               console.error(`  [${agent.name}] endTurn after buyout failed: ${e2.shortMessage || e2.message}`);
-              rawState = await readGameState(publicClient, contractAddress, gameId);
+              rawState = await freshRead();
             }
           }
         } catch (e: any) {
           addTurnLog(log, tn, agent.name, "jailBuyoutFailed", { error: e.message?.slice(0, 100) });
           // Fall back to waiting
-          await writeContract(publicClient, wallet, contractAddress, "waitInJail", [gameId]);
+          lastBlock = await writeContract(publicClient, wallet, contractAddress, "waitInJail", [gameId]);
           addTurnLog(log, tn, agent.name, "jailWait", { turnsServed: player.turnsInJail + 1 });
         }
       } else {
-        await writeContract(publicClient, wallet, contractAddress, "waitInJail", [gameId]);
+        lastBlock = await writeContract(publicClient, wallet, contractAddress, "waitInJail", [gameId]);
         addTurnLog(log, tn, agent.name, "jailWait", { turnsServed: player.turnsInJail + 1 });
       }
     } else {
@@ -248,7 +311,7 @@ export async function runGameLoop(config: GameLoopConfig): Promise<GameLog> {
       let proposed = false;
       if (rawState.votingEnabled && agent.decidePropose(agentState)) {
         try {
-          await writeContract(publicClient, wallet, contractAddress, "proposeModeSwitch", [gameId]);
+          lastBlock = await writeContract(publicClient, wallet, contractAddress, "proposeModeSwitch", [gameId]);
           proposed = true;
           addTurnLog(log, tn, agent.name, "proposeModeSwitch", { currentMode: agentState.mode });
 
@@ -264,7 +327,7 @@ export async function runGameLoop(config: GameLoopConfig): Promise<GameLog> {
             if (i === currentIdx) continue;
             const voterState = toAgentState(rawState, i, boardSpaces);
             const vote = agents[i].decideVote(voterState);
-            await writeContract(publicClient, agentWallets[i], contractAddress, "voteModeSwitch", [gameId, vote]);
+            lastBlock = await writeContract(publicClient, agentWallets[i], contractAddress, "voteModeSwitch", [gameId, vote]);
             addTurnLog(log, tn, agents[i].name, "vote", { inFavor: vote });
           }
         } catch (e: any) {
@@ -274,7 +337,7 @@ export async function runGameLoop(config: GameLoopConfig): Promise<GameLog> {
 
       // After any proposal attempt, verify state before rolling
       if (proposed) {
-        rawState = await readGameState(publicClient, contractAddress, gameId);
+        rawState = await freshRead();
         if (rawState.gameOver) break;
         if (Number(rawState.currentPlayerIndex) !== currentIdx) {
           // Proposal was rejected — turn was skipped by contract
@@ -291,33 +354,33 @@ export async function runGameLoop(config: GameLoopConfig): Promise<GameLog> {
 
       // 2. Roll and move
       try {
-        await writeContract(publicClient, wallet, contractAddress, "rollAndMove", [gameId]);
+        lastBlock = await writeContract(publicClient, wallet, contractAddress, "rollAndMove", [gameId]);
       } catch (e: any) {
         // rollAndMove failed — recover by diagnosing and advancing the turn
-        rawState = await readGameState(publicClient, contractAddress, gameId);
+        rawState = await freshRead();
         if (rawState.gameOver) break;
 
         const stuckPlayer = rawState.players[Number(rawState.currentPlayerIndex)];
         if (stuckPlayer.inJail) {
           // PlayerInJail revert — route to jail handling
           try {
-            await writeContract(publicClient, wallet, contractAddress, "waitInJail", [gameId]);
+            lastBlock = await writeContract(publicClient, wallet, contractAddress, "waitInJail", [gameId]);
             addTurnLog(log, tn, agent.name, "jailWait", { turnsServed: stuckPlayer.turnsInJail + 1, recovery: true });
           } catch { /* waitInJail also failed — fall through */ }
         } else if (rawState.hasRolled) {
           // AlreadyRolled revert — force endTurn to advance
           try {
-            await writeContract(publicClient, wallet, contractAddress, "endTurn", [gameId]);
+            lastBlock = await writeContract(publicClient, wallet, contractAddress, "endTurn", [gameId]);
             addTurnLog(log, tn, agent.name, "endTurn", { recovery: true });
           } catch { /* endTurn also failed — fall through */ }
         } else {
           console.error(`  [${agent.name}] rollAndMove failed unexpectedly: ${e.shortMessage || e.message}`);
         }
 
-        rawState = await readGameState(publicClient, contractAddress, gameId);
+        rawState = await freshRead();
         continue;
       }
-      rawState = await readGameState(publicClient, contractAddress, gameId);
+      rawState = await freshRead();
 
       const postRollState = toAgentState(rawState, currentIdx, boardSpaces);
       const dice1 = Number(rawState.lastDice1);
@@ -333,23 +396,23 @@ export async function runGameLoop(config: GameLoopConfig): Promise<GameLog> {
 
       // 3. Buy/build (if not jailed during landing)
       if (!rawState.players[currentIdx].inJail) {
-        await tryBuyAndBuild(publicClient, wallet, contractAddress, gameId, agent, postRollState, log, tn);
+        lastBlock = await tryBuyAndBuild(publicClient, wallet, contractAddress, gameId, agent, postRollState, log, tn) ?? lastBlock;
       }
 
       // 4. End turn (only if we're still the current player — might have changed due to liquidation/jail)
-      rawState = await readGameState(publicClient, contractAddress, gameId);
+      rawState = await freshRead();
       if (!rawState.gameOver && Number(rawState.currentPlayerIndex) === currentIdx) {
         try {
-          await writeContract(publicClient, wallet, contractAddress, "endTurn", [gameId]);
+          lastBlock = await writeContract(publicClient, wallet, contractAddress, "endTurn", [gameId]);
         } catch (e: any) {
           // Silently recover — the game will continue on the next iteration
-          rawState = await readGameState(publicClient, contractAddress, gameId);
+          rawState = await freshRead();
         }
       }
     }
 
     // Re-read state for next iteration
-    rawState = await readGameState(publicClient, contractAddress, gameId);
+    rawState = await freshRead();
 
     // Round snapshot at the start of each new round
     if (Number(rawState.currentPlayerIndex) === 0) {
@@ -358,7 +421,7 @@ export async function runGameLoop(config: GameLoopConfig): Promise<GameLog> {
   }
 
   // Final state
-  rawState = await readGameState(publicClient, contractAddress, gameId);
+  rawState = await freshRead();
   const finalBalances = rawState.players.map(p => Number(p.cash));
   const netWorths = rawState.players.map((_, i) => {
     let nw = Number(rawState.players[i].cash);
@@ -391,7 +454,7 @@ export async function runGameLoop(config: GameLoopConfig): Promise<GameLog> {
   return log;
 }
 
-/** Try to buy property and build houses */
+/** Try to buy property and build houses. Returns last confirmed block number. */
 async function tryBuyAndBuild(
   publicClient: any,
   wallet: any,
@@ -401,11 +464,13 @@ async function tryBuyAndBuild(
   state: GameState,
   log: GameLog,
   turnNumber: number,
-) {
+): Promise<bigint | undefined> {
+  let block: bigint | undefined;
+
   // Buy?
   if (agent.decideBuy(state)) {
     try {
-      await writeContract(publicClient, wallet, contractAddress, "buyProperty", [gameId]);
+      block = await writeContract(publicClient, wallet, contractAddress, "buyProperty", [gameId]);
       addTurnLog(log, turnNumber, agent.name, "buy", { position: state.myPosition, price: state.spacePrice });
     } catch {
       // Can't buy — not a property space, already owned, etc. Silent fail.
@@ -416,10 +481,12 @@ async function tryBuyAndBuild(
   const buildPositions = agent.decideBuild(state);
   for (const pos of buildPositions) {
     try {
-      await writeContract(publicClient, wallet, contractAddress, "buildHouse", [gameId, BigInt(pos)]);
+      block = await writeContract(publicClient, wallet, contractAddress, "buildHouse", [gameId, BigInt(pos)]);
       addTurnLog(log, turnNumber, agent.name, "build", { position: pos });
     } catch {
       // Can't build — not enough cash, max houses, etc. Silent fail.
     }
   }
+
+  return block;
 }

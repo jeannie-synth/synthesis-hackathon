@@ -7,6 +7,15 @@ import { LANDLORDS_GAME_ABI } from "../../agents/src/chain/abi.js";
 
 const AGENT_GAS_FUND = parseEther("0.01");
 
+/** Simple deployer nonce tracker — avoids stale nonce reads on public Sepolia RPCs */
+let deployerNonce: number | undefined;
+async function getDeployerNonce(publicClient: any, address: string): Promise<number> {
+  if (deployerNonce === undefined) {
+    deployerNonce = Number(await publicClient.getTransactionCount({ address }));
+  }
+  return deployerNonce++;
+}
+
 export interface SetupResult {
   publicClient: any;
   deployerWallet: any;
@@ -38,10 +47,12 @@ export async function setup(
       const balance = await publicClient.getBalance({ address: account.address });
       if (balance < AGENT_GAS_FUND) {
         const needed = AGENT_GAS_FUND - balance;
+        const nonce = await getDeployerNonce(publicClient, deployerAccount.address);
         const hash = await (deployerWallet as any).sendTransaction({
           to: account.address,
           value: needed,
           account: deployerAccount,
+          nonce,
         });
         await publicClient.waitForTransactionReceipt({ hash });
         console.log(`  Funded ${name} with ${needed} wei`);
@@ -52,10 +63,14 @@ export async function setup(
   // 3. Deploy contract
   console.log("Deploying LandlordsGame...");
   const bytecode = getBytecode();
+  const deployNonce = network === "base-sepolia"
+    ? await getDeployerNonce(publicClient, deployerAccount.address)
+    : undefined;
   const deployHash = await (deployerWallet as any).deployContract({
     abi: LANDLORDS_GAME_ABI,
     bytecode,
     account: deployerAccount,
+    ...(deployNonce !== undefined ? { nonce: deployNonce } : {}),
   });
   const receipt = await publicClient.waitForTransactionReceipt({ hash: deployHash });
   const contractAddress = receipt.contractAddress!;
@@ -92,6 +107,7 @@ export async function createGame(
   prosperityThreshold = 0,
   votingEnabled = false,
 ): Promise<bigint> {
+  const nonce = await getDeployerNonce(publicClient, deployerWallet.account.address);
   const hash = await deployerWallet.writeContract({
     address: contractAddress,
     abi: LANDLORDS_GAME_ABI,
@@ -104,6 +120,8 @@ export async function createGame(
       BigInt(prosperityThreshold),
       votingEnabled,
     ],
+    account: deployerWallet.account,
+    nonce,
   });
   const receipt = await publicClient.waitForTransactionReceipt({ hash });
 
