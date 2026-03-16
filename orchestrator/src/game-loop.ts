@@ -31,6 +31,7 @@ interface ContractGameState {
   modeSwitchCount: bigint;
   modeSwitchProposed: boolean;
   votingEnabled: boolean;
+  hasRolled: boolean;
   monopolistWinThreshold: bigint;
   prosperityWinThreshold: bigint;
   players: {
@@ -129,6 +130,7 @@ async function readGameState(
     modeSwitchCount: result.modeSwitchCount,
     modeSwitchProposed: result.modeSwitchProposed,
     votingEnabled: result.votingEnabled,
+    hasRolled: result.hasRolled,
     monopolistWinThreshold: result.monopolistWinThreshold,
     prosperityWinThreshold: result.prosperityWinThreshold,
     players: result.players,
@@ -291,8 +293,27 @@ export async function runGameLoop(config: GameLoopConfig): Promise<GameLog> {
       try {
         await writeContract(publicClient, wallet, contractAddress, "rollAndMove", [gameId]);
       } catch (e: any) {
-        console.error(`  [${agent.name}] rollAndMove failed: ${e.shortMessage || e.message}`);
-        // Try to recover by re-reading state
+        // rollAndMove failed — recover by diagnosing and advancing the turn
+        rawState = await readGameState(publicClient, contractAddress, gameId);
+        if (rawState.gameOver) break;
+
+        const stuckPlayer = rawState.players[Number(rawState.currentPlayerIndex)];
+        if (stuckPlayer.inJail) {
+          // PlayerInJail revert — route to jail handling
+          try {
+            await writeContract(publicClient, wallet, contractAddress, "waitInJail", [gameId]);
+            addTurnLog(log, tn, agent.name, "jailWait", { turnsServed: stuckPlayer.turnsInJail + 1, recovery: true });
+          } catch { /* waitInJail also failed — fall through */ }
+        } else if (rawState.hasRolled) {
+          // AlreadyRolled revert — force endTurn to advance
+          try {
+            await writeContract(publicClient, wallet, contractAddress, "endTurn", [gameId]);
+            addTurnLog(log, tn, agent.name, "endTurn", { recovery: true });
+          } catch { /* endTurn also failed — fall through */ }
+        } else {
+          console.error(`  [${agent.name}] rollAndMove failed unexpectedly: ${e.shortMessage || e.message}`);
+        }
+
         rawState = await readGameState(publicClient, contractAddress, gameId);
         continue;
       }

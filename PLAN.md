@@ -326,47 +326,70 @@ The JSON log schema is the contract between the game engine and all visualizatio
 - [x] Gini computed on net worth (not just cash) — fixes inequality measurement
 - [x] Streamlit dashboard layout proposed (docs/streamlit-layout.md) — discuss before implementing
 - [x] HTML5 replay viewer: SVG board, dice animation, player cards, annotations, event ticker
-- [ ] **BLOCKED**: Tournament runs — game loop bugs prevent clean data
-- [ ] Fix game loop proposal/rejection handling (bugs 1+2, root cause identified)
-- [ ] Fix Generative proposal frequency (bug 1)
-- [ ] Fix ghost roll [0,0] (bug 3, cosmetic)
-- [ ] Validate all 5 agents with clean 5-game run
-- [ ] Run 30-game tournament (15 Monopolist + 15 Prosperity) — revised from 100/board
+- [x] Fix game loop proposal/rejection handling (bugs 1+2) — votingEnabled gate + proposal restructure
+- [x] Fix Generative proposal frequency (bug 1) — self-preserving proposal logic replaces blind ideology
+- [x] Fix ghost roll [0,0] (bug 3) — dice=null when uninitialized
+- [x] Fix rollAndMove revert loop (bug 5) — robust recovery: detect jail/alreadyRolled, force-advance turn
+- [x] Validate all 5 agents with clean 2-game run on fresh Anvil
+- [ ] Run 30-game tournament (15 Monopolist + 15 Prosperity) — on Sepolia, not Anvil
 
-### Known bugs (blocking tournament runs)
-1. Generative always proposes in Monopolist → never rolls (game-breaking)
-2. FreeRider infinite loop after rejected proposal → game hangs (game-breaking)
-3. Ghost roll [0,0] on first turn (cosmetic)
-4. Agent name matching in event counters (fixed)
+### Bugs fixed (Day 4, Session 5)
+1. ~~Generative always proposes in Monopolist~~ → Phase 1: votingEnabled=false skips proposals entirely. Phase 2: self-preserving logic (propose only when below avg NW + conditions changed)
+2. ~~FreeRider infinite loop after rejected proposal~~ → votingEnabled gate eliminates in Phase 1. Phase 2: proposal restructure with proposed flag + state verification
+3. ~~Ghost roll [0,0] on first turn~~ → dice=null when lastDice1/lastDice2 both 0
+4. ~~Agent name matching in event counters~~ → fixed in Day 3
+5. ~~rollAndMove revert loop~~ → robust recovery detects PlayerInJail (→ waitInJail) and AlreadyRolled (→ endTurn) instead of naive continue
 
-Root cause: game loop doesn't handle proposal-rejection turn advancement correctly.
+### Contract patches (Day 4)
+- votingEnabled flag: Phase 1 games disable proposals at contract level, Phase 2+ enables
+- Vote tie fix: proposer's implicit +1 vote at resolution time (odd total, no ties)
+- Prosperity winner: richest player wins (same incentive both modes, clean experiment)
+- hasRolled in getFullState: orchestrator can diagnose stuck turns
 
-### Partial results (26 Monopolist games on Anvil — invalidated by Generative bug)
-- Gini: mean 0.254 (range 0.17-0.31)
-- Conditional wins 63% of games, Extractive 33%, FreeRider 4%
-- Generative always $500 (broken — never rolls)
-- These results cannot be used for thesis — need clean runs with all agents participating
+### Strategy redesign (Day 4)
+- Proposal decisions separated from voting ideology: "what you believe" (vote direction) vs "when you act" (self-preservation)
+- Ideologists (Generative/Extractive): propose when below average NW + conditions changed since last proposal
+- Pragmatists (Conditional/FreeRider/Pavlov): only propose after observing political action from others
+- All agents get turnNumber logging for turn boundary tracking
+
+### Validation results (Day 4, fresh Anvil)
+- Monopolist: Extractive wins at NW 2016, 51 rounds, Gini 0.0916
+- Prosperity: Generative wins at NW 1314, 11 rounds, Gini 0.0302
+- Gini divergence: 0.0615 (Monopolist more unequal) — thesis confirmed
+- All 5 agents participate, no revert loops, both games complete with winners
 
 ### Decisions made
 - Time-series extraction (Gini curves, treasury curves) happens in Streamlit from raw JSON logs, not in metrics.ts
 - Performance table + dominance flip analysis for strategy comparison (not full Nash equilibria)
 - Liquidation counter parked (contract handles automatically, no turn log yet — needs tx receipt parsing)
 - Streamlit + Plotly confirmed as viz stack (Days 5-6)
+- Phase 1 = no voting (authoritarian rules). Phase 2 = voting enabled (democratic). Phase 3 = signaling (off-chain). Phase 4 = evolution (off-chain). One contract deploy covers all phases.
+- turnNumber in flat TurnLog (hackathon decision; correct arch is nested Turn{actions[]})
+- Gini thresholds for proposal triggers: parked for Phase 2 tuning after Phase 1 data
 
-### Milestone: 100 games per board on Anvil, results in CSV, thesis visible in data — PARTIALLY MET
+### Milestone: All bugs fixed, validated on Anvil, ready for Sepolia deploy
 
 ---
 
-## Day 4 — Mar 16: Base Sepolia Deployment + Data Verification
+## Day 4 — Mar 16: Bug Fixes + Base Sepolia Deployment
 
-- [ ] Update Deploy.s.sol, deploy + verify on Base Sepolia
-- [ ] Fund agent wallets with Sepolia ETH
-- [ ] Sepolia-aware orchestrator: receipt waiting, retry logic, rate limiting
-- [ ] Run 10-20 games on Sepolia, log tx hashes
+- [x] Contract patches: votingEnabled flag, vote tie fix, Prosperity winner, hasRolled view
+- [x] Game loop fixes: votingEnabled gate, proposal restructure, ghost roll, rollAndMove recovery
+- [x] Strategy redesign: self-preserving proposals (ideologists vs pragmatists)
+- [x] TypeScript wiring: ABI, types, setup.ts, tournament.ts, index.ts, logger.ts (turnNumber)
+- [x] Validation: 2 clean games on fresh Anvil, both complete with winners
+- [ ] Generate agent mnemonic, add to .env
+- [ ] Deploy + verify on Base Sepolia
+- [ ] Fund agent wallets (0.01 ETH each from deployer)
+- [ ] Run Phase 1 tournament on Sepolia (15 Monopolist + 15 Prosperity, votingEnabled=false)
 - [ ] CDP SQL API: query `base.events` to verify on-chain events match local JSON logs
 - [ ] Document Base data integration (chain + CDP SQL = deeper partner claim)
 
-### Milestone: Contract live on Base Sepolia, on-chain data verified via CDP SQL API
+### Phase 2 known issues (next session)
+1. Conditional updateObservations() never called — defaults to first-round behavior
+2. Phase 2 E2E validation needed (VOTING=true on Sepolia)
+
+### Milestone: Contract live on Base Sepolia, Phase 1 tournament with on-chain provenance
 
 ---
 

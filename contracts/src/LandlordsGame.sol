@@ -433,6 +433,7 @@ contract LandlordsGame {
         state.modeSwitchCount = g.modeSwitchCount;
         state.modeSwitchProposed = g.modeSwitchProposed;
         state.votingEnabled = g.votingEnabled;
+        state.hasRolled = g.hasRolled;
         state.monopolistWinThreshold = g.monopolistWinThreshold;
         state.prosperityWinThreshold = g.prosperityWinThreshold;
 

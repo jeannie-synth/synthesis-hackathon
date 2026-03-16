@@ -335,3 +335,77 @@ Root cause of bugs 1+2: the game loop doesn't properly handle the proposal-rejec
 - Run 30-game tournament (15 Monopolist + 15 Prosperity)
 - Commit viewer + all fixes
 - Assess: move to Day 4 (Sepolia) or run more tournaments
+
+---
+
+## Day 4 — March 16, 2026
+
+### Session 5: Design Session + Bug Fixes + Contract Patches
+
+Deep design session with Goldi, followed by implementation. This was the most architecturally significant session since Day 2.
+
+**Design session (proposal/rejection turn flow)**:
+- Mapped the full proposal-rejection flow in the contract: propose → vote × 4 → resolve (pass: proposer rolls, reject: _nextTurn skips proposer)
+- Identified root cause of Bug 2 (infinite loop): single try-catch around proposal + voting means partial vote failure leaves modeSwitchProposed stuck, rollAndMove reverts with VotePending forever
+- Key insight from Goldi: **Phase 1 has no voting.** The proposal bugs disappear when we add a votingEnabled flag. Proposals are a Phase 2 feature, not Phase 1.
+- This reframing simplified the fix dramatically: disable proposals at contract level for Phase 1, fix them properly for Phase 2.
+
+**Contract review (3 correctness issues found)**:
+1. **Vote tie**: With 5 players, proposer excluded from voting = 4 voters = 2-2 tie possible. Goldi: "the proposal itself counts as a vote in favor!" Fix: proposer's implicit +1 at resolution time.
+2. **Prosperity winner**: Contract always declared player 0 as winner. Goldi: "the richest player should win in both modes — same goal keeps the experiment clean." Fix: find richest player index.
+3. **votingEnabled flag**: New parameter in createGame(). Phase 1 games: false. Phase 2+: true. Contract enforces at proposeModeSwitch level.
+
+**Strategy redesign (philosophical)**:
+- Goldi challenged the cooldown approach: "Does it have to be time bound? Why not let them lose their first turn? Is it ideology vs experience?"
+- Insight: separate **belief** (how you vote — ideological, hardwired) from **action** (when you spend political capital — pragmatic, self-preserving)
+- Ideologists (Generative/Extractive): propose when personally suffering (below avg NW) + conditions changed since last proposal
+- Pragmatists (Conditional/FreeRider/Pavlov): only propose after observing political action from others + personal suffering
+- Goldi: "all agents should abstain until they've seen a proposal — only ideologists initiate"
+- Gini thresholds parked for Phase 2 tuning after Phase 1 data shows natural distributions
+
+**Phase architecture clarified**:
+- Phase 1: no voting (authoritarian — rules imposed, no political agency)
+- Phase 2: voting enabled (democratic — agents propose, coalitions form)
+- Phase 3: signaling (off-chain agent interface, promise-keeping metrics)
+- Phase 4: strategy evolution (off-chain strategy selection)
+- One contract deploy covers all 4 phases — no contract changes needed for Phases 3-4
+
+**Implementation (all in one session)**:
+- Contract: votingEnabled flag, vote tie fix, Prosperity winner, hasRolled in getFullState
+- Game loop: full rewrite of turn flow — votingEnabled gate, proposal restructure, ghost roll fix, rollAndMove robust recovery, turnNumber logging
+- All 5 strategies: self-preserving proposal logic with observeProposal() for pragmatists
+- TypeScript wiring: ABI, types, setup.ts, tournament.ts, index.ts, logger.ts
+- 46 contract tests pass, TypeScript compiles clean
+
+**Bug 5 discovered and fixed (rollAndMove revert loop)**:
+- First Anvil validation (stale Anvil, 11K+ blocks): Prosperity clean, Monopolist ends without winner
+- Root cause: when rollAndMove reverts, naive error recovery just continues → same player retries → same revert → burns through MAX_TURNS (2000) with only 114 real turns
+- Fix: robust recovery detects PlayerInJail (→ waitInJail) and AlreadyRolled (→ endTurn) instead of blind retry
+- Added hasRolled to contract's getFullState view so orchestrator can diagnose stuck turns
+
+**Validation (fresh Anvil)**:
+- Monopolist: Extractive wins at NW 2016, 51 rounds, Gini 0.0916
+- Prosperity: Generative wins at NW 1314, 11 rounds, Gini 0.0302
+- Gini divergence: 0.0615 (Monopolist more unequal) — thesis confirmed
+- All 5 agents participate, no revert loops, both games complete with winners
+
+**Decisions made**:
+- Phase 1 = fixed rules, no voting. Phase 2 = voting enabled. Single contract covers all phases.
+- Proposal = self-preserving economic decision, not blind ideology. Belief (vote direction) separated from action (when to propose).
+- turnNumber in flat TurnLog (hackathon shortcut; correct architecture is nested Turn{actions[]})
+- Gini thresholds: parked for Phase 2 tuning
+- Win thresholds + MAX_TURNS: keep as-is (Monopolist=2000, Prosperity=1000, MAX_TURNS=2000). Fix the revert loop, don't paper over it.
+- Deploy to Sepolia and run Phase 1 tournament on-chain. Skip Anvil tournament — every game on Sepolia = verifiable data.
+
+### Session 5 close
+
+**Status**: All bugs fixed, validated on Anvil, deploying to Sepolia.
+
+**Critical path**: Deploy to Sepolia → generate agent mnemonic → Phase 1 tournament (30 games) → headline thesis data with on-chain provenance.
+
+### What's next
+
+- Deploy contract to Base Sepolia
+- Generate agent mnemonic, fund wallets
+- Run Phase 1 tournament (15 Monopolist + 15 Prosperity, votingEnabled=false)
+- Phase 2 edge cases: Conditional updateObservations, VOTING=true E2E validation

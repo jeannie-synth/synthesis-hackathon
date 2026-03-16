@@ -463,6 +463,11 @@ export const LANDLORDS_GAME_ABI = [
             "internalType": "bool"
           },
           {
+            "name": "hasRolled",
+            "type": "bool",
+            "internalType": "bool"
+          },
+          {
             "name": "monopolistWinThreshold",
             "type": "uint256",
             "internalType": "uint256"

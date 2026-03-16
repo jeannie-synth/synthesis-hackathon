@@ -77,6 +77,7 @@ struct GameState {
     uint256 modeSwitchCount;
     bool modeSwitchProposed;
     bool votingEnabled;
+    bool hasRolled;
     uint256 monopolistWinThreshold;
     uint256 prosperityWinThreshold;
     Player[] players;
