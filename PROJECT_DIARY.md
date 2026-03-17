@@ -409,3 +409,129 @@ Deep design session with Goldi, followed by implementation. This was the most ar
 - Generate agent mnemonic, fund wallets
 - Run Phase 1 tournament (15 Monopolist + 15 Prosperity, votingEnabled=false)
 - Phase 2 edge cases: Conditional updateObservations, VOTING=true E2E validation
+
+---
+
+## Day 5 — March 17, 2026
+
+### Session 6: Sepolia Deployment + Orchestrator Redesign
+
+The session that was supposed to be "deploy and run" turned into a deep architectural redesign. Ultimately more valuable.
+
+**Contract deployed to Base Sepolia**: `0xda1557c901ff5b7a0d9f0d0da17fef55b2d59d85` (tx: `0x919ca5c0...`). Verified with `cast call nextGameId()`. Deployer: ~0.54 ETH. All 5 agent wallets funded (~0.0099 ETH each).
+
+**The stale-read problem**: Moving from Anvil to Sepolia via Alchemy exposed a category change. Live RPCs load-balance reads across replica nodes. A read after a confirmed write may return stale state from a replica that hasn't indexed the new block yet. The orchestrator assumed sequential consistency — write then read = read reflects write. That's faith-based engineering, not trustless.
+
+**Attempted fixes (all failed)**:
+1. **Nonce manager + block-pinning** (ce562e1, reverted): Over-engineered, still broke on edge cases
+2. **Block-pinned reads from receipt.blockNumber**: Alchemy free tier returns "block not found" for recent historical blocks — can't serve `eth_call` at arbitrary block numbers
+3. **Fallback to "latest" when block unavailable**: Reintroduced stale reads — back to wrong-player reverts
+
+**The systemic insight**: Goldi pushed for systemic thinking, not symptom patching. The real issue isn't "stale reads" — it's that the orchestrator polls the chain for information it already has. The receipt contains event logs for every state change. The contract emits 19 events. The answer was always in our hands.
+
+**Receipt-driven architecture** (designed, not yet implemented):
+- Parse receipt event logs instead of re-reading chain state
+- Build local GameState from events during play
+- Only read chain once at game start (no stale-read risk — no prior write)
+- Board spaces cached across games (static, loaded once)
+- Zero reads during gameplay — all orchestration from receipts
+
+**Plato's Cavern metaphor** (Goldi): The contract is the Form (true game state, math onchain). Receipts are the light (carry the shape of what happened). The orchestrator is the fire (casts shadows from receipts). The viewer renders the shadows on the wall. "To do is to do onchain" — Berkeleyesque.
+
+**Other design decisions locked**:
+- **Sequential create-play pattern**: Create game 1 → play → create game 2 → play. Never batch deployer txs. Eliminates nonce collisions.
+- **Fisher-Yates shuffle for player order**: Per-game shuffle, pre-generated before tournament. All arrays (addresses, agents, wallets) reordered together. Mitigates first-mover advantage. Twin games (Monopolist-N + Prosperity-N) use the same shuffle — controlled experiment preserved.
+- **Strategy field added to TurnLog**: Future-proofs for Phase 4 (strategy evolution). Agent identity = wallet address. Strategy is a current assignment, not identity.
+- **Agent identity decoupled from strategy**: Wallet address is the UID. Strategy names in logs are for human readability. Phase 4 can change strategy without breaking identity.
+- **Player order advantage**: Known issue, documented. FY shuffle mitigates statistically. If player 0 still wins disproportionately after shuffling, that's a finding about game mechanics, not a bug.
+
+**Code changes made (partial — design session interrupted implementation)**:
+- `game-loop.ts`: Block-pinned reads implemented (will be replaced by receipt parsing)
+- `game-loop.ts`: Strategy field added to all addTurnLog calls
+- `logger.ts`: TurnLog interface now includes `strategy: string`
+- `index.ts`: Sequential create-play-create-play pattern
+- `setup.ts`: Explicit deployer nonce in funding loop
+
+**What still needs implementation**:
+- Receipt event parsing in game-loop.ts (the big rewrite)
+- Local GameState model (MVP — currentPlayerIndex, inJail[], cash[], position[], gameOver, winner)
+- Board space caching across games
+- Fisher-Yates shuffle with pre-generated per-game orders (twin pairs share order)
+- Validation on Sepolia
+- Phase 1 tournament (15+15 games)
+
+### Session 6 close
+
+**Status**: Contract deployed, architecture redesigned, implementation partially done. The receipt-driven approach is the right fix — zero reads during gameplay, all state from events.
+
+**Critical path**: Implement receipt parsing → validate on Sepolia → Phase 1 tournament → thesis data with onchain provenance.
+
+**Goldi context**: Writing from bomb shelter during war. Pushed for systemic thinking over symptom patching. The design session was more valuable than a rushed deploy would have been.
+
+### Session 7: Board Art — Orli's Visual Design + Viewer Integration
+
+Goldi brought her sister Orli in as visual designer. Jeannie provided design constraints and reference templates; Orli delivered two 1600px board designs in Canva.
+
+**Goldi's concept**: Two visually distinct boards — same 40 spaces, different aesthetic worlds. Monopolist = urban, industrial, extractive. Prosperity = green, organic, regenerative. The visual contrast lands the thesis before anyone reads the rules.
+
+**Deliverables**:
+- Two SVG reference templates with space grid + creative direction notes for Orli
+- Two 1600px PNGs from Orli (Monopolist: factories/smog/cracked earth; Prosperity: garden/globe/people planting together)
+- Viewer integration: board art as background image, code-generated labels removed, game overlays preserved
+- Board auto-swaps when mode changes mid-game (proposal passes)
+
+**Commit**: `3ee914e` — viewer-only, cherry-pickable. No operational code touched.
+
+**Bug discovered**: While reviewing the viewer, Goldi spotted Pavlov-4 rolling [2+1] five times in a row, always landing on Mother Earth. Confirmed from game data: `rollAndMove` succeeds but position doesn't change. Contract returns success without moving the player. Orchestrator logs a roll, retries. Ghost rolls. Flagged for operational fix in separate session.
+
+### Session 8: Receipt-Driven Orchestrator + Contract Event Completeness
+
+The biggest architectural session of the hackathon. Started with the receipt-driven rewrite plan, ended with a fundamental rethink of the contract-orchestrator boundary.
+
+**The problem**: Orchestrator polls chain after every write (~500 reads per game). Alchemy free tier returns stale data. Block-pinned reads fail. Games loop infinitely on the same player.
+
+**Root cause discovered**: `_nextTurn()` in the contract mutates `currentPlayerIndex`, `round`, and `hasRolled` with NO event. The orchestrator has no way to know the turn advanced. Mapped ALL silent mutations across the full turn lifecycle.
+
+**Contract refactor — "reconstruction is not trustless"** (Goldi's directive):
+- `_finishTurn()` replaces `_nextTurn()` — checks wins (was missing in `waitInJail` and rejected vote paths), emits `TurnEnded` with full player snapshot + next player index
+- `TurnEnded` event: playerCash, playerPosition, playerInJail, playerTurnsInJail, nextPlayerIndex, round, gameOver
+- `ContributionMade` event: tracks `lastContributionRound` (was silent)
+- `LiquidationSettled` event: post-liquidation cash + properties lost count
+- `ReleasedFromJail` enriched with `newCash`
+- `TreasuryDividend` enriched with `newTreasuryBalance` + contract keeps integer division remainder (was zeroing it)
+- Dice seed: added `block.number` (prevents identical rolls when state variables collide across retries in same block)
+
+**Orchestrator rewrite**:
+- Receipt-driven: `applyReceipt()` handles all 22 events, updates `LocalGameState`
+- Wait-and-resync error handling: any tx failure → wait one block → re-read chain state → restart turn. No recovery writes, no cascading errors.
+- `NonceManager`: per-wallet nonce tracking. Fetched once at game start, advanced only after confirmed receipt, resyncs on failure.
+- `OrchestratorLog`: JSONL telemetry (txSent, txConfirmed, txFailed, resync) — separate from game JSON
+- FY shuffle for turn order bias elimination (twin pairs share order)
+- Board space cache (40 reads per contract lifetime)
+- WebSocket transport for Sepolia (instant receipt notification via `eth_subscribe`)
+
+**Sepolia testing**: Contract deploys and game creation work. Game loop hits RPC stale-read issues on Alchemy free tier — games advance (101 turns observed on one run) but with revert noise. Wait-and-resync architecture implemented but not yet validated end-to-end.
+
+**Key decisions**:
+- "Reconstruction is not trustless" — every contract state change must emit an event
+- "Don't fight fire with fire" — recovery writes create cascades; just wait and re-read
+- Turn lifecycle: `_finishTurn` is the universal turn-end function (endTurn, waitInJail, rejected vote all flow through it)
+- Treasury dust: remainder stays in treasury (fairer than zeroing)
+
+**Bugs discovered and addressed**:
+1. `hasRolled` resume: game loop assumed fresh turn, crashed when resuming mid-turn → guard added
+2. Treasury dust: contract zeroed remainder, orchestrator computed it → contract fixed
+3. Revert reasons opaque on Alchemy: custom error names stripped → nonce manager + wait-resync make this tolerable
+4. endTurn catch manual advance: was guessing next player → replaced with chain re-sync
+
+**Files changed**: LandlordsGame.sol, abi.ts, client.ts, game-loop.ts, index.ts, tournament.ts, setup.ts, logger.ts, utils.ts (new), check-state.ts (new debug tool)
+
+**Commit**: `pending` — all compiles, not yet validated on Sepolia
+
+### What's next
+
+- Validate on Sepolia (the real test — wait-and-resync should handle stale reads)
+- Consider Alchemy upgrade or Infura as primary RPC
+- Phase 1 tournament (15 Monopolist + 15 Prosperity)
+- Streamlit dashboard for analytics
+- Update PLAN.md with Day 5 actuals vs planned

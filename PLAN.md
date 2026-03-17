@@ -393,16 +393,39 @@ The JSON log schema is the contract between the game engine and all visualizatio
 
 ---
 
-## Day 5 — Mar 17: Phase 2 — Voting + Streamlit Dashboard (Office Hours day)
+## Day 5 — Mar 17: Contract Event Completeness + Receipt-Driven Orchestrator
 
-- [ ] proposeModeSwitch() costs your turn (contract change)
-- [ ] Wire voting into game loop
-- [ ] Mode switch tracking in metrics
-- [ ] Run Tournaments C & D on Anvil
-- [ ] Attend office hours if relevant
-- [ ] **Stream V**: Streamlit dashboard v1 — reads JSON logs, displays Gini curves + wealth distributions
+**Planned**: Phase 2 voting + Streamlit dashboard
+**Actual**: Deeper infrastructure work required — contract event completeness + orchestrator rewrite
 
-### Milestone: Voting works, C & D data shows mode switch dynamics, dashboard visualizes results
+- [x] Contract: `_finishTurn()` replaces `_nextTurn()` — universal turn-end with `TurnEnded` event
+- [x] Contract: 4 new events (`TurnEnded`, `ContributionMade`, `LiquidationSettled`, enriched `ReleasedFromJail`, `TreasuryDividend`)
+- [x] Contract: Treasury remainder preserved (was zeroing integer division dust)
+- [x] Contract: Dice seed includes `block.number`
+- [x] Contract: `forge build` passes
+- [x] Orchestrator: Receipt-driven state (`applyReceipt` handles all 22 events)
+- [x] Orchestrator: Wait-and-resync error handling (no recovery writes)
+- [x] Orchestrator: `NonceManager` per wallet (nonce advanced only after confirmed receipt)
+- [x] Orchestrator: `OrchestratorLog` JSONL telemetry
+- [x] Orchestrator: FY shuffle for turn order bias elimination
+- [x] Orchestrator: WebSocket transport for Sepolia
+- [x] Orchestrator: Board space cache
+- [x] ABI re-extracted (76 entries)
+- [x] Default network flipped to base-sepolia
+- [x] `npx tsc --noEmit` passes
+- [ ] **BLOCKED**: Sepolia E2E validation (Alchemy free tier stale reads)
+- [ ] Phase 2 voting E2E — deferred to Day 6
+- [ ] Streamlit dashboard — deferred to Day 6
+
+### Sepolia deploy history (Day 5)
+| Address | Status |
+|---------|--------|
+| `0x2f9240...` | New contract, `createGame` nonce collision |
+| `0xb73a17...` | Game loop ran 101 turns but revert storm |
+| `0xb496b1...` | Timeout on first rollAndMove |
+| `0x1c8cf9...` | Deploy OK, createGame gas estimation failure |
+
+### Milestone: Architecture complete, compiles, not yet validated end-to-end on Sepolia
 
 ---
 

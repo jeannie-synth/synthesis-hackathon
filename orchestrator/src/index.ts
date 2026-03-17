@@ -2,11 +2,12 @@ import { setup, createGame } from "./setup.js";
 import { runGameLoop } from "./game-loop.js";
 import { saveGameLog, gini } from "./logger.js";
 import { createAgentSet } from "../../agents/src/strategies/index.js";
+import { fisherYatesShuffle, applyPermutation } from "./utils.js";
 import type { Address } from "viem";
 
 async function main() {
-  const network = (process.env.NETWORK as "anvil" | "base-sepolia") ?? "anvil";
-  const rpcUrl = process.env.RPC_URL;
+  const network = (process.env.NETWORK as "anvil" | "base-sepolia") ?? "base-sepolia";
+  const rpcUrl = network === "anvil" ? undefined : (process.env.RPC_URL ?? process.env.BASE_SEPOLIA_RPC);
 
   // Anvil defaults — use account 9 as deployer (accounts 0-4 are agents via mnemonic)
   const anvilDeployerKey = "0x2a871d0798f97d79848a013d4936a73bf4cc922c825d33c1cf7073dff6d409c6" as `0x${string}`;
@@ -24,43 +25,39 @@ async function main() {
   console.log(`Network: ${network}\n`);
 
   // 1. Setup: deploy contract, derive wallets
-  const { publicClient, deployerWallet, agentWallets, contractAddress } = await setup(network, key, seed, rpcUrl);
+  let { publicClient, deployerWallet, deployerNonce, agentWallets, contractAddress } = await setup(network, key, seed, rpcUrl);
 
   const playerAddresses = agentWallets.map(w => w.address) as Address[];
   const playerWallets = agentWallets.map(w => w.wallet);
 
-  // 2. Create agents (5 strategies)
-  const agents = createAgentSet(playerAddresses);
-
-  // 3. Create two games: Monopolist and Prosperity (same 5 agents)
-  console.log("\nCreating games...");
   const votingEnabled = process.env.VOTING === "true";
-  const gameIdM = await createGame(publicClient, deployerWallet, contractAddress, 1, 0, playerAddresses, 0, 0, votingEnabled);
-  const gameIdP = await createGame(publicClient, deployerWallet, contractAddress, 1, 1, playerAddresses, 0, 0, votingEnabled);
-
-  // 4. Run games sequentially (same wallets, no nonce conflicts)
-  const logM = await runGameLoop({
-    publicClient,
-    contractAddress,
-    gameId: gameIdM,
-    agents,
-    agentWallets: playerWallets,
-  });
-
-  // Reset agent state for second game
-  const agents2 = createAgentSet(playerAddresses);
-
-  const logP = await runGameLoop({
-    publicClient,
-    contractAddress,
-    gameId: gameIdP,
-    agents: agents2,
-    agentWallets: playerWallets,
-  });
-
-  // 5. Save logs
   const logDir = "data/games/tournament-1";
+
+  // FY shuffle — shared between twin pair (Monopolist + Prosperity share player order)
+  const order = fisherYatesShuffle([0, 1, 2, 3, 4]);
+  const shuffledAddresses = applyPermutation(playerAddresses, order);
+  const shuffledWallets = applyPermutation(playerWallets, order);
+
+  console.log(`  Player order: [${order.join(", ")}]`);
+
+  // 2. Game 1: Monopolist — create, play, save
+  console.log("\n--- Monopolist ---");
+  const agentsM = applyPermutation(createAgentSet(playerAddresses), order);
+  const [gameIdM, nonce2] = await createGame(publicClient, deployerWallet, contractAddress, 1, 0, shuffledAddresses, 0, 0, votingEnabled, deployerNonce);
+  deployerNonce = nonce2;
+  const logM = await runGameLoop({
+    publicClient, contractAddress, gameId: gameIdM, agents: agentsM, agentWallets: shuffledWallets, logDir,
+  });
   saveGameLog(logM, logDir);
+
+  // 3. Game 2: Prosperity — create, play, save (fresh agents, same order)
+  console.log("\n--- Prosperity ---");
+  const agentsP = applyPermutation(createAgentSet(playerAddresses), order);
+  const [gameIdP, nonce3] = await createGame(publicClient, deployerWallet, contractAddress, 1, 1, shuffledAddresses, 0, 0, votingEnabled, deployerNonce);
+  deployerNonce = nonce3;
+  const logP = await runGameLoop({
+    publicClient, contractAddress, gameId: gameIdP, agents: agentsP, agentWallets: shuffledWallets, logDir,
+  });
   saveGameLog(logP, logDir);
 
   // 6. Print comparison

@@ -1,12 +1,32 @@
-import type { Address } from "viem";
+import { writeFileSync, appendFileSync, mkdirSync } from "fs";
+import type { Address, TransactionReceipt } from "viem";
+import { decodeEventLog } from "viem";
 import { LANDLORDS_GAME_ABI } from "../../agents/src/chain/abi.js";
 import type { Agent, GameState, PlayerState, PropertyState, GameMode } from "../../agents/src/agent.js";
-import { SpaceType, ZERO_ADDRESS } from "../../agents/src/agent.js";
+import { ZERO_ADDRESS } from "../../agents/src/agent.js";
 import type { GameLog } from "./logger.js";
 import { createGameLog, addTurnLog, addRoundSnapshot, finalizeGame, gini } from "./logger.js";
 
 const JAIL_FEE = 50;
 const MONOPOLIST_JAIL_TURNS = 3;
+
+/** Known contract revert reasons — extracted from error message */
+const REVERT_REASONS = [
+  "NotYourTurn", "PlayerInJail", "AlreadyRolled", "GameNotActive",
+  "VotePending", "MustRollFirst", "InsufficientFunds", "PropertyNotAvailable",
+  "NotPropertyOwner", "MaxHousesReached", "NotInJail", "NoBuyoutInProsperity",
+  "VotingDisabled", "SwitchAlreadyProposed", "AlreadyVoted", "NoSwitchProposed",
+  "CantBuyInProsperityPark",
+] as const;
+
+/** Parse the contract revert reason from a viem error */
+function parseRevertReason(e: any): string {
+  const msg = e.shortMessage || e.message || "";
+  for (const reason of REVERT_REASONS) {
+    if (msg.includes(reason)) return reason;
+  }
+  return msg.slice(0, 100);
+}
 
 export interface GameLoopConfig {
   publicClient: any;
@@ -14,7 +34,89 @@ export interface GameLoopConfig {
   gameId: bigint;
   agents: Agent[];
   agentWallets: any[];
+  logDir?: string; // Directory for orchestrator JSONL log
 }
+
+// ─── Orchestrator telemetry log (JSONL, separate from game JSON) ───
+
+class OrchestratorLog {
+  private filePath: string | null = null;
+
+  init(dir: string, gameId: number) {
+    if (dir) {
+      mkdirSync(dir, { recursive: true });
+      this.filePath = `${dir}/orchestrator-${gameId}.jsonl`;
+      writeFileSync(this.filePath, ""); // Create/truncate
+    }
+  }
+
+  append(event: Record<string, unknown>) {
+    if (!this.filePath) return;
+    appendFileSync(this.filePath, JSON.stringify(event) + "\n");
+  }
+}
+
+// ─── Local game state (updated exclusively from receipt events) ───
+
+interface LocalPlayer {
+  address: Address;
+  cash: number;
+  position: number;
+  inJail: boolean;
+  turnsInJail: number;
+  lastContributionRound: number;
+  dividendsReceived: number;
+}
+
+interface LocalGameState {
+  currentPlayerIndex: number;
+  gameOver: boolean;
+  winner: Address | null;
+  hasRolled: boolean;
+  modeSwitchProposed: boolean;
+  round: number;
+  turnsTaken: number;
+  mode: number;
+  modeSwitchCount: number;
+  votingEnabled: boolean;
+  treasury: number;
+  lastDice1: number;
+  lastDice2: number;
+  players: LocalPlayer[];
+  properties: { owner: Address; houses: number }[];
+}
+
+// ─── Board space cache (40 reads per contract lifetime) ───
+
+interface BoardSpace {
+  name: string;
+  spaceType: number;
+  price: number;
+}
+
+let cachedBoardSpaces: BoardSpace[] | null = null;
+
+async function getBoardSpaces(publicClient: any, contractAddress: Address): Promise<BoardSpace[]> {
+  if (cachedBoardSpaces) return cachedBoardSpaces;
+  const spaces: BoardSpace[] = [];
+  for (let i = 0; i < 40; i++) {
+    const space = await publicClient.readContract({
+      address: contractAddress,
+      abi: LANDLORDS_GAME_ABI,
+      functionName: "getSpace",
+      args: [BigInt(i)],
+    }) as any;
+    spaces.push({ name: space.name, spaceType: space.spaceType, price: Number(space.price) });
+  }
+  cachedBoardSpaces = spaces;
+  return spaces;
+}
+
+export function resetBoardCache() {
+  cachedBoardSpaces = null;
+}
+
+// ─── Contract interaction ───
 
 interface ContractGameState {
   gameId: bigint;
@@ -46,447 +148,530 @@ interface ContractGameState {
   properties: { owner: Address; houses: number }[];
 }
 
-/** Convert contract state to agent-friendly GameState */
-function toAgentState(raw: ContractGameState, agentIndex: number, boardSpaces: { name: string; spaceType: number; price: any }[]): GameState {
-  const players: PlayerState[] = raw.players.map(p => ({
-    address: p.addr,
-    cash: Number(p.cash),
-    position: Number(p.position),
-    inJail: p.inJail,
-    turnsInJail: p.turnsInJail,
-    lastContributionRound: Number(p.lastContributionRound),
-    dividendsReceived: Number(p.dividendsReceived),
-    netWorth: 0, // Filled below
-  }));
-
-  const properties: PropertyState[] = raw.properties.map((p, i) => ({
-    owner: p.owner,
-    houses: p.houses,
-    position: i,
-    price: Number(boardSpaces[i].price),
-  }));
-
-  // Calculate net worths
-  for (const player of players) {
-    player.netWorth = player.cash;
-    for (const prop of properties) {
-      if (prop.owner === player.address) {
-        player.netWorth += prop.price + prop.houses * 50;
-      }
-    }
-  }
-
-  const myPlayer = players[agentIndex];
-  const myPos = myPlayer.position;
-  const space = boardSpaces[myPos];
-
-  return {
-    gameId: Number(raw.gameId),
-    mode: raw.mode === 0 ? "Monopolist" : "Prosperity",
-    round: Number(raw.round),
-    turnsTaken: Number(raw.turnsTaken),
-    currentPlayerIndex: Number(raw.currentPlayerIndex),
-    treasury: Number(raw.treasury),
-    players,
-    properties,
-    modeSwitchCount: Number(raw.modeSwitchCount),
-    modeSwitchProposed: raw.modeSwitchProposed,
-    votingEnabled: raw.votingEnabled,
-    myIndex: agentIndex,
-    myPosition: myPos,
-    myCash: myPlayer.cash,
-    myNetWorth: myPlayer.netWorth,
-    spaceType: space.spaceType,
-    spacePrice: Number(space.price),
-    spaceName: space.name,
-  };
-}
-
-/** Read full game state from contract. Alias for readGameStateAt without block pinning. */
-function readGameState(publicClient: any, contractAddress: Address, gameId: bigint) {
-  return readGameStateAt(publicClient, contractAddress, gameId);
-}
-
-/** Load board spaces once (shared across all games) */
-async function loadBoardSpaces(
-  publicClient: any,
-  contractAddress: Address,
-): Promise<{ name: string; spaceType: number; price: any }[]> {
-  const spaces: { name: string; spaceType: number; price: any }[] = [];
-  for (let i = 0; i < 40; i++) {
-    const space = await publicClient.readContract({
-      address: contractAddress,
-      abi: LANDLORDS_GAME_ABI,
-      functionName: "getSpace",
-      args: [BigInt(i)],
-    }) as any;
-    spaces.push({ name: space.name, spaceType: space.spaceType, price: space.price });
-  }
-  return spaces;
-}
-
-/**
- * Nonce manager — tracks nonces locally to avoid stale RPC reads on Sepolia.
- * Public RPCs return stale nonces between rapid sequential txs from the same wallet.
- */
-class NonceManager {
-  private nonces = new Map<string, number>();
-
-  async getNonce(publicClient: any, address: string): Promise<number> {
-    if (!this.nonces.has(address)) {
-      const count = await publicClient.getTransactionCount({ address });
-      this.nonces.set(address, Number(count));
-    }
-    return this.nonces.get(address)!;
-  }
-
-  increment(address: string) {
-    const current = this.nonces.get(address) ?? 0;
-    this.nonces.set(address, current + 1);
-  }
-}
-
-const nonceManager = new NonceManager();
-
-/** Write a contract call and wait for receipt.
- *  Returns the confirmed block number for read-after-write consistency. */
-async function writeContract(
-  publicClient: any,
-  wallet: any,
-  contractAddress: Address,
-  functionName: string,
-  args: any[],
-): Promise<bigint> {
-  if (!wallet.account) {
-    throw new Error(`writeContract(${functionName}): wallet has no account!`);
-  }
-  const address = wallet.account.address;
-  const nonce = await nonceManager.getNonce(publicClient, address);
-
-  const hash = await wallet.writeContract({
-    address: contractAddress,
-    abi: LANDLORDS_GAME_ABI,
-    functionName,
-    args,
-    account: wallet.account,
-    nonce,
-  });
-  nonceManager.increment(address);
-  const receipt = await publicClient.waitForTransactionReceipt({ hash });
-  return receipt.blockNumber;
-}
-
-/** Read game state at a specific block (or latest if not specified).
- *  Passing the block number from a confirmed tx ensures read-after-write consistency on Sepolia. */
-async function readGameStateAt(
+async function readGameState(
   publicClient: any,
   contractAddress: Address,
   gameId: bigint,
-  blockNumber?: bigint,
 ): Promise<ContractGameState> {
   const result = await publicClient.readContract({
     address: contractAddress,
     abi: LANDLORDS_GAME_ABI,
     functionName: "getFullState",
     args: [gameId],
-    ...(blockNumber ? { blockNumber } : {}),
   }) as any;
 
   return {
-    gameId: result.gameId,
-    tournamentId: result.tournamentId,
-    mode: result.mode,
-    treasury: result.treasury,
-    currentPlayerIndex: result.currentPlayerIndex,
-    round: result.round,
-    turnsTaken: result.turnsTaken,
-    gameOver: result.gameOver,
-    winner: result.winner,
-    lastDice1: result.lastDice1,
-    lastDice2: result.lastDice2,
-    modeSwitchCount: result.modeSwitchCount,
-    modeSwitchProposed: result.modeSwitchProposed,
-    votingEnabled: result.votingEnabled,
-    hasRolled: result.hasRolled,
+    gameId: result.gameId, tournamentId: result.tournamentId, mode: result.mode,
+    treasury: result.treasury, currentPlayerIndex: result.currentPlayerIndex,
+    round: result.round, turnsTaken: result.turnsTaken, gameOver: result.gameOver,
+    winner: result.winner, lastDice1: result.lastDice1, lastDice2: result.lastDice2,
+    modeSwitchCount: result.modeSwitchCount, modeSwitchProposed: result.modeSwitchProposed,
+    votingEnabled: result.votingEnabled, hasRolled: result.hasRolled,
     monopolistWinThreshold: result.monopolistWinThreshold,
     prosperityWinThreshold: result.prosperityWinThreshold,
-    players: result.players,
-    properties: result.properties,
+    players: result.players, properties: result.properties,
   };
 }
 
-/** Run a complete game and return the log */
+function initLocalState(raw: ContractGameState): LocalGameState {
+  return {
+    currentPlayerIndex: Number(raw.currentPlayerIndex),
+    gameOver: raw.gameOver,
+    winner: raw.winner === ZERO_ADDRESS ? null : raw.winner,
+    hasRolled: raw.hasRolled,
+    modeSwitchProposed: raw.modeSwitchProposed,
+    round: Number(raw.round),
+    turnsTaken: Number(raw.turnsTaken),
+    mode: raw.mode,
+    modeSwitchCount: Number(raw.modeSwitchCount),
+    votingEnabled: raw.votingEnabled,
+    treasury: Number(raw.treasury),
+    lastDice1: Number(raw.lastDice1),
+    lastDice2: Number(raw.lastDice2),
+    players: raw.players.map(p => ({
+      address: p.addr,
+      cash: Number(p.cash),
+      position: Number(p.position),
+      inJail: p.inJail,
+      turnsInJail: p.turnsInJail,
+      lastContributionRound: Number(p.lastContributionRound),
+      dividendsReceived: Number(p.dividendsReceived),
+    })),
+    properties: raw.properties.map(p => ({ owner: p.owner, houses: p.houses })),
+  };
+}
+
+// ─── Receipt event parsing ───
+
+function playerIndex(state: LocalGameState, addr: Address): number {
+  return state.players.findIndex(p => p.address.toLowerCase() === addr.toLowerCase());
+}
+
+function applyReceipt(state: LocalGameState, receipt: TransactionReceipt): void {
+  for (const log of receipt.logs) {
+    let decoded: any;
+    try {
+      decoded = decodeEventLog({ abi: LANDLORDS_GAME_ABI, data: log.data, topics: log.topics });
+    } catch { continue; }
+
+    const args = decoded.args as any;
+    switch (decoded.eventName) {
+      case "TurnStarted": {
+        const idx = playerIndex(state, args.player);
+        if (idx >= 0) state.currentPlayerIndex = idx;
+        state.round = Number(args.round);
+        state.turnsTaken = Number(args.turnsTaken);
+        break;
+      }
+      case "PlayerMoved": {
+        const idx = playerIndex(state, args.player);
+        if (idx >= 0) state.players[idx].position = Number(args.toPos);
+        state.lastDice1 = Number(args.dice1);
+        state.lastDice2 = Number(args.dice2);
+        state.hasRolled = true;
+        break;
+      }
+      case "SalaryCollected": {
+        const idx = playerIndex(state, args.player);
+        if (idx >= 0) state.players[idx].cash = Number(args.newCash);
+        break;
+      }
+      case "RentPaid": {
+        const payerIdx = playerIndex(state, args.payer);
+        const recipIdx = playerIndex(state, args.recipient);
+        if (payerIdx >= 0) state.players[payerIdx].cash = Number(args.payerNewCash);
+        if (recipIdx >= 0) state.players[recipIdx].cash = Number(args.recipientNewCash);
+        break;
+      }
+      case "RentToTreasury": {
+        const idx = playerIndex(state, args.payer);
+        if (idx >= 0) state.players[idx].cash = Number(args.payerNewCash);
+        state.treasury = Number(args.newTreasuryBalance);
+        break;
+      }
+      case "TaxPaid": {
+        const idx = playerIndex(state, args.player);
+        if (idx >= 0) state.players[idx].cash = Number(args.newCash);
+        state.treasury = Number(args.newTreasuryBalance);
+        break;
+      }
+      case "TreasuryDividend": {
+        state.treasury = Number(args.newTreasuryBalance);
+        break;
+      }
+      case "DividendCollected": {
+        const idx = playerIndex(state, args.player);
+        if (idx >= 0) {
+          state.players[idx].cash = Number(args.newCash);
+          state.players[idx].dividendsReceived++;
+        }
+        break;
+      }
+      case "SentToJail": {
+        const idx = playerIndex(state, args.player);
+        if (idx >= 0) {
+          state.players[idx].inJail = true;
+          state.players[idx].position = 10;
+          state.players[idx].turnsInJail = 0;
+        }
+        break;
+      }
+      case "ReleasedFromJail": {
+        const idx = playerIndex(state, args.player);
+        if (idx >= 0) {
+          state.players[idx].inJail = false;
+          state.players[idx].turnsInJail = 0;
+          if (args.newCash !== undefined) state.players[idx].cash = Number(args.newCash);
+        }
+        break;
+      }
+      case "PropertyBought": {
+        const idx = playerIndex(state, args.player);
+        const pos = Number(args.position);
+        if (idx >= 0) state.players[idx].cash = Number(args.newCash);
+        state.properties[pos].owner = args.player;
+        break;
+      }
+      case "PropertyLiquidated": {
+        const pos = Number(args.position);
+        state.properties[pos].owner = ZERO_ADDRESS;
+        state.properties[pos].houses = 0;
+        break;
+      }
+      case "HouseBuilt": {
+        const idx = playerIndex(state, args.player);
+        const pos = Number(args.position);
+        if (idx >= 0) state.players[idx].cash = Number(args.newCash);
+        state.properties[pos].houses = Number(args.totalHouses);
+        break;
+      }
+      case "ModeSwitchProposed": { state.modeSwitchProposed = true; break; }
+      case "ModeSwitchVote": { break; }
+      case "ModeSwitched": {
+        state.mode = Number(args.newMode);
+        state.modeSwitchProposed = false;
+        state.modeSwitchCount++;
+        break;
+      }
+      case "ModeSwitchRejected": { state.modeSwitchProposed = false; break; }
+      case "GameWon": { state.gameOver = true; state.winner = args.winner; break; }
+      case "TurnEnded": {
+        const idx = playerIndex(state, args.player);
+        if (idx >= 0) {
+          state.players[idx].cash = Number(args.playerCash);
+          state.players[idx].position = Number(args.playerPosition);
+          state.players[idx].inJail = args.playerInJail;
+          state.players[idx].turnsInJail = Number(args.playerTurnsInJail);
+        }
+        state.currentPlayerIndex = Number(args.nextPlayerIndex);
+        state.round = Number(args.round);
+        state.hasRolled = false;
+        state.gameOver = args.gameOver;
+        break;
+      }
+      case "ContributionMade": {
+        const idx = playerIndex(state, args.player);
+        if (idx >= 0) state.players[idx].lastContributionRound = Number(args.round);
+        break;
+      }
+      case "LiquidationSettled": {
+        const idx = playerIndex(state, args.player);
+        if (idx >= 0) state.players[idx].cash = Number(args.newCash);
+        break;
+      }
+    }
+  }
+}
+
+// ─── State conversion for agents ───
+
+function toAgentState(local: LocalGameState, agentIndex: number, boardSpaces: BoardSpace[]): GameState {
+  const players: PlayerState[] = local.players.map(p => ({
+    address: p.address, cash: p.cash, position: p.position,
+    inJail: p.inJail, turnsInJail: p.turnsInJail,
+    lastContributionRound: p.lastContributionRound,
+    dividendsReceived: p.dividendsReceived, netWorth: 0,
+  }));
+  const properties: PropertyState[] = local.properties.map((p, i) => ({
+    owner: p.owner, houses: p.houses, position: i, price: boardSpaces[i].price,
+  }));
+  for (const player of players) {
+    player.netWorth = player.cash;
+    for (const prop of properties) {
+      if (prop.owner.toLowerCase() === player.address.toLowerCase()) {
+        player.netWorth += prop.price + prop.houses * 50;
+      }
+    }
+  }
+  const myPlayer = players[agentIndex];
+  const myPos = myPlayer.position;
+  const space = boardSpaces[myPos];
+  return {
+    gameId: 0, mode: local.mode === 0 ? "Monopolist" : "Prosperity",
+    round: local.round, turnsTaken: local.turnsTaken,
+    currentPlayerIndex: local.currentPlayerIndex, treasury: local.treasury,
+    players, properties, modeSwitchCount: local.modeSwitchCount,
+    modeSwitchProposed: local.modeSwitchProposed, votingEnabled: local.votingEnabled,
+    myIndex: agentIndex, myPosition: myPos, myCash: myPlayer.cash,
+    myNetWorth: myPlayer.netWorth, spaceType: space.spaceType,
+    spacePrice: space.price, spaceName: space.name,
+  };
+}
+
+// ─── Nonce manager (per-wallet, local tracking) ───
+
+class NonceManager {
+  private nonces = new Map<string, number>();
+
+  async init(publicClient: any, address: string): Promise<void> {
+    const nonce = Number(await publicClient.getTransactionCount({ address, blockTag: "pending" }));
+    this.nonces.set(address.toLowerCase(), nonce);
+  }
+
+  current(address: string): number {
+    const key = address.toLowerCase();
+    const nonce = this.nonces.get(key);
+    if (nonce === undefined) throw new Error(`NonceManager: no nonce for ${address}`);
+    return nonce;
+  }
+
+  advance(address: string): void {
+    const key = address.toLowerCase();
+    this.nonces.set(key, this.nonces.get(key)! + 1);
+  }
+
+  async resync(publicClient: any, address: string): Promise<void> {
+    const nonce = Number(await publicClient.getTransactionCount({ address, blockTag: "pending" }));
+    this.nonces.set(address.toLowerCase(), nonce);
+  }
+}
+
+// ─── Contract write ───
+
+async function writeContract(
+  publicClient: any,
+  wallet: any,
+  contractAddress: Address,
+  functionName: string,
+  args: any[],
+  nonceManager: NonceManager,
+  orchLog: OrchestratorLog,
+): Promise<TransactionReceipt> {
+  const address = wallet.account.address;
+  const nonce = nonceManager.current(address);
+  const t0 = Date.now();
+  orchLog.append({ ts: t0, event: "txSent", fn: functionName, agent: address.slice(0, 10), nonce });
+
+  try {
+    const hash = await wallet.writeContract({
+      address: contractAddress, abi: LANDLORDS_GAME_ABI, functionName, args,
+      account: wallet.account, nonce,
+    });
+    const receipt = await publicClient.waitForTransactionReceipt({ hash });
+    nonceManager.advance(address);
+    orchLog.append({ ts: Date.now(), event: "txConfirmed", fn: functionName, agent: address.slice(0, 10), durationMs: Date.now() - t0, blockNumber: Number(receipt.blockNumber) });
+    return receipt;
+  } catch (e: any) {
+    await nonceManager.resync(publicClient, address);
+    orchLog.append({ ts: Date.now(), event: "txFailed", fn: functionName, agent: address.slice(0, 10), reason: parseRevertReason(e).slice(0, 80), durationMs: Date.now() - t0 });
+    throw e;
+  }
+}
+
+// ─── Wait one block ───
+
+async function waitOneBlock(publicClient: any): Promise<void> {
+  const current = await publicClient.getBlockNumber();
+  while (await publicClient.getBlockNumber() <= current) {
+    await new Promise(r => setTimeout(r, 1000));
+  }
+}
+
+// ─── Universal error handler ───
+
+async function handleTxError(
+  e: any,
+  publicClient: any,
+  contractAddress: Address,
+  gameId: bigint,
+  local: LocalGameState,
+  agentName: string,
+  fn: string,
+  orchLog: OrchestratorLog,
+): Promise<void> {
+  const reason = parseRevertReason(e);
+  console.error(`  [${agentName}] ${fn} failed: ${reason.slice(0, 60)} — waiting for next block`);
+
+  await waitOneBlock(publicClient);
+  const resynced = await readGameState(publicClient, contractAddress, gameId);
+  Object.assign(local, initLocalState(resynced));
+  orchLog.append({ ts: Date.now(), event: "resync", agent: agentName, fn, reason: reason.slice(0, 80) });
+}
+
+// ─── Game loop ───
+
 export async function runGameLoop(config: GameLoopConfig): Promise<GameLog> {
-  const { publicClient, contractAddress, gameId, agents, agentWallets } = config;
+  const { publicClient, contractAddress, gameId, agents, agentWallets, logDir } = config;
 
-  // Load board spaces once
-  const boardSpaces = await loadBoardSpaces(publicClient, contractAddress);
+  const boardSpaces = await getBoardSpaces(publicClient, contractAddress);
+  const rawState = await readGameState(publicClient, contractAddress, gameId);
+  const local = initLocalState(rawState);
 
-  // Read initial state
-  let rawState = await freshRead();
-  const mode: GameMode = rawState.mode === 0 ? "Monopolist" : "Prosperity";
+  const nonces = new NonceManager();
+  for (const w of agentWallets) {
+    await nonces.init(publicClient, w.account.address);
+  }
+
+  const orchLog = new OrchestratorLog();
+  if (logDir) orchLog.init(logDir, Number(gameId));
+
+  const mode: GameMode = local.mode === 0 ? "Monopolist" : "Prosperity";
   const log = createGameLog(Number(gameId), mode, agents.map(a => a.address));
 
   console.log(`\n--- Game ${gameId} (${mode}) ---`);
 
-  // Track last confirmed block for read-after-write consistency on Sepolia.
-  // Public RPCs may return stale state if we read at "latest" immediately after a tx confirms.
-  // Using var (not let) to avoid temporal dead zone issues with closures defined below.
-  var lastBlock: bigint | undefined = undefined;
-
-  /** Write + read: sends tx, waits for receipt, reads state at confirmed block */
-  async function sendAndRead(w: any, fn: string, args: any[]): Promise<ContractGameState> {
-    lastBlock = await writeContract(publicClient, w, contractAddress, fn, args);
-    return readGameStateAt(publicClient, contractAddress, gameId, lastBlock);
-  }
-
-  /** Read state at last known block (or latest if no writes yet) */
-  async function freshRead(): Promise<ContractGameState> {
-    return readGameStateAt(publicClient, contractAddress, gameId, lastBlock);
-  }
-
   let turnCount = 0;
-  const MAX_TURNS = 2000; // Safety limit
+  const MAX_TURNS = 2000;
 
-  while (!rawState.gameOver && turnCount < MAX_TURNS) {
-    const currentIdx = Number(rawState.currentPlayerIndex);
+  while (!local.gameOver && turnCount < MAX_TURNS) {
+    const currentIdx = local.currentPlayerIndex;
     const agent = agents[currentIdx];
     const wallet = agentWallets[currentIdx];
-    const player = rawState.players[currentIdx];
-    const agentState = toAgentState(rawState, currentIdx, boardSpaces);
-    const tn = Number(rawState.turnsTaken); // turnNumber for logging
+    const player = local.players[currentIdx];
+    const tn = local.turnsTaken;
 
     turnCount++;
 
-    // Diagnostic: verify wallet matches contract player (first 3 turns only)
-    if (turnCount <= 3) {
-      console.log(`  [DIAG] Turn ${turnCount}: player=${currentIdx} contract_addr=${player.addr} wallet_addr=${wallet.account?.address} match=${wallet.account?.address?.toLowerCase() === player.addr.toLowerCase()}`);
-    }
+    try {
+      if (player.inJail) {
+        // === JAIL TURN ===
+        const buyoutCost = local.mode === 0
+          ? JAIL_FEE * (MONOPOLIST_JAIL_TURNS - player.turnsInJail) : 0;
 
-    if (player.inJail) {
-      // === JAIL TURN ===
-      const buyoutCost = rawState.mode === 0
-        ? JAIL_FEE * (MONOPOLIST_JAIL_TURNS - player.turnsInJail)
-        : 0;
-
-      if (rawState.mode === 0 && agent.decideJailBuyout(agentState, buyoutCost)) {
-        try {
-          lastBlock = await writeContract(publicClient, wallet, contractAddress, "payJailBuyout", [gameId]);
-          addTurnLog(log, tn, agent.name, "jailBuyout", { cost: buyoutCost });
-
-          // After buyout, player can roll
-          lastBlock = await writeContract(publicClient, wallet, contractAddress, "rollAndMove", [gameId]);
-
-          // Re-read state after roll
-          rawState = await freshRead();
-          const newAgentState = toAgentState(rawState, currentIdx, boardSpaces);
-
-          // Buy/build if not jailed during landing
-          if (!rawState.players[currentIdx].inJail) {
-            lastBlock = await tryBuyAndBuild(publicClient, wallet, contractAddress, gameId, agent, newAgentState, log, tn) ?? lastBlock;
+        // Try buyout (Monopolist only)
+        if (local.mode === 0 && agent.decideJailBuyout(toAgentState(local, currentIdx, boardSpaces), buyoutCost)) {
+          try {
+            const receipt = await writeContract(publicClient, wallet, contractAddress, "payJailBuyout", [gameId], nonces, orchLog);
+            applyReceipt(local, receipt);
+            addTurnLog(log, tn, agent.name, agent.strategyName, "jailBuyout", { cost: buyoutCost });
+          } catch {
+            // Buyout failed — fall through to wait
           }
-
-          if (!rawState.gameOver) {
-            try {
-              lastBlock = await writeContract(publicClient, wallet, contractAddress, "endTurn", [gameId]);
-            } catch (e2: any) {
-              console.error(`  [${agent.name}] endTurn after buyout failed: ${e2.shortMessage || e2.message}`);
-              rawState = await freshRead();
-            }
-          }
-        } catch (e: any) {
-          addTurnLog(log, tn, agent.name, "jailBuyoutFailed", { error: e.message?.slice(0, 100) });
-          // Fall back to waiting
-          lastBlock = await writeContract(publicClient, wallet, contractAddress, "waitInJail", [gameId]);
-          addTurnLog(log, tn, agent.name, "jailWait", { turnsServed: player.turnsInJail + 1 });
         }
-      } else {
-        lastBlock = await writeContract(publicClient, wallet, contractAddress, "waitInJail", [gameId]);
-        addTurnLog(log, tn, agent.name, "jailWait", { turnsServed: player.turnsInJail + 1 });
-      }
-    } else {
-      // === NORMAL TURN ===
 
-      // 1. Optional mode switch proposal (before roll) — only if voting enabled
-      let proposed = false;
-      if (rawState.votingEnabled && agent.decidePropose(agentState)) {
-        try {
-          lastBlock = await writeContract(publicClient, wallet, contractAddress, "proposeModeSwitch", [gameId]);
-          proposed = true;
-          addTurnLog(log, tn, agent.name, "proposeModeSwitch", { currentMode: agentState.mode });
-
-          // Notify all agents that a proposal occurred (pragmatists track this)
-          for (const a of agents) {
-            if (typeof (a as any).observeProposal === "function") {
-              (a as any).observeProposal();
-            }
-          }
-
-          // All other agents vote
-          for (let i = 0; i < agents.length; i++) {
-            if (i === currentIdx) continue;
-            const voterState = toAgentState(rawState, i, boardSpaces);
-            const vote = agents[i].decideVote(voterState);
-            lastBlock = await writeContract(publicClient, agentWallets[i], contractAddress, "voteModeSwitch", [gameId, vote]);
-            addTurnLog(log, tn, agents[i].name, "vote", { inFavor: vote });
-          }
-        } catch (e: any) {
-          addTurnLog(log, tn, agent.name, "proposeFailed", { error: e.message?.slice(0, 100) });
+        if (local.players[currentIdx].inJail) {
+          // Still in jail — wait (turn ends via _finishTurn in contract)
+          const receipt = await writeContract(publicClient, wallet, contractAddress, "waitInJail", [gameId], nonces, orchLog);
+          applyReceipt(local, receipt);
+          addTurnLog(log, tn, agent.name, agent.strategyName, "jailWait", { turnsServed: local.players[currentIdx].turnsInJail });
+          continue; // Turn is over — _finishTurn advanced to next player
         }
+
+        // Buyout succeeded — fall through to normal roll/buy/build/endTurn
       }
 
-      // After any proposal attempt, verify state before rolling
-      if (proposed) {
-        rawState = await freshRead();
-        if (rawState.gameOver) break;
-        if (Number(rawState.currentPlayerIndex) !== currentIdx) {
-          // Proposal was rejected — turn was skipped by contract
-          addTurnLog(log, tn, agent.name, "proposalRejected", {});
+      // === NORMAL TURN (or freed from jail via buyout) ===
+
+      // 1. Optional mode switch proposal (before roll)
+      if (local.votingEnabled && !local.hasRolled && agent.decidePropose(toAgentState(local, currentIdx, boardSpaces))) {
+        const receipt = await writeContract(publicClient, wallet, contractAddress, "proposeModeSwitch", [gameId], nonces, orchLog);
+        applyReceipt(local, receipt);
+        addTurnLog(log, tn, agent.name, agent.strategyName, "proposeModeSwitch", { currentMode: mode });
+
+        for (const a of agents) {
+          if (typeof (a as any).observeProposal === "function") (a as any).observeProposal();
+        }
+
+        // All other agents vote
+        for (let i = 0; i < agents.length; i++) {
+          if (i === currentIdx) continue;
+          const voterState = toAgentState(local, i, boardSpaces);
+          const vote = agents[i].decideVote(voterState);
+          const vReceipt = await writeContract(publicClient, agentWallets[i], contractAddress, "voteModeSwitch", [gameId, vote], nonces, orchLog);
+          applyReceipt(local, vReceipt);
+          addTurnLog(log, tn, agents[i].name, agents[i].strategyName, "vote", { inFavor: vote });
+        }
+
+        if (local.gameOver) break;
+        if (local.currentPlayerIndex !== currentIdx) {
+          // Proposal rejected — turn lost (TurnEnded already advanced)
+          addTurnLog(log, tn, agent.name, agent.strategyName, "proposalRejected", {});
           continue;
         }
-        if (rawState.modeSwitchProposed) {
-          // Vote stuck (incomplete voting) — can't roll, skip turn gracefully
-          console.error(`  [${agent.name}] vote stuck (modeSwitchProposed still true), skipping`);
-          continue;
-        }
-        addTurnLog(log, tn, agent.name, "proposalPassed", { newMode: rawState.mode === 0 ? "Monopolist" : "Prosperity" });
+        addTurnLog(log, tn, agent.name, agent.strategyName, "proposalPassed", { newMode: local.mode === 0 ? "Monopolist" : "Prosperity" });
       }
 
-      // 2. Roll and move
-      try {
-        lastBlock = await writeContract(publicClient, wallet, contractAddress, "rollAndMove", [gameId]);
-      } catch (e: any) {
-        // rollAndMove failed — recover by diagnosing and advancing the turn
-        rawState = await freshRead();
-        if (rawState.gameOver) break;
-
-        const stuckPlayer = rawState.players[Number(rawState.currentPlayerIndex)];
-        if (stuckPlayer.inJail) {
-          // PlayerInJail revert — route to jail handling
-          try {
-            lastBlock = await writeContract(publicClient, wallet, contractAddress, "waitInJail", [gameId]);
-            addTurnLog(log, tn, agent.name, "jailWait", { turnsServed: stuckPlayer.turnsInJail + 1, recovery: true });
-          } catch { /* waitInJail also failed — fall through */ }
-        } else if (rawState.hasRolled) {
-          // AlreadyRolled revert — force endTurn to advance
-          try {
-            lastBlock = await writeContract(publicClient, wallet, contractAddress, "endTurn", [gameId]);
-            addTurnLog(log, tn, agent.name, "endTurn", { recovery: true });
-          } catch { /* endTurn also failed — fall through */ }
-        } else {
-          console.error(`  [${agent.name}] rollAndMove failed unexpectedly: ${e.shortMessage || e.message}`);
-        }
-
-        rawState = await freshRead();
-        continue;
+      // 2. Roll and move (skip if already rolled — resuming mid-turn)
+      if (!local.hasRolled) {
+        const receipt = await writeContract(publicClient, wallet, contractAddress, "rollAndMove", [gameId], nonces, orchLog);
+        applyReceipt(local, receipt);
       }
-      rawState = await freshRead();
 
-      const postRollState = toAgentState(rawState, currentIdx, boardSpaces);
-      const dice1 = Number(rawState.lastDice1);
-      const dice2 = Number(rawState.lastDice2);
-      addTurnLog(log, tn, agent.name, "roll", {
-        dice: (dice1 === 0 && dice2 === 0) ? null : [dice1, dice2], // Ghost roll guard: [0,0] = uninitialized
-        position: Number(rawState.players[currentIdx].position),
-        spaceName: boardSpaces[Number(rawState.players[currentIdx].position)].name,
-        cash: Number(rawState.players[currentIdx].cash),
+      const dice1 = local.lastDice1;
+      const dice2 = local.lastDice2;
+      addTurnLog(log, tn, agent.name, agent.strategyName, "roll", {
+        dice: (dice1 === 0 && dice2 === 0) ? null : [dice1, dice2],
+        position: local.players[currentIdx].position,
+        spaceName: boardSpaces[local.players[currentIdx].position].name,
+        cash: local.players[currentIdx].cash,
       });
 
-      if (rawState.gameOver) break;
+      if (local.gameOver) break;
 
       // 3. Buy/build (if not jailed during landing)
-      if (!rawState.players[currentIdx].inJail) {
-        lastBlock = await tryBuyAndBuild(publicClient, wallet, contractAddress, gameId, agent, postRollState, log, tn) ?? lastBlock;
+      if (!local.players[currentIdx].inJail) {
+        const postRollState = toAgentState(local, currentIdx, boardSpaces);
+        await tryBuyAndBuild(publicClient, wallet, contractAddress, gameId, agent, postRollState, log, tn, local, nonces, orchLog);
       }
 
-      // 4. End turn (only if we're still the current player — might have changed due to liquidation/jail)
-      rawState = await freshRead();
-      if (!rawState.gameOver && Number(rawState.currentPlayerIndex) === currentIdx) {
-        try {
-          lastBlock = await writeContract(publicClient, wallet, contractAddress, "endTurn", [gameId]);
-        } catch (e: any) {
-          // Silently recover — the game will continue on the next iteration
-          rawState = await freshRead();
-        }
+      // 4. End turn
+      if (!local.gameOver) {
+        const receipt = await writeContract(publicClient, wallet, contractAddress, "endTurn", [gameId], nonces, orchLog);
+        applyReceipt(local, receipt);
       }
+
+    } catch (e: any) {
+      // === UNIVERSAL ERROR HANDLER ===
+      // Any tx failure: wait one block, re-read chain state, restart turn.
+      // No recovery writes. No cascading errors.
+      await handleTxError(e, publicClient, contractAddress, gameId, local, agent.name, "turn", orchLog);
+      continue;
     }
 
-    // Re-read state for next iteration
-    rawState = await freshRead();
-
     // Round snapshot at the start of each new round
-    if (Number(rawState.currentPlayerIndex) === 0) {
-      addRoundSnapshot(log, rawState, agents);
+    if (local.currentPlayerIndex === 0) {
+      addRoundSnapshotFromLocal(log, local, agents, boardSpaces);
     }
   }
 
   // Final state
-  rawState = await freshRead();
-  const finalBalances = rawState.players.map(p => Number(p.cash));
-  const netWorths = rawState.players.map((_, i) => {
-    let nw = Number(rawState.players[i].cash);
+  const finalBalances = local.players.map(p => p.cash);
+  const netWorths = local.players.map((p) => {
+    let nw = p.cash;
     for (let pos = 0; pos < 40; pos++) {
-      if (rawState.properties[pos].owner === rawState.players[i].addr) {
-        nw += Number(boardSpaces[pos].price) + rawState.properties[pos].houses * 50;
+      if (local.properties[pos].owner.toLowerCase() === p.address.toLowerCase()) {
+        nw += boardSpaces[pos].price + local.properties[pos].houses * 50;
       }
     }
     return nw;
   });
-  // Gini on net worth (wealth inequality), not just cash
   const giniCoeff = gini(netWorths);
 
   finalizeGame(log, {
-    winner: rawState.winner,
-    mode: rawState.mode === 0 ? "Monopolist" : "Prosperity",
-    rounds: Number(rawState.round),
-    turnsTaken: Number(rawState.turnsTaken),
+    winner: local.winner ?? ZERO_ADDRESS,
+    mode: local.mode === 0 ? "Monopolist" : "Prosperity",
+    rounds: local.round,
+    turnsTaken: local.turnsTaken,
     giniCoefficient: giniCoeff,
     finalBalances,
-    treasuryFinal: Number(rawState.treasury),
+    treasuryFinal: local.treasury,
     netWorths,
   });
 
-  console.log(`  Winner: ${rawState.winner}`);
-  console.log(`  Rounds: ${rawState.round}, Turns: ${rawState.turnsTaken}`);
+  console.log(`  Winner: ${local.winner}`);
+  console.log(`  Rounds: ${local.round}, Turns: ${local.turnsTaken}`);
   console.log(`  Gini: ${giniCoeff.toFixed(4)}`);
   console.log(`  Final balances: [${finalBalances.join(", ")}]`);
 
   return log;
 }
 
-/** Try to buy property and build houses. Returns last confirmed block number. */
-async function tryBuyAndBuild(
-  publicClient: any,
-  wallet: any,
-  contractAddress: Address,
-  gameId: bigint,
-  agent: Agent,
-  state: GameState,
-  log: GameLog,
-  turnNumber: number,
-): Promise<bigint | undefined> {
-  let block: bigint | undefined;
+function addRoundSnapshotFromLocal(log: GameLog, local: LocalGameState, agents: Agent[], boardSpaces: BoardSpace[]) {
+  const players = local.players.map((p) => {
+    let nw = p.cash;
+    for (let pos = 0; pos < 40; pos++) {
+      if (local.properties[pos].owner.toLowerCase() === p.address.toLowerCase()) {
+        nw += boardSpaces[pos].price + local.properties[pos].houses * 50;
+      }
+    }
+    return { address: p.address, cash: p.cash, position: p.position, inJail: p.inJail, netWorth: nw };
+  });
+  log.roundSnapshots.push({
+    round: local.round, players, treasury: local.treasury,
+    mode: local.mode === 0 ? "Monopolist" : "Prosperity",
+  });
+}
 
-  // Buy?
+async function tryBuyAndBuild(
+  publicClient: any, wallet: any, contractAddress: Address, gameId: bigint,
+  agent: Agent, state: GameState, log: GameLog, turnNumber: number,
+  local: LocalGameState, nonces: NonceManager, orchLog: OrchestratorLog,
+): Promise<void> {
   if (agent.decideBuy(state)) {
     try {
-      block = await writeContract(publicClient, wallet, contractAddress, "buyProperty", [gameId]);
-      addTurnLog(log, turnNumber, agent.name, "buy", { position: state.myPosition, price: state.spacePrice });
-    } catch {
-      // Can't buy — not a property space, already owned, etc. Silent fail.
-    }
+      const receipt = await writeContract(publicClient, wallet, contractAddress, "buyProperty", [gameId], nonces, orchLog);
+      applyReceipt(local, receipt);
+      addTurnLog(log, turnNumber, agent.name, agent.strategyName, "buy", { position: state.myPosition, price: state.spacePrice });
+    } catch { /* Can't buy — silent */ }
   }
 
-  // Build?
-  const buildPositions = agent.decideBuild(state);
+  const postBuyState = toAgentState(local, state.myIndex, await getBoardSpaces(publicClient, contractAddress));
+  const buildPositions = agent.decideBuild(postBuyState);
   for (const pos of buildPositions) {
     try {
-      block = await writeContract(publicClient, wallet, contractAddress, "buildHouse", [gameId, BigInt(pos)]);
-      addTurnLog(log, turnNumber, agent.name, "build", { position: pos });
-    } catch {
-      // Can't build — not enough cash, max houses, etc. Silent fail.
-    }
+      const receipt = await writeContract(publicClient, wallet, contractAddress, "buildHouse", [gameId, BigInt(pos)], nonces, orchLog);
+      applyReceipt(local, receipt);
+      addTurnLog(log, turnNumber, agent.name, agent.strategyName, "build", { position: pos });
+    } catch { /* Can't build — silent */ }
   }
-
-  return block;
 }

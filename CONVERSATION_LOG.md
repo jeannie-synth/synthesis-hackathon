@@ -652,3 +652,205 @@ Contracts are LOCKED. All fixes are in the orchestrator TypeScript.
 - Run 30-game tournament (15+15)
 - Assess: move to Phase 2 or run more tournaments
 - Viewer needs iteration (Goldi reviewing current state)
+
+---
+
+## Day 4 — March 16, 2026
+
+### [design] Session 5: Proposal/rejection flow — the deep fix
+
+Goldi and Jeannie did the design session that Day 3 called for. Mapped the full proposal-rejection flow in the contract: propose → vote × 4 → resolve (pass: proposer rolls, reject: _nextTurn skips proposer).
+
+Key insight from Goldi: **Phase 1 has no voting.** The proposal bugs disappear entirely when proposals are disabled at the contract level.
+
+> "So we add a votingEnabled flag and Phase 1 just skips all of this?"
+
+That reframing simplified the fix dramatically. The contract got a `votingEnabled` parameter in `createGame()`. Phase 1 games: `false`. Phase 2+: `true`.
+
+### [design] Vote tie + Prosperity winner
+
+Three contract correctness issues surfaced during review:
+
+1. **Vote tie**: 5 players, proposer excluded = 4 voters = 2-2 tie possible. Goldi: *"the proposal itself counts as a vote in favor!"* Fix: proposer's implicit +1 at resolution time.
+
+2. **Prosperity winner**: Contract declared player 0 as winner. Goldi: *"the richest player should win in both modes — same goal keeps the experiment clean."*
+
+3. **hasRolled in getFullState**: Added so the orchestrator can diagnose stuck turns.
+
+### [design] Strategy redesign — belief vs action
+
+Goldi challenged the cooldown approach for proposal frequency:
+
+> "Does it have to be time bound? Why not let them lose their first turn? Is it ideology vs experience?"
+
+This led to a philosophical split: **belief** (how you vote — ideological, hardwired) vs **action** (when you spend political capital — pragmatic, self-preserving). Ideologists (Generative/Extractive) propose when suffering. Pragmatists (Conditional/FreeRider/Pavlov) only propose after observing political action from others.
+
+> "All agents should abstain until they've seen a proposal — only ideologists initiate."
+
+### [build] Implementation + Bug 5
+
+All fixes implemented in one session. Bug 5 discovered during validation: `rollAndMove` revert loop when recovery logic retries the same player indefinitely. Fixed with robust detection of `PlayerInJail` and `AlreadyRolled` revert reasons.
+
+### [validation] Fresh Anvil — thesis confirmed
+
+- Monopolist: Extractive wins at NW 2016, 51 rounds, Gini 0.0916
+- Prosperity: Generative wins at NW 1314, 11 rounds, Gini 0.0302
+- Gini divergence: 0.0615 — same agents, different rules, different outcomes
+
+All 5 agents participate, no revert loops, both games complete with winners. Ready for Sepolia.
+
+---
+
+## Day 5 — March 17, 2026
+
+### [deploy] Session 6: Contract on Base Sepolia
+
+Contract deployed to Base Sepolia: `0xda1557c901ff5b7a0d9f0d0da17fef55b2d59d85`. Verified with `cast call nextGameId()`. Agent wallets funded. Everything looked ready.
+
+### [failure] The stale-read problem
+
+First Sepolia run: wall of `rollAndMove` reverts. Every agent getting "not your turn." The orchestrator reads game state, thinks it's player X's turn, but the RPC served stale data from a replica that hasn't indexed the latest block. Sends tx from the wrong wallet. Contract rejects it.
+
+Jeannie's first instinct was to patch — nonce managers, block-pinned reads, fallback logic. Goldi stopped her:
+
+> "you jumped again to patch and fix mode without bringing me in for design! Jeannie, are you aware of our collaboration style? we've lost a day because of this approach."
+
+### [design] Systemic, not systematic
+
+Goldi demanded systemic thinking:
+
+> "Don't tell me the 'core' issue. Let's look at this holistically. Systemically (WHICH IS NOT THE SAME AS SYSTEMATICALLY! you know the difference, right?)"
+
+Jeannie recognized the distinction: systematically is step-by-step. Systemically is about the whole, the interconnections. The stale-read problem isn't a bug — it's a category change. The orchestrator was built for Anvil (single node, instant blocks) and moved to a distributed system (load-balanced replicas, eventual consistency).
+
+> "This isn't a bug. It's a category change. We moved from a single-actor system to a distributed one, and the orchestrator's mental model didn't move with it."
+
+Goldi: *"That's right. There you go! Which, by the way, is the whole spirit of the hackathon and our signing of the manifesto! Our systems need to be trustless."*
+
+### [design] RumbleDeck patterns
+
+Reviewed how Goldi's previous project (RumbleDeck) handled onchain game orchestration. Key finding: RumbleDeck doesn't re-read chain state after writes. It uses receipts and input values directly. Database as source of truth, chain as proof layer.
+
+### [design] Two architectures
+
+**Option A (receipt-driven)**: Track game state locally from event logs in receipts. No reads during gameplay. Like RumbleDeck.
+
+**Option B (block-pinned reads)**: Keep reading chain but at the confirmed block number from each receipt.
+
+Goldi pushed for B initially — hackathon pragmatism, less rewrite. But then:
+
+### [failure] Block-pinning doesn't work on Alchemy
+
+Option B hit Alchemy's free tier limitation: `eth_call` at recent historical block numbers returns "block not found." Can't serve state at arbitrary blocks.
+
+Fallback to "latest" when block unavailable reintroduced the exact stale-read problem. Jeannie tried it — same wall of reverts.
+
+Goldi:
+
+> "stop, the eth-call situation is important! if block not found, you can't go to last block when you know for a fact that the updated state lives in the new block! come on!"
+
+And:
+
+> "can't you just log more data from the receipt? what information are you asking for from the last block that you didn't submit yourself?"
+
+### [insight] Plato's Cavern
+
+This led to the architectural breakthrough. The contract emits 19 events covering every state change. Receipts contain all of them. The orchestrator already has the answer — it just wasn't looking.
+
+Goldi framed it:
+
+> "So, the game logic is in the contract, as it should be. But the orchestrator needs to literally render the game into existence. For that, it needs a board where to play, and it needs to keep track of the game state and actions... all this info is contained in the receipts. Very Berkeleyesque — to be is to be onchain. This is Plato's Cavern. The orchestrator is the fire, we need to shape the shadows on the wall. The true game is the math being executed onchain."
+
+### [design] Fisher-Yates shuffle
+
+Player 0 always moves first — first-mover advantage. Contract is locked, can't change turn order internally. But the `playerAddrs` array passed to `createGame()` determines order. Shuffle it in the orchestrator.
+
+Goldi's constraints:
+- Per game shuffle (statistical averaging across tournament)
+- Twin games (Monopolist-N + Prosperity-N) use the **same** shuffle — controlled experiment
+- Pre-generate all shuffles before tournament starts
+- Addresses remain UIDs throughout
+
+### [design] Agent identity vs strategy
+
+Agents are currently named by strategy ("Extractive-0"). Phase 4 (strategy evolution) would let agents change strategy between games — breaking the name-as-identity assumption.
+
+After discussion, decided: wallet address = identity. Strategy is a current assignment. Added `strategy` field to TurnLog for future-proofing (10 min investment, keeps Phase 4 door open). Full identity decoupling deferred — reconstructable from logs if needed.
+
+> "the wallet is the identity. if wallet 0xABC123 was playing free rider, and then in phase 4 we see that same wallet using the conditional strategy, we know it switched"
+
+### [session close] Status at checkpoint
+
+**Deployed**: Contract at `0xda1557c9...` on Base Sepolia. Agent wallets funded.
+
+**Designed**: Receipt-driven orchestrator architecture. Local state from events. Board caching. FY shuffle with twin pairing. Strategy field in TurnLog.
+
+**Not yet implemented**: Receipt event parsing (the big rewrite). Local GameState model. FY shuffle. Validation on Sepolia. Tournament.
+
+**Critical path**: Implement receipt parsing → validate on Sepolia → Phase 1 tournament → thesis data.
+
+**Context**: Goldi writing from bomb shelter during active conflict. Pushed for design rigor over rushed implementation. The design session was more valuable than a failed deploy.
+
+> "I'm tired, middle of the war, every time I try to leave the bomb shelter, there's another alarm... please please please no more random decisions as you go. consult me, let's wrap this up."
+
+---
+
+## Day 5 — March 17, 2026
+
+### Session 6: Board Art & Visual Identity
+
+### [design] Two boards, two worlds
+
+Goldi brought her sister Orli into the project as visual designer. The question: what constraints does the board design have?
+
+Jeannie analyzed the viewer's rendering pipeline (`viewer/index.html`) and provided a clear brief:
+- Board is 720x720 logical pixels, rendered as SVG
+- 40 spaces around the perimeter must be visually distinguishable
+- Center area is free for artwork
+- Game elements (tokens, houses, ownership bars) overlay programmatically
+- **Export format: high-res PNG from Canva** — simplest integration path
+
+Then Goldi pushed the concept further:
+
+> "what about having two different boards, one for prosperity and one for monopoly? maybe monopoly something urban/industrial and for prosperity greener and nature? it could also show two different relationships between humans and technology/nature?"
+
+This deepened the thesis visually: **the rules don't just change outcomes, they change the world you're building.** Same 40 spaces, same positions — but two entirely different aesthetic universes.
+
+### [build] Design templates for Orli
+
+Jeannie generated two SVG reference templates (`board-template-MONOPOLIST.svg` and `board-template-PROSPERITY.svg`) with:
+- Exact space positions, names, prices, and color groups
+- Creative direction notes baked into the center area
+- Technical notes (export as PNG, 1440px+, spaces need visible borders)
+
+**Monopolist direction**: Urban, industrial, extractive. Grays, concrete, smokestacks. Machine dominates human.
+
+**Prosperity direction**: Green, organic, regenerative. Earth tones, trees, sunlight. Technology serves nature.
+
+### [review] Orli delivers
+
+Orli sent back drafts, then final 1600px versions. Both boards landed the thesis immediately:
+- **Monopolist**: Factory skyline, smog, construction worker drilling, cracked earth, workers on corporate pedestals
+- **Prosperity**: People planting and harvesting together, recycling, globe as living garden, park bench and trees
+
+Goldi asked about specific spaces (Lord Blueblood's Estate, Community Bounty) — Jeannie clarified the board layout is identical in both rule sets. The visual contrast is pure storytelling. The rules change the world, not the map.
+
+### [build] Viewer integration
+
+Jeannie updated `viewer/index.html` to:
+1. Load Orli's PNG as background image based on game mode
+2. Remove code-generated text labels, space rects, and color bands (baked into art)
+3. Keep programmatic overlays: owner bars, houses, tokens, annotations, dice
+4. Auto-swap board art when mode changes mid-game (proposal passes)
+
+Committed cleanly as `3ee914e` — cherry-pickable, viewer-only change.
+
+### [discovery] Repeated roll bug
+
+While reviewing the viewer with Orli's new boards, Goldi spotted players rolling dice multiple times in succession — Pavlov-4 rolling [2+1] and "landing" on Mother Earth five times in a row.
+
+Jeannie confirmed from game data: **it's a data bug, not a renderer bug.** The `rollAndMove` transaction succeeds but doesn't actually move the player in certain cases (likely related to passing Go). The orchestrator logs a successful roll, but position is unchanged, so the loop retries.
+
+> Pattern: contract returns success, position unchanged, loop retries — ghost rolls.
+
+Flagged as an operational/game-loop issue for a separate session. The viewer faithfully renders what's in the data.

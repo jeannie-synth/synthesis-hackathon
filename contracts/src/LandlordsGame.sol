@@ -75,11 +75,11 @@ contract LandlordsGame {
     event RentToTreasury(uint256 indexed gameId, address indexed payer, uint256 position, uint256 amount, uint256 payerNewCash, uint256 newTreasuryBalance);
     event TaxPaid(uint256 indexed gameId, address indexed player, uint256 position, uint256 amount, uint256 newCash, uint256 newTreasuryBalance);
     event HouseBuilt(uint256 indexed gameId, address indexed player, uint256 position, uint8 totalHouses, uint256 newCash);
-    event TreasuryDividend(uint256 indexed gameId, uint256 treasuryBefore, uint256 amountPerPlayer, uint256 playerCount);
+    event TreasuryDividend(uint256 indexed gameId, uint256 treasuryBefore, uint256 amountPerPlayer, uint256 playerCount, uint256 newTreasuryBalance);
     event DividendCollected(uint256 indexed gameId, address indexed player, uint256 amount, uint256 newCash);
     event PropertyLiquidated(uint256 indexed gameId, address indexed player, uint256 position, uint256 faceValue, address creditor, uint256 remainingDebt);
     event SentToJail(uint256 indexed gameId, address indexed player, JailReason reason);
-    event ReleasedFromJail(uint256 indexed gameId, address indexed player, ReleaseMethod method, uint8 turnsMissed, uint256 feePaid);
+    event ReleasedFromJail(uint256 indexed gameId, address indexed player, ReleaseMethod method, uint8 turnsMissed, uint256 feePaid, uint256 newCash);
     event ModeSwitchProposed(uint256 indexed gameId, address indexed proposer, GameMode currentMode, GameMode proposedMode);
     event ModeSwitchVote(uint256 indexed gameId, address indexed voter, bool inFavor, uint256 votesFor, uint256 votesAgainst);
     event ModeSwitched(uint256 indexed gameId, GameMode oldMode, GameMode newMode, uint256 round, uint256 votesFor, uint256 votesAgainst);
@@ -89,6 +89,13 @@ contract LandlordsGame {
         uint256 round, uint256 turnsTaken, uint256 winnerNetWorth,
         uint256[] allPlayerNetWorths, uint256 finalTreasury
     );
+    event TurnEnded(
+        uint256 indexed gameId, address indexed player,
+        uint256 playerCash, uint256 playerPosition, bool playerInJail, uint8 playerTurnsInJail,
+        uint256 nextPlayerIndex, uint256 round, bool gameOver
+    );
+    event ContributionMade(uint256 indexed gameId, address indexed player, uint256 round);
+    event LiquidationSettled(uint256 indexed gameId, address indexed player, uint256 newCash, uint256 propertiesLost);
 
     // ============ Errors ============
     error NotYourTurn();
@@ -247,6 +254,7 @@ contract LandlordsGame {
         if (g.mode == GameMode.Prosperity) {
             g.treasury += spaces[pos].price;
             player.lastContributionRound = g.round;
+            emit ContributionMade(gameId, player.addr, g.round);
         }
 
         emit PropertyBought(gameId, player.addr, pos, spaces[pos].name, spaces[pos].price, player.cash);
@@ -280,14 +288,7 @@ contract LandlordsGame {
         if (player.addr != msg.sender) revert NotYourTurn();
         if (!g.hasRolled) revert MustRollFirst();
 
-        g.hasRolled = false;
-
-        if (!g.gameOver) {
-            _checkWinConditions(gameId);
-        }
-        if (!g.gameOver) {
-            _nextTurn(gameId);
-        }
+        _finishTurn(gameId);
     }
 
     // ============ Jail ============
@@ -310,7 +311,7 @@ contract LandlordsGame {
         player.inJail = false;
         player.turnsInJail = 0;
 
-        emit ReleasedFromJail(gameId, player.addr, ReleaseMethod.PaidBuyout, turnsMissed, buyoutCost);
+        emit ReleasedFromJail(gameId, player.addr, ReleaseMethod.PaidBuyout, turnsMissed, buyoutCost, player.cash);
         // Player can now call rollAndMove
     }
 
@@ -332,10 +333,10 @@ contract LandlordsGame {
             uint8 turnsMissed = player.turnsInJail;
             player.inJail = false;
             player.turnsInJail = 0;
-            emit ReleasedFromJail(gameId, player.addr, ReleaseMethod.Waited, turnsMissed, 0);
+            emit ReleasedFromJail(gameId, player.addr, ReleaseMethod.Waited, turnsMissed, 0, player.cash);
         }
 
-        _nextTurn(gameId);
+        _finishTurn(gameId);
     }
 
     // ============ Mode Switching (Propose-and-Risk) ============
@@ -407,7 +408,7 @@ contract LandlordsGame {
                 emit ModeSwitchRejected(gameId, g.modeSwitchProposer, g.round, g.modeSwitchVotesFor, g.modeSwitchVotesAgainst);
                 g.turnsTaken++;
                 emit TurnStarted(gameId, g.modeSwitchProposer, g.round, g.turnsTaken);
-                _nextTurn(gameId);
+                _finishTurn(gameId);
             }
         }
     }
@@ -507,7 +508,10 @@ contract LandlordsGame {
             uint256 paid = _handlePayment(gameId, playerIdx, tax, address(0));
             if (g.mode == GameMode.Prosperity) {
                 g.treasury += paid;
-                if (paid > 0) player.lastContributionRound = g.round;
+                if (paid > 0) {
+                    player.lastContributionRound = g.round;
+                    emit ContributionMade(gameId, player.addr, g.round);
+                }
             }
             emit TaxPaid(gameId, player.addr, pos, paid, player.cash, g.treasury);
             _checkDividend(gameId);
@@ -520,7 +524,10 @@ contract LandlordsGame {
             uint256 paid = _handlePayment(gameId, playerIdx, expense, address(0));
             if (g.mode == GameMode.Prosperity) {
                 g.treasury += paid;
-                if (paid > 0) player.lastContributionRound = g.round;
+                if (paid > 0) {
+                    player.lastContributionRound = g.round;
+                    emit ContributionMade(gameId, player.addr, g.round);
+                }
             }
             emit TaxPaid(gameId, player.addr, pos, paid, player.cash, g.treasury);
             _checkDividend(gameId);
@@ -548,7 +555,10 @@ contract LandlordsGame {
                 } else {
                     uint256 paid = _handlePayment(gameId, playerIdx, rent, address(0));
                     g.treasury += paid;
-                    if (paid > 0) player.lastContributionRound = g.round;
+                    if (paid > 0) {
+                        player.lastContributionRound = g.round;
+                        emit ContributionMade(gameId, player.addr, g.round);
+                    }
                     emit RentToTreasury(gameId, player.addr, pos, paid, player.cash, g.treasury);
                     _checkDividend(gameId);
                 }
@@ -575,6 +585,7 @@ contract LandlordsGame {
         player.cash = 0;
 
         // Auto-liquidate properties in ascending position order until debt is covered
+        uint256 propertiesLost = 0;
         for (uint256 pos = 0; pos < BOARD_SIZE && debt > 0; pos++) {
             Property storage prop = gameProperties[gameId][pos];
             if (prop.owner == player.addr) {
@@ -582,6 +593,7 @@ contract LandlordsGame {
                 // Houses are lost on liquidation
                 prop.houses = 0;
                 prop.owner = address(0);
+                propertiesLost++;
 
                 emit PropertyLiquidated(gameId, player.addr, pos, faceValue, creditor, debt);
 
@@ -594,6 +606,11 @@ contract LandlordsGame {
                     debt -= faceValue;
                 }
             }
+        }
+
+        // Emit settlement summary if any liquidation occurred
+        if (propertiesLost > 0) {
+            emit LiquidationSettled(gameId, player.addr, player.cash, propertiesLost);
         }
 
         // If still can't pay after full liquidation → jail with $0
@@ -661,9 +678,9 @@ contract LandlordsGame {
 
         uint256 treasuryBefore = g.treasury;
         uint256 perPlayer = g.treasury / g.playerCount;
-        g.treasury = 0;
+        g.treasury = treasuryBefore - (perPlayer * g.playerCount); // Keep integer division remainder
 
-        emit TreasuryDividend(gameId, treasuryBefore, perPlayer, g.playerCount);
+        emit TreasuryDividend(gameId, treasuryBefore, perPlayer, g.playerCount, g.treasury);
 
         for (uint256 i = 0; i < players.length; i++) {
             players[i].cash += perPlayer;
@@ -744,17 +761,37 @@ contract LandlordsGame {
 
     // ============ Internal: Turn Management ============
 
-    function _nextTurn(uint256 gameId) internal {
+    /// @notice Finish the current turn: check win conditions, emit TurnEnded, advance to next player.
+    /// @dev Replaces _nextTurn — universal turn-end logic called by endTurn, waitInJail, and rejected vote.
+    function _finishTurn(uint256 gameId) internal {
         GameCore storage g = games[gameId];
         if (g.gameOver) return;
 
+        // 1. Check win conditions (universal — was previously only in endTurn)
+        _checkWinConditions(gameId);
+
+        // 2. Capture ending player's final state
+        Player storage endingPlayer = gamePlayers[gameId][g.currentPlayerIndex];
+
+        // 3. Advance
         g.hasRolled = false;
         g.currentPlayerIndex = (g.currentPlayerIndex + 1) % g.playerCount;
-
-        // Increment round when we wrap back to player 0
         if (g.currentPlayerIndex == 0) {
             g.round++;
         }
+
+        // 4. Emit complete turn-end snapshot
+        emit TurnEnded(
+            gameId,
+            endingPlayer.addr,
+            endingPlayer.cash,
+            endingPlayer.position,
+            endingPlayer.inJail,
+            endingPlayer.turnsInJail,
+            g.currentPlayerIndex,
+            g.round,
+            g.gameOver
+        );
     }
 
     // ============ Internal: Dice ============
@@ -765,7 +802,7 @@ contract LandlordsGame {
     function _rollDice(uint256 gameId) internal view returns (uint256 d1, uint256 d2) {
         GameCore storage g = games[gameId];
         uint256 hash = uint256(keccak256(abi.encodePacked(
-            block.prevrandao, block.timestamp, gameId,
+            block.prevrandao, block.timestamp, block.number, gameId,
             g.currentPlayerIndex, g.round, g.turnsTaken
         )));
         d1 = (hash % 6) + 1;

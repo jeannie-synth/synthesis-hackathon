@@ -2,6 +2,7 @@ import {
   createPublicClient,
   createWalletClient,
   http,
+  webSocket,
   type Chain,
   type PublicClient,
   type WalletClient,
@@ -39,6 +40,32 @@ export function getChain(network: "anvil" | "base-sepolia"): Chain {
   return network === "anvil" ? anvil : baseSepolia;
 }
 
+/** Convert an HTTP RPC URL to its WebSocket equivalent (Alchemy, Infura pattern) */
+export function toWsUrl(httpUrl: string): string | null {
+  try {
+    const url = new URL(httpUrl);
+    if (url.protocol === "https:") {
+      url.protocol = "wss:";
+      return url.toString();
+    }
+  } catch { /* not a valid URL */ }
+  return null;
+}
+
+/** Create a transport — prefers WebSocket for live RPCs (instant receipt notification),
+ *  falls back to HTTP for Anvil or if no WS URL is available. */
+export function createTransport(network: "anvil" | "base-sepolia", rpcUrl?: string): Transport {
+  const chain = getChain(network);
+  const httpUrl = rpcUrl ?? chain.rpcUrls.default.http[0];
+
+  if (network !== "anvil") {
+    const wsUrl = toWsUrl(httpUrl);
+    if (wsUrl) return webSocket(wsUrl);
+  }
+
+  return http(httpUrl);
+}
+
 export function createClient(
   network: "anvil" | "base-sepolia",
   rpcUrl?: string
@@ -46,7 +73,7 @@ export function createClient(
   const chain = getChain(network);
   return createPublicClient({
     chain,
-    transport: http(rpcUrl ?? chain.rpcUrls.default.http[0]),
+    transport: createTransport(network, rpcUrl),
   });
 }
 
@@ -60,7 +87,7 @@ export function createAgentWallet(
   const wallet = createWalletClient({
     account,
     chain,
-    transport: http(rpcUrl ?? chain.rpcUrls.default.http[0]),
+    transport: createTransport(network, rpcUrl),
   });
   return { account, wallet };
 }
@@ -78,7 +105,7 @@ export function deriveAgentWallets(
   rpcUrl?: string
 ): { name: string; account: HDAccount; wallet: WalletClient }[] {
   const chain = getChain(network);
-  const transport = http(rpcUrl ?? chain.rpcUrls.default.http[0]);
+  const transport = createTransport(network, rpcUrl);
 
   return AGENT_NAMES.map((name, index) => {
     const account = mnemonicToAccount(mnemonic, {

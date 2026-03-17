@@ -4,21 +4,14 @@ import { fileURLToPath } from "url";
 import { parseEther, type Address } from "viem";
 import { createClient, createAgentWallet, deriveAgentWallets } from "../../agents/src/chain/client.js";
 import { LANDLORDS_GAME_ABI } from "../../agents/src/chain/abi.js";
+import { getNextNonce } from "./utils.js";
 
-const AGENT_GAS_FUND = parseEther("0.01");
-
-/** Simple deployer nonce tracker — avoids stale nonce reads on public Sepolia RPCs */
-let deployerNonce: number | undefined;
-async function getDeployerNonce(publicClient: any, address: string): Promise<number> {
-  if (deployerNonce === undefined) {
-    deployerNonce = Number(await publicClient.getTransactionCount({ address }));
-  }
-  return deployerNonce++;
-}
+const AGENT_GAS_FUND = parseEther("0.005"); // 0.005 ETH per agent — enough for ~100+ game turns
 
 export interface SetupResult {
   publicClient: any;
   deployerWallet: any;
+  deployerNonce: number;
   agentWallets: { name: string; address: Address; wallet: any }[];
   contractAddress: Address;
 }
@@ -42,17 +35,19 @@ export async function setup(
   }
 
   // 2. Fund agents (Anvil accounts are pre-funded, but Sepolia needs this)
+  // Explicit nonce tracking for deployer — live RPCs return stale nonces between rapid txs
+  let deployerNonce = await getNextNonce(publicClient, deployerAccount.address);
+
   if (network === "base-sepolia") {
     for (const { name, account } of agentWallets) {
       const balance = await publicClient.getBalance({ address: account.address });
       if (balance < AGENT_GAS_FUND) {
         const needed = AGENT_GAS_FUND - balance;
-        const nonce = await getDeployerNonce(publicClient, deployerAccount.address);
         const hash = await (deployerWallet as any).sendTransaction({
           to: account.address,
           value: needed,
           account: deployerAccount,
-          nonce,
+          nonce: deployerNonce++,
         });
         await publicClient.waitForTransactionReceipt({ hash });
         console.log(`  Funded ${name} with ${needed} wei`);
@@ -60,25 +55,31 @@ export async function setup(
     }
   }
 
-  // 3. Deploy contract
-  console.log("Deploying LandlordsGame...");
-  const bytecode = getBytecode();
-  const deployNonce = network === "base-sepolia"
-    ? await getDeployerNonce(publicClient, deployerAccount.address)
-    : undefined;
-  const deployHash = await (deployerWallet as any).deployContract({
-    abi: LANDLORDS_GAME_ABI,
-    bytecode,
-    account: deployerAccount,
-    ...(deployNonce !== undefined ? { nonce: deployNonce } : {}),
-  });
-  const receipt = await publicClient.waitForTransactionReceipt({ hash: deployHash });
-  const contractAddress = receipt.contractAddress!;
-  console.log(`  Contract deployed: ${contractAddress}`);
+  // 3. Use existing contract or deploy new one
+  const existingAddress = process.env.CONTRACT_ADDRESS as Address | undefined;
+  let contractAddress: Address;
+  if (existingAddress) {
+    contractAddress = existingAddress;
+    console.log(`  Using existing contract: ${contractAddress}`);
+  } else {
+    console.log("Deploying LandlordsGame...");
+    const bytecode = getBytecode();
+    const deployHash = await (deployerWallet as any).deployContract({
+      abi: LANDLORDS_GAME_ABI,
+      bytecode,
+      account: deployerAccount,
+      nonce: deployerNonce++,
+      gas: 30_000_000n, // Large contract — Board.sol initializes 40 spaces in constructor
+    });
+    const receipt = await publicClient.waitForTransactionReceipt({ hash: deployHash });
+    contractAddress = receipt.contractAddress!;
+    console.log(`  Contract deployed: ${contractAddress}`);
+  }
 
   return {
     publicClient,
     deployerWallet,
+    deployerNonce,
     agentWallets: agentWallets.map(({ name, account, wallet }) => ({
       name,
       address: account.address,
@@ -95,7 +96,8 @@ function getBytecode(): `0x${string}` {
   return artifact.bytecode.object as `0x${string}`;
 }
 
-/** Create a game on the deployed contract */
+/** Create a game on the deployed contract.
+ *  Pass deployerNonce for explicit nonce tracking; returns [gameId, nextNonce]. */
 export async function createGame(
   publicClient: any,
   deployerWallet: any,
@@ -106,29 +108,32 @@ export async function createGame(
   monopolistThreshold = 0,
   prosperityThreshold = 0,
   votingEnabled = false,
-): Promise<bigint> {
-  const nonce = await getDeployerNonce(publicClient, deployerWallet.account.address);
+  deployerNonce?: number,
+): Promise<[bigint, number]> {
+  const nonce = deployerNonce ?? await getNextNonce(publicClient, deployerWallet.account.address);
   const hash = await deployerWallet.writeContract({
     address: contractAddress,
     abi: LANDLORDS_GAME_ABI,
     functionName: "createGame",
     args: [
-      BigInt(tournamentId),
-      mode,
-      playerAddresses,
-      BigInt(monopolistThreshold),
-      BigInt(prosperityThreshold),
-      votingEnabled,
+      BigInt(tournamentId), mode, playerAddresses,
+      BigInt(monopolistThreshold), BigInt(prosperityThreshold), votingEnabled,
     ],
     account: deployerWallet.account,
     nonce,
   });
   const receipt = await publicClient.waitForTransactionReceipt({ hash });
 
-  // Parse GameCreated event to get gameId
+  if (receipt.status === "reverted") {
+    throw new Error(`createGame tx reverted (nonce=${nonce}, hash=${hash})`);
+  }
+  if (!receipt.logs || receipt.logs.length === 0) {
+    throw new Error(`createGame tx has no logs (status=${receipt.status}, nonce=${nonce}, hash=${hash})`);
+  }
+
+  // Parse GameCreated event — gameId is first indexed topic
   const gameCreatedLog = receipt.logs[0];
-  // gameId is the first indexed topic (after event signature)
   const gameId = BigInt(gameCreatedLog.topics[1]!);
   console.log(`  Game ${gameId} created (tournament ${tournamentId}, mode ${mode === 0 ? "Monopolist" : "Prosperity"})`);
-  return gameId;
+  return [gameId, nonce + 1];
 }

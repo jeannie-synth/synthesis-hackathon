@@ -5,7 +5,7 @@
  */
 
 import { setup, createGame } from "./setup.js";
-import { runGameLoop } from "./game-loop.js";
+import { runGameLoop, resetBoardCache } from "./game-loop.js";
 import { saveGameLog } from "./logger.js";
 import { createAgentSet, STRATEGY_ORDER } from "../../agents/src/strategies/index.js";
 import { computeGameMetrics, computeTournamentMetrics, computeTwinDivergence, computePerformanceTable } from "./metrics.js";
@@ -20,11 +20,12 @@ import {
 import type { GameMetrics } from "./metrics.js";
 import type { Address } from "viem";
 import { LANDLORDS_GAME_ABI } from "../../agents/src/chain/abi.js";
+import { fisherYatesShuffle, applyPermutation } from "./utils.js";
 
 async function main() {
   const gamesPerBoard = parseInt(process.env.GAMES ?? "100", 10);
-  const network = (process.env.NETWORK as "anvil" | "base-sepolia") ?? "anvil";
-  const rpcUrl = process.env.RPC_URL;
+  const network = (process.env.NETWORK as "anvil" | "base-sepolia") ?? "base-sepolia";
+  const rpcUrl = network === "anvil" ? undefined : (process.env.RPC_URL ?? process.env.BASE_SEPOLIA_RPC);
   const votingEnabled = process.env.VOTING === "true"; // Phase 1: false (default), Phase 2+: VOTING=true
 
   // Anvil defaults
@@ -45,7 +46,7 @@ async function main() {
   console.log("╚══════════════════════════════════════════════════════╝\n");
 
   // 1. Single deploy — all games share one contract
-  const { publicClient, deployerWallet, agentWallets, contractAddress } = await setup(network, key, seed, rpcUrl);
+  let { publicClient, deployerWallet, deployerNonce, agentWallets, contractAddress } = await setup(network, key, seed, rpcUrl);
   const playerAddresses = agentWallets.map(w => w.address) as Address[];
   const playerWallets = agentWallets.map(w => w.wallet);
 
@@ -55,31 +56,29 @@ async function main() {
   const monopolistMetrics: GameMetrics[] = [];
   const prosperityMetrics: GameMetrics[] = [];
 
-  // 2. Run Tournament A — Monopolist games
-  console.log(`\n=== Tournament A: Monopolist (${gamesPerBoard} games) ===\n`);
+  // Pre-generate one permutation per game pair — twins share order
+  const gameOrders = Array.from({ length: gamesPerBoard }, () =>
+    fisherYatesShuffle([0, 1, 2, 3, 4])
+  );
+
+  // 2. Run twin pairs: game i Monopolist + game i Prosperity share the same player order
   for (let i = 0; i < gamesPerBoard; i++) {
     const progress = `[${i + 1}/${gamesPerBoard}]`;
+    const order = gameOrders[i];
+    const shuffledAddresses = applyPermutation(playerAddresses, order);
+    const shuffledWallets = applyPermutation(playerWallets, order);
+
+    // --- Monopolist ---
     try {
-      // Fresh agents per game (resets Pavlov/Conditional memory)
-      const agents = createAgentSet(playerAddresses);
-
-      // Create game on-chain
-      const gameId = await createGame(publicClient, deployerWallet, contractAddress, tournamentId, 0, playerAddresses, 0, 0, votingEnabled);
-
-      // Run game
+      const agents = applyPermutation(createAgentSet(playerAddresses), order);
+      const [gameId, n1] = await createGame(publicClient, deployerWallet, contractAddress, tournamentId, 0, shuffledAddresses, 0, 0, votingEnabled, deployerNonce);
+      deployerNonce = n1;
       const log = await runGameLoop({
-        publicClient,
-        contractAddress,
-        gameId,
-        agents,
-        agentWallets: playerWallets,
+        publicClient, contractAddress, gameId, agents, agentWallets: shuffledWallets, logDir,
       });
-
-      // Save individual game log
       saveGameLog(log, logDir);
 
-      // Compute metrics
-      const propCounts = await countPropertiesFromContract(publicClient, contractAddress, gameId, playerAddresses);
+      const propCounts = await countPropertiesFromContract(publicClient, contractAddress, gameId, shuffledAddresses);
       const metrics = computeGameMetrics(log, propCounts);
       monopolistMetrics.push(metrics);
 
@@ -87,29 +86,18 @@ async function main() {
     } catch (e: any) {
       console.error(`  ${progress} Monopolist game FAILED: ${e.message?.slice(0, 100)}`);
     }
-  }
 
-  // 3. Run Tournament B — Prosperity games
-  console.log(`\n=== Tournament B: Prosperity (${gamesPerBoard} games) ===\n`);
-  for (let i = 0; i < gamesPerBoard; i++) {
-    const progress = `[${i + 1}/${gamesPerBoard}]`;
+    // --- Prosperity (same order) ---
     try {
-      // Fresh agents per game
-      const agents = createAgentSet(playerAddresses);
-
-      const gameId = await createGame(publicClient, deployerWallet, contractAddress, tournamentId, 1, playerAddresses, 0, 0, votingEnabled);
-
+      const agents = applyPermutation(createAgentSet(playerAddresses), order);
+      const [gameId, n2] = await createGame(publicClient, deployerWallet, contractAddress, tournamentId, 1, shuffledAddresses, 0, 0, votingEnabled, deployerNonce);
+      deployerNonce = n2;
       const log = await runGameLoop({
-        publicClient,
-        contractAddress,
-        gameId,
-        agents,
-        agentWallets: playerWallets,
+        publicClient, contractAddress, gameId, agents, agentWallets: shuffledWallets, logDir,
       });
-
       saveGameLog(log, logDir);
 
-      const propCounts = await countPropertiesFromContract(publicClient, contractAddress, gameId, playerAddresses);
+      const propCounts = await countPropertiesFromContract(publicClient, contractAddress, gameId, shuffledAddresses);
       const metrics = computeGameMetrics(log, propCounts);
       prosperityMetrics.push(metrics);
 
