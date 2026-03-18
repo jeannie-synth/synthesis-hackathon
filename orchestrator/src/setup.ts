@@ -56,7 +56,7 @@ export async function setup(
   }
 
   // 3. Use existing contract or deploy new one
-  const existingAddress = process.env.CONTRACT_ADDRESS as Address | undefined;
+  const existingAddress = (process.env.CONTRACT_ADDRESS || undefined) as Address | undefined;
   let contractAddress: Address;
   if (existingAddress) {
     contractAddress = existingAddress;
@@ -69,7 +69,6 @@ export async function setup(
       bytecode,
       account: deployerAccount,
       nonce: deployerNonce++,
-      gas: 30_000_000n, // Large contract — Board.sol initializes 40 spaces in constructor
     });
     const receipt = await publicClient.waitForTransactionReceipt({ hash: deployHash });
     contractAddress = receipt.contractAddress!;
@@ -121,6 +120,7 @@ export async function createGame(
     ],
     account: deployerWallet.account,
     nonce,
+    gas: 1_000_000n, // createGame initializes 5 players + 40 properties — needs generous gas
   });
   const receipt = await publicClient.waitForTransactionReceipt({ hash });
 

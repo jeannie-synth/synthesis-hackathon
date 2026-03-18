@@ -630,3 +630,81 @@ Goldi reported `endTurn` reverts looping endlessly in the Docker Anvil container
 - Viewer enhancements for submission
 - README update with results when tournament data lands
 - ERC-8004 transfer before Day 9
+
+### Session 11: Streamlit Dashboard + Status Review + Submission FAQ
+
+Goldi and Jeannie reviewed project status, fetched the new hackathon submission FAQ, and built the Streamlit analytics dashboard.
+
+**Submission process discovered** (from `synthesis.devfolio.co/submission/skill.md`):
+- Self-custody NFT transfer required before publishing (15-min window per attempt)
+- Moltbook post required (`submissionMetadata.moltbookPostURL`)
+- `conversationLog` field is judged directly — our PROJECT_DIARY.md + CONVERSATION_LOG.md feed this
+- `submissionMetadata` requires: agentFramework, agentHarness (`claude-code`), model, skills[], tools[]
+- Judges cross-reference skills/tools claims against conversation logs and repo
+- Repo must be public by deadline (Mar 22)
+- At least 1 track UUID required
+
+**Streamlit dashboard built** (all 4 pages from `docs/streamlit-layout.md`):
+1. **Thesis** — Gini curves over rounds (mean + confidence band), terminal Gini distribution (box plot), inequality ratio metric
+2. **Strategy Performance** — grouped bar chart (net worth by strategy × mode), twin divergence horizontal bars, rankings table
+3. **Game Dynamics** — action counts by strategy per mode, treasury curve (Prosperity), rounds to completion distribution
+4. **Single Game Explorer** — game selector, net worth over rounds per player, final standings, filterable turn log
+
+**Docker architecture**:
+- Separate `dashboard` service in docker-compose (not in jeannie container)
+- `streamlit/Dockerfile`: Python 3.12-slim + streamlit + plotly + pandas
+- Mounts `./data:/data:ro` — reads game JSON, no write access
+- Port 8501, independent of Anvil/orchestrator
+- Dashboard live and rendering existing tournament data (pre-bug-fix, but pipeline validated)
+
+**Anvil validation run**: Started in separate `anvil-test` Docker container (2-game run: Monopolist + Prosperity). Running receipt-driven orchestrator with all Session 10 fixes. Still in progress.
+
+**Deployment plan for production**:
+- Single Fly.io container running both orchestrator and Streamlit (shared `/data` volume)
+- Deferred to deployment phase
+
+**Decisions made**:
+- Streamlit runs in its own Docker service for development (clean separation)
+- For Fly.io production: unified container (orchestrator + Streamlit share data volume)
+- Metric explanations needed in dashboard (Gini, Herfindahl, twin divergence — what they mean in plain language)
+
+### Session 12: Sepolia Test Games — PASSED
+
+Two test games ran to completion on Base Sepolia. Phase 1 development complete.
+
+**Sepolia test results** (contract `0x2563180c904a22c0494eca0d9e1791fa8758946d`, fresh deploy):
+- **Monopolist**: Gini 0.3623, 35 rounds. Net worths: [2095, 1290, 0, 1216, 689]. One player wiped out.
+- **Prosperity**: Gini 0.0363, 12 rounds. Net worths: [1287, 1230, 1111, 1157, 1323]. Tight cluster.
+- **Gini divergence: 0.3260** — Monopolist 10× more unequal. Thesis confirmed on-chain.
+
+**Error profile** (8 transient errors across ~400+ txs):
+- 3× "nonce too low" — NonceManager local count drifted behind chain. Resync fixed immediately.
+- 5× "replacement underpriced" — Alchemy rejected duplicate-nonce tx. Same root cause.
+- Zero contract logic errors. Zero stuck turns. Every error recovered on first retry.
+
+**Also fixed this session**:
+- `createGame` in setup.ts needed same gas fix (1M fixed gas limit)
+- `.env` not auto-loaded by Node process (no dotenv) — test ran with fresh deploy, production runs should use `CONTRACT_ADDRESS` env var
+
+**Phase 1 development status: COMPLETE.**
+- Contract: deployed and validated on Sepolia
+- Orchestrator: receipt-driven, error-resilient, gas-fixed
+- Agents: all 5 strategies working
+- Data pipeline: JSON logs written correctly
+- Ready for tournament phase
+
+### Tournament parameters (Phase 1)
+
+| Parameter | Sepolia |
+|-----------|---------|
+| Games per board | 15 |
+| Total games | 30 |
+| Voting | disabled |
+| Est. duration | ~8 hours |
+| Purpose | on-chain provenance + thesis data |
+
+### What's next
+
+- Run Phase 1 tournament on Sepolia (15+15 games) → on-chain provenance + thesis data
+- Feed tournament data to Streamlit dashboard + viewer
+- Self-custody NFT transfer + Moltbook post (before Day 9)

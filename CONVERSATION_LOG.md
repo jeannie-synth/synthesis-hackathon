@@ -854,3 +854,140 @@ Jeannie confirmed from game data: **it's a data bug, not a renderer bug.** The `
 > Pattern: contract returns success, position unchanged, loop retries — ghost rolls.
 
 Flagged as an operational/game-loop issue for a separate session. The viewer faithfully renders what's in the data.
+
+---
+
+## Days 4-6 — March 16-18, 2026
+
+### Session 9: Architecture Deep Dive, Submission Strategy, CDP SQL, Data Paths
+
+A long exploratory session running across three calendar days — parallel to implementation work on another terminal. No code changes to core systems; focus on architectural understanding, strategic planning, and infrastructure wiring.
+
+### [exploration] Full contract walkthrough
+
+Goldi asked Jeannie to walk through the entire contract architecture. Covered:
+- **Contract structure**: Types.sol (vocabulary), Board.sol (static 40-space init), LandlordsGame.sol (~800 lines, all game logic)
+- **Multi-game architecture**: All state keyed by `gameId`, shared board, one deploy unlimited games
+- **Rent math**: Lots (price/10 + monopoly bonus + house bonus), Railroads ($25 × count), Utilities (dice × 4 or 10)
+- **Mode divergence**: Same rent formula, different destination — owner (Monopolist) vs treasury (Prosperity). The thesis in one code branch.
+- **Liquidation cascade**: Cash first, then properties in ascending position order, houses destroyed, jail if still in debt
+- **Dividend loop**: Treasury ≥ $500 → equal split, `dividendsReceived` counter feeds commons exploitation detection
+
+### [exploration] Agent interaction + voting mechanics
+
+Full trace through the agent decision flow:
+- Orchestrator as puppeteer: reads state, asks agent, executes on-chain, records
+- Five strategies mapped to their academic sources (Kelly, Fischbacher, Nowak/Sigmund, Ostrom)
+- Propose-and-risk mechanic: proposal before roll, all others vote, rejected = lose turn
+- Vote resolution: strict majority, tie goes to rejection, auto-resolves on last vote inside contract
+- Conditional agent as kingmaker: mirrors last majority, creates path-dependent political lock-in
+- Free Rider trap: never buys → no contributions → receives dividends → commons exploitation jail
+
+### [exploration] Data pipeline
+
+Full trace from contract events through to visualization:
+- Logger captures turns[], roundSnapshots[], GameResult per game
+- Metrics computes Gini, Herfindahl, twin divergence, event counters
+- Results outputs JSON + CSV + console tables
+- Replay viewer: single HTML file, drag-drop JSON, SVG board, animated dice, player cards
+- Streamlit dashboard: designed (docs/streamlit-layout.md), not yet built
+
+### [decision] Deployment architecture — no database
+
+Goldi pushed back on Jeannie's initial proposal (React/Next.js, Vercel, wagmi/RainbowKit):
+
+> "I thought you said wallet integration could be done on HTML... so vercel for sure? no fly.io? we could have a local mongo instance in a docker container... keep as much data on-chain as possible, but for gameplay, do we need a db?"
+
+This forced a rigorous rethink. The answer: **no database needed for gameplay.** The contract is the state machine, the chain is the history. For production:
+
+- **Frontend**: Single HTML file + ~50 lines wallet glue (`window.ethereum`, no SDK). Extend the replay viewer, don't start a new project. The RumbleDeck lesson: no SDK between app and wallet.
+- **Hosting**: Fly.io, not Vercel. Fly.io gives a container (can add Mongo later if needed for UX polish). Vercel is static-only.
+- **Lobby**: Signed messages in browser, last player triggers `createGame()`. No server needed.
+
+### [decision] Three data paths, no crossover
+
+Goldi clarified the CDP SQL role after Jeannie proposed wiring it to the viewer:
+
+> "CDP should wire only to streamlit for raw data verification."
+
+This locked three clean, non-overlapping data paths:
+
+```
+Orchestrator → JSON logs → Viewer     (live spectator + replay)
+CDP SQL      → Streamlit              (on-chain data verification + analytics)
+Contract                              (source of truth for both)
+```
+
+The viewer consumes JSON logs only. The orchestrator writes incrementally during gameplay — the viewer polls the file. The natural tx-time lag IS the aesthetic, "like old game transmissions."
+
+CDP SQL is the independent audit trail: judges can verify local analytics match on-chain evidence. It doesn't feed the viewer or the game experience.
+
+### [decision] Viewer is Tier 0 submission priority
+
+Jeannie initially buried the viewer under "host on GitHub Pages" in the submission priority list. Goldi corrected:
+
+> "What I didn't see in your priorities at all was the game renderer, don't forget human judges have the final say!"
+
+The agentic judges surface recommendations. Human partners make the final call. The viewer is the first thing a judge clicks — it IS the submission experience. Revised priority:
+
+- **Tier 0**: Replay viewer, live and polished, at a URL. Pre-loaded with best games. No friction.
+- **Tier 1**: Clean tournament data, Sepolia deploy, Streamlit dashboard, README with results
+- **Tier 2**: CDP SQL verification, conversation log, partner integrations
+
+### [decision] Turn order bias — Fisher-Yates per game
+
+Goldi asked about changing player order without modifying the contract. Jeannie identified that turn order = array order of `playerAddrs` passed to `createGame()`, currently hardcoded (Extractive always first).
+
+Solution: Fisher-Yates shuffle both `agents[]` and `addresses[]` arrays together before each game in the tournament runner. No contract change needed. Doesn't eliminate first-mover advantage — distributes it fairly across the tournament. Twin pairs share the same shuffle for controlled comparison.
+
+Goldi: "turn order bias, but you just gave me the answer."
+
+### [build] Submission text drafted
+
+Jeannie drafted the full Devfolio submission: tagline, short description, full description, track selection, links, tech stack, conversation log field, and a fill-in-the-blanks results section template. Saved to `docs/submission-draft.md`.
+
+Key framing: "Most submissions in the Cooperate track will build agents that cooperate. We built a system that proves cooperation is a structural outcome, not an agent property."
+
+Phase placeholders included (Phase 1: benchmark, Phase 2: voting, Phase 3: signaling, Phase 4: evolution).
+
+### [build] CDP SQL API verified
+
+Goldi created a CDP account and generated Secret API Keys (Ed25519). Jeannie built a test script (`scripts/test-cdp-sql.mjs`) with JWT auth and ran it inside the Docker container.
+
+Results:
+- **Auth works** — Ed25519 JWT signing against `api.cdp.coinbase.com/platform/v2/data/query/run`
+- **`base_sepolia.events` exists** — contract events will be queryable after deploy
+- **`base.events` exists** — for mainnet later
+- **Parameters are pre-decoded** — `parameters['gameId']` works directly, no ABI parsing needed
+- **Must filter by address** — full table scans exceed the 93 GiB byte limit
+- **Column is `block_timestamp`**, not `timestamp` (reserved word in ClickHouse)
+
+Eight verification queries written and saved to `docs/cdp-sql-queries.md`: event census, game timeline, tournament overview, wealth outcomes (thesis query), rent flow comparison, dividend distribution, commons exploitation, political activity.
+
+### [decision] Metrics refactor — deferred
+
+Goldi questioned whether the orchestrator should compute metrics:
+
+> "Maybe it isn't the job of the orchestrator to do this... we said it is just a game interpreter... maybe we need to move those calculations to a streamlit util"
+
+Architecturally correct — the orchestrator should only drive games and write logs. Metrics computation is analysis, not game execution. But the rewrite isn't worth doing under deadline pressure. Working TypeScript code stays. Gini function extraction to a shared util is worth doing anytime (orchestrator needs it for future strategy evolution decisions).
+
+**Hackathon path**: Streamlit reads preprocessed JSON/CSV files from `results.ts`. Post-hackathon: migrate metrics computation to Streamlit Python utils.
+
+### [note] Alchemy Smart WebSockets
+
+Goldi asked where Alchemy Smart WebSockets come in. Answer: live spectator mode for on-chain games. The viewer subscribes to contract events via WebSocket, renders turns as they land on-chain — no orchestrator, no file, no server. Not needed for hackathon (JSON file path works), becomes valuable for external spectators post-launch.
+
+### Session 9 close
+
+**Produced (no code interference with other terminal)**:
+- `docs/submission-draft.md` — full Devfolio submission text with placeholders
+- `docs/cdp-sql-queries.md` — 8 verification queries, validated schema
+- `scripts/test-cdp-sql.mjs` — working CDP SQL test script with JWT auth
+- Deployment architecture locked and saved to memory
+- Three data paths defined (orchestrator→viewer, CDP→Streamlit, contract as source of truth)
+- Viewer priority corrected to Tier 0
+- Turn order bias solution identified
+- Metrics refactor deferred with rationale
+
+**No files modified in orchestrator/, agents/, contracts/, or viewer/ — parallel terminal safe.**

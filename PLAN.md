@@ -440,7 +440,7 @@ The JSON log schema is the contract between the game engine and all visualizatio
 
 ### Milestone: 600 games, all metrics, preliminary findings, full analytical dashboard
 
-### Day 6 Actuals (parallel session — no code changes to core systems)
+### Day 6 Actuals — Session 9 (parallel session — no code changes to core systems)
 
 - [x] Full architecture walkthrough (contract, rent math, agents, voting, data pipeline)
 - [x] Deployment architecture locked: no DB, HTML + wallet glue, Fly.io, CDP SQL → Streamlit only
@@ -465,8 +465,23 @@ The JSON log schema is the contract between the game engine and all visualizatio
 - [x] Confirmed deployer funded (0.615 ETH), all 5 agents funded (0.005 ETH each)
 - [x] Confirmed 6 post-0xda1557 deploys are zombie retries (CONTRACT_ADDRESS wasn't set)
 - [x] Commit `19def39`
-- [ ] Run test games on Base Sepolia
-- [ ] Phase 1 tournament on Sepolia
+- [x] Fixed createGame gas (1M fixed limit in setup.ts)
+- [x] **Sepolia test games PASSED** — 2 games (Monopolist + Prosperity), both completed, thesis confirmed on-chain
+- [x] Gini divergence 0.3260 on Sepolia (Monopolist 0.3623 vs Prosperity 0.0363)
+- [x] 8 transient errors / ~400+ txs — all recovered on retry, zero logic bugs
+- [ ] Phase 1 tournament on Sepolia (15+15 games)
+
+### Day 6 Milestone: Phase 1 development COMPLETE. Moving to tournament phase.
+
+### Day 6 Actuals — Session 11 (Streamlit dashboard + submission FAQ)
+
+- [x] Fetched and analyzed submission FAQ from `synthesis.devfolio.co/submission/skill.md`
+- [x] Streamlit dashboard built: 4 pages (Thesis, Strategy Performance, Game Dynamics, Single Game Explorer)
+- [x] Docker service: `streamlit/Dockerfile` (Python 3.12-slim), separate `dashboard` service in docker-compose
+- [x] Dashboard live on localhost:8501, reading existing tournament JSON data
+- [x] Anvil validation run started in separate Docker container (receipt-driven orchestrator)
+- [ ] Add metric explanations to dashboard (Gini, Herfindahl, twin divergence)
+- [ ] Redeploy contract to Sepolia (latest with TurnEnded events)
 
 ### Day 6 Decisions
 - CDP SQL wires to Streamlit only — not to viewer. Viewer consumes JSON logs.
@@ -474,6 +489,7 @@ The JSON log schema is the contract between the game engine and all visualizatio
 - Alchemy Smart WebSockets: production feature for external spectators, not hackathon.
 - Metrics stay in orchestrator for hackathon. Gini extraction to shared util worth doing anytime.
 - "Monopolist" naming stays as hackathon quirk — consistent everywhere including contract enum.
+- Streamlit runs in separate Docker service for dev; unified Fly.io container for production (deferred to deployment phase).
 
 ---
 
@@ -496,6 +512,8 @@ The JSON log schema is the contract between the game engine and all visualizatio
 - [ ] docs/: updated architecture, game rules, results
 - [ ] PROJECT_DIARY.md: all daily entries
 - [ ] CONVERSATION_LOG.md: collaboration narrative
+- [ ] Unified Fly.io Dockerfile (Node + Python, orchestrator + Streamlit, shared /data volume)
+- [ ] Deploy dashboard + viewer to Fly.io
 - [ ] (Stretch) Base Mainnet: open game for agents & humans
 - [ ] (Stretch) Streamlit human-playable mode: board state display, click-to-act, tx submission
 - [ ] (Stretch) Pixel art board replay from JSON logs (HTML5 canvas)

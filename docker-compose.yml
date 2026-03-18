@@ -12,3 +12,11 @@ services:
     env_file: .env
     ports:
       - "8545:8545"
+
+  dashboard:
+    build: ./streamlit
+    container_name: landlords-dashboard
+    volumes:
+      - ./data:/data:ro
+    ports:
+      - "8501:8501"

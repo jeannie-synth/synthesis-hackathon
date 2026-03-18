@@ -1,0 +1,8 @@
+{
+  "devDependencies": {
+    "@coinbase/cdp-sdk": "^1.45.0"
+  },
+  "dependencies": {
+    "jose": "^6.2.1"
+  }
+}
