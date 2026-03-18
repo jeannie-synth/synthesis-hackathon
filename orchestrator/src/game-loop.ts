@@ -19,13 +19,33 @@ const REVERT_REASONS = [
   "CantBuyInProsperityPark",
 ] as const;
 
-/** Parse the contract revert reason from a viem error */
+/** Parse the contract revert reason from a viem error — walks the full error tree */
 function parseRevertReason(e: any): string {
-  const msg = e.shortMessage || e.message || "";
-  for (const reason of REVERT_REASONS) {
-    if (msg.includes(reason)) return reason;
+  // 1. Check all string fields that viem might put the custom error name in
+  const candidates = [
+    e.shortMessage, e.message, e.details,
+    e.cause?.shortMessage, e.cause?.message, e.cause?.reason, e.cause?.details,
+    e.cause?.cause?.shortMessage, e.cause?.cause?.message,
+    e.walk?.((inner: any) => inner?.data?.errorName)?.data?.errorName,
+  ];
+  for (const candidate of candidates) {
+    if (typeof candidate !== "string") continue;
+    for (const reason of REVERT_REASONS) {
+      if (candidate.includes(reason)) return reason;
+    }
   }
-  return msg.slice(0, 100);
+
+  // 2. Try viem's error data (custom errors have errorName)
+  try {
+    const walked = typeof e.walk === "function" ? e.walk() : null;
+    if (walked?.data?.errorName) return walked.data.errorName;
+  } catch {}
+
+  // 3. Fallback — dump everything useful
+  const short = e.shortMessage || "";
+  const cause = e.cause?.shortMessage || e.cause?.message || "";
+  const details = e.details || "";
+  return `${short} | cause: ${cause} | details: ${details}`.slice(0, 200);
 }
 
 export interface GameLoopConfig {
@@ -423,12 +443,19 @@ async function writeContract(
   orchLog.append({ ts: t0, event: "txSent", fn: functionName, agent: address.slice(0, 10), nonce });
 
   try {
+    // Fixed gas limit — estimation is unreliable because dice rolls change between
+    // simulation (block N) and execution (block N+1), hitting different code paths.
+    // 500K covers worst case (rollAndMove → liquidation loop over 40 positions).
     const hash = await wallet.writeContract({
       address: contractAddress, abi: LANDLORDS_GAME_ABI, functionName, args,
-      account: wallet.account, nonce,
+      account: wallet.account, nonce, gas: 500_000n,
     });
     const receipt = await publicClient.waitForTransactionReceipt({ hash });
     nonceManager.advance(address);
+    if (receipt.status === "reverted") {
+      orchLog.append({ ts: Date.now(), event: "txReverted", fn: functionName, agent: address.slice(0, 10), durationMs: Date.now() - t0, blockNumber: Number(receipt.blockNumber) });
+      throw new Error(`${functionName} tx reverted on-chain (hash=${hash}, block=${receipt.blockNumber})`);
+    }
     orchLog.append({ ts: Date.now(), event: "txConfirmed", fn: functionName, agent: address.slice(0, 10), durationMs: Date.now() - t0, blockNumber: Number(receipt.blockNumber) });
     return receipt;
   } catch (e: any) {
@@ -460,12 +487,16 @@ async function handleTxError(
   orchLog: OrchestratorLog,
 ): Promise<void> {
   const reason = parseRevertReason(e);
-  console.error(`  [${agentName}] ${fn} failed: ${reason.slice(0, 60)} — waiting for next block`);
+  console.error(`  [${agentName}] ${fn} failed: ${reason}`);
+  console.error(`    local state: currentIdx=${local.currentPlayerIndex}, hasRolled=${local.hasRolled}, gameOver=${local.gameOver}, round=${local.round}, turn=${local.turnsTaken}`);
 
   await waitOneBlock(publicClient);
   const resynced = await readGameState(publicClient, contractAddress, gameId);
+  const before = { idx: local.currentPlayerIndex, hasRolled: local.hasRolled, round: local.round };
   Object.assign(local, initLocalState(resynced));
-  orchLog.append({ ts: Date.now(), event: "resync", agent: agentName, fn, reason: reason.slice(0, 80) });
+  const after = { idx: local.currentPlayerIndex, hasRolled: local.hasRolled, round: local.round };
+  console.error(`    resync: idx ${before.idx}→${after.idx}, hasRolled ${before.hasRolled}→${after.hasRolled}, round ${before.round}→${after.round}`);
+  orchLog.append({ ts: Date.now(), event: "resync", agent: agentName, fn, reason: reason.slice(0, 200), before, after });
 }
 
 // ─── Game loop ───
@@ -586,6 +617,9 @@ export async function runGameLoop(config: GameLoopConfig): Promise<GameLog> {
 
       // 4. End turn
       if (!local.gameOver) {
+        // Diagnostic: log state the contract will check
+        const expectedNonce = nonces.current(wallet.account.address);
+        console.log(`  [${agent.name}] endTurn pre-flight: hasRolled=${local.hasRolled}, gameOver=${local.gameOver}, currentIdx=${local.currentPlayerIndex}, expectedIdx=${currentIdx}, inJail=${local.players[currentIdx].inJail}, nonce=${expectedNonce}`);
         const receipt = await writeContract(publicClient, wallet, contractAddress, "endTurn", [gameId], nonces, orchLog);
         applyReceipt(local, receipt);
       }
