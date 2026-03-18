@@ -104,6 +104,7 @@ interface LocalGameState {
   lastDice2: number;
   players: LocalPlayer[];
   properties: { owner: Address; houses: number }[];
+  lastSignals: boolean[]; // Phase 3: signals from end of previous turn
 }
 
 // ─── Board space cache (40 reads per contract lifetime) ───
@@ -218,6 +219,7 @@ function initLocalState(raw: ContractGameState): LocalGameState {
       dividendsReceived: Number(p.dividendsReceived),
     })),
     properties: raw.properties.map(p => ({ owner: p.owner, houses: p.houses })),
+    lastSignals: [],
   };
 }
 
@@ -392,6 +394,7 @@ function toAgentState(local: LocalGameState, agentIndex: number, boardSpaces: Bo
     currentPlayerIndex: local.currentPlayerIndex, treasury: local.treasury,
     players, properties, modeSwitchCount: local.modeSwitchCount,
     modeSwitchProposed: local.modeSwitchProposed, votingEnabled: local.votingEnabled,
+    lastSignals: local.lastSignals,
     myIndex: agentIndex, myPosition: myPos, myCash: myPlayer.cash,
     myNetWorth: myPlayer.netWorth, spaceType: space.spaceType,
     spacePrice: space.price, spaceName: space.name,
@@ -499,6 +502,38 @@ async function handleTxError(
   orchLog.append({ ts: Date.now(), event: "resync", agent: agentName, fn, reason: reason.slice(0, 200), before, after });
 }
 
+// ─── Phase 3: Signal collection ───
+
+function collectSignals(
+  local: LocalGameState,
+  agents: Agent[],
+  boardSpaces: BoardSpace[],
+  log: GameLog,
+): void {
+  const signals: boolean[] = [];
+  const signalDetails: { agent: string; strategy: string; signal: boolean }[] = [];
+
+  for (let i = 0; i < agents.length; i++) {
+    const agentState = toAgentState(local, i, boardSpaces);
+    const signal = agents[i].signalIntent(agentState);
+    signals.push(signal);
+    signalDetails.push({ agent: agents[i].name, strategy: agents[i].strategyName, signal });
+  }
+
+  local.lastSignals = signals;
+
+  // Feed majority signal to Conditional agents (they mirror what others signal)
+  for (let i = 0; i < agents.length; i++) {
+    if (typeof (agents[i] as any).observeSignal === "function") {
+      const otherSignals = signals.filter((_, j) => j !== i);
+      const majoritySignal = otherSignals.filter(s => s).length > otherSignals.length / 2;
+      (agents[i] as any).observeSignal(majoritySignal);
+    }
+  }
+
+  addTurnLog(log, local.turnsTaken, "ALL", "ALL", "signals", { signals: signalDetails });
+}
+
 // ─── Game loop ───
 
 export async function runGameLoop(config: GameLoopConfig): Promise<GameLog> {
@@ -573,14 +608,16 @@ export async function runGameLoop(config: GameLoopConfig): Promise<GameLog> {
           if (typeof (a as any).observeProposal === "function") (a as any).observeProposal();
         }
 
-        // All other agents vote
+        // All other agents vote — compare against lastSignals for promise-keeping
         for (let i = 0; i < agents.length; i++) {
           if (i === currentIdx) continue;
           const voterState = toAgentState(local, i, boardSpaces);
           const vote = agents[i].decideVote(voterState);
+          const signaled = local.lastSignals.length > i ? local.lastSignals[i] : undefined;
+          const keptPromise = signaled !== undefined ? signaled === vote : undefined;
           const vReceipt = await writeContract(publicClient, agentWallets[i], contractAddress, "voteModeSwitch", [gameId, vote], nonces, orchLog);
           applyReceipt(local, vReceipt);
-          addTurnLog(log, tn, agents[i].name, agents[i].strategyName, "vote", { inFavor: vote });
+          addTurnLog(log, tn, agents[i].name, agents[i].strategyName, "vote", { inFavor: vote, signaled, keptPromise });
         }
 
         if (local.gameOver) break;
@@ -636,6 +673,16 @@ export async function runGameLoop(config: GameLoopConfig): Promise<GameLog> {
     if (local.currentPlayerIndex === 0) {
       addRoundSnapshotFromLocal(log, local, agents, boardSpaces);
     }
+
+    // Phase 3: Collect signals at end of each turn (not turn 0, before next turn's potential proposal)
+    if (local.turnsTaken > 0 && !local.gameOver) {
+      collectSignals(local, agents, boardSpaces, log);
+    }
+  }
+
+  // Phase 3: Final signal poll at game end (data only, no follow-up action)
+  if (local.turnsTaken > 0) {
+    collectSignals(local, agents, boardSpaces, log);
   }
 
   // Final state

@@ -58,4 +58,9 @@ export class GenerativeAgent implements Agent {
   decideJailBuyout(): boolean {
     return false; // Always wait it out
   }
+
+  signalIntent(state: GameState): boolean {
+    // Honest: signals true intent — always votes toward Prosperity
+    return state.mode === "Monopolist";
+  }
 }

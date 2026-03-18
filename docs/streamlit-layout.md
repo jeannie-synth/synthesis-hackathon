@@ -13,7 +13,7 @@ The hero page. One image that proves the argument.
 
 - **Gini curves over rounds** — two lines (Monopolist vs Prosperity) diverging from the same starting point. Computed from `roundSnapshots` in each game log. Show mean curve with confidence band across all games.
 - **Terminal Gini distribution** — histogram or box plot comparing final Gini values across M and P games.
-- **Thesis verdict** — auto-generated one-sentence summary from data (e.g., "Monopolist rules produce 2.1x greater wealth inequality across 100 games").
+- **Thesis verdict** — auto-generated one-sentence summary from data (e.g., "Monopolist rules produce 2.1x greater wealth inequality across N games").
 
 ## Page 2: Strategy Performance
 
@@ -41,11 +41,11 @@ For judges who want to drill into individual games.
 - **Round-by-round player state** — table or line chart of cash, position, net worth per player per round.
 - **Turn log table** — filterable by agent name and action type.
 
-## Page 5: Payoff Heatmap (Phase 3 placeholder)
+## Page 5: Signaling & Trust (Phase 3)
 
-- **5 strategies x 2 rule sets** — heatmap with diverging colormap.
-- Empty until Phase 3 voting/signaling data exists.
-- With Phase 3 data: extends to include political payoffs (proposal success rate, vote alignment reward).
+- **Promise-keeping rates** — bar chart per strategy. Extractive 0%, Generative 100%, Conditional ~14%, FreeRider ~48%, Pavlov ~100%. The core Phase 3 finding.
+- **Signal evolution timeline** — line chart showing how each agent's signal changes across turns within a game. Shows the dynamics of deception over time.
+- **5 strategies x 2 rule sets** — payoff heatmap with diverging colormap, extended to include political payoffs (proposal success rate, vote alignment, promise-keeping).
 
 ---
 

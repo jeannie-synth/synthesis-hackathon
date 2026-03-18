@@ -94,4 +94,16 @@ export class ConditionalAgent implements Agent {
     const avgCash = state.players.reduce((sum, p) => sum + p.cash, 0) / state.players.length;
     return state.myCash >= buyoutCost && state.myCash > avgCash;
   }
+
+  /** Track the last observed signal from others */
+  private lastObservedSignal = true; // Default: cooperative (nice start)
+
+  observeSignal(signal: boolean) {
+    this.lastObservedSignal = signal;
+  }
+
+  signalIntent(_state: GameState): boolean {
+    // Mirrors last observed signal from others
+    return this.lastObservedSignal;
+  }
 }

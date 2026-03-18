@@ -113,4 +113,15 @@ export class PavlovAgent implements Agent {
       return this.lastPaidBuyout;
     }
   }
+
+  signalIntent(state: GameState): boolean {
+    const winning = state.myCash >= (this.cashHistory[Math.max(0, this.cashHistory.length - 4)] ?? 500);
+    if (winning) {
+      // Honest when winning — signal matches actual vote
+      return this.lastVotedForSwitch;
+    } else {
+      // Lies when losing — signal opposite of what they'll actually vote
+      return !this.lastVotedForSwitch;
+    }
+  }
 }

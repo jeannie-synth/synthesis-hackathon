@@ -49,15 +49,15 @@ docs/               Game rules reference, architecture
 
 Five agent archetypes, grounded in experimental economics and game theory. Each plays on both boards as a twin pair — one twin under Monopolist rules, one under Prosperity rules. Odd number ensures mode-switching votes always resolve.
 
-| Strategy | Based On | Buy | Build | Vote |
-|----------|----------|-----|-------|------|
-| **Extractive** | Kelly's extractive ownership / Always Defect | Always | Always | Monopolist |
-| **Generative** | Kelly's generative ownership / Always Cooperate | With surplus | In Prosperity only | Prosperity |
-| **Conditional** | Fischbacher's conditional cooperator / Tit-for-Tat | Matches group behavior | Matches group behavior | With majority |
-| **Free Rider** | Fischbacher's free rider / Ostrom's rational egoist | Never | Never | Based on cash flow |
-| **Pavlov** | Nowak & Sigmund's Win-Stay, Lose-Shift | Repeats what worked | Repeats what worked | Keep mode if winning |
+| Strategy | Based On | Buy | Build | Vote | Signal (Phase 3) |
+|----------|----------|-----|-------|------|------------------|
+| **Extractive** | Kelly's extractive ownership / Always Defect | Always | Always | Monopolist | Lies (0% promise-keeping) |
+| **Generative** | Kelly's generative ownership / Always Cooperate | With surplus | In Prosperity only | Prosperity | Honest (100%) |
+| **Conditional** | Fischbacher's conditional cooperator / Tit-for-Tat | Matches group behavior | Matches group behavior | With majority | Mirrors others (~14%) |
+| **Free Rider** | Fischbacher's free rider / Ostrom's rational egoist | Never | Never | Based on cash flow | Lies — signals cooperation (~48%) |
+| **Pavlov** | Nowak & Sigmund's Win-Stay, Lose-Shift | Repeats what worked | Repeats what worked | Keep mode if winning | Honest when winning (~100%) |
 
-Only Extractive and Generative have hardwired votes. The other three vote based on game dynamics — political outcomes are emergent, not predetermined.
+Only Extractive and Generative have hardwired votes. The other three vote based on game dynamics — political outcomes are emergent, not predetermined. Signaling (Phase 3) adds a pre-commitment layer: agents broadcast intended votes before proposals, but may lie. The promise-keeping rate reveals which strategies are trustworthy — and which poison the information commons.
 
 The strategies are deliberately simple. The complexity comes from the system, not the agents. Five well-grounded archetypes in two different structures produce more insight than one sophisticated strategy in one.
 
@@ -93,13 +93,14 @@ This has practical consequences. As AI agents begin participating in real econom
 
 ## Where It Goes
 
-The hackathon build is a benchmark — same players, two structures, compare equilibria. But the framework opens up:
+The hackathon build is a benchmark — same players, two structures, compare equilibria. The framework is built in phases:
 
-- **Tournament evolution**: 100-game tournaments where agents can switch strategies between games. Do agents converge toward cooperation or extraction? Does it depend on the starting rule set?
-- **Mode-switching votes**: Agents propose and vote to change the rules mid-game. Proposing costs your turn. Secret ballots via commit-reveal. Measures: when do agents change the system? Who benefits?
-- **Pre-vote signaling**: Agents broadcast voting intent before committing. Non-binding. Measures: promise-keeping rate under each rule set. Do extractive rules breed dishonesty?
+- **Phase 1 (complete)**: Fixed-rule parallel boards with 5 agent archetypes. Tournament data on Base Sepolia confirms the thesis — Monopolist rules produce significantly higher Gini coefficients than Prosperity rules.
+- **Phase 2 (complete)**: Mode-switching votes. Agents propose rule changes mid-game, all agents vote, proposals pass by majority. Proposing costs your turn. Validated on Anvil: 28 proposals in a single Monopolist game, 13 passed.
+- **Phase 3 (complete)**: Pre-vote signaling. Agents broadcast voting intent at end of each turn. Non-binding. Promise-keeping rate measured per strategy: Extractive 0% (always lies), Generative 100% (always honest), Conditional 14% (mirrors liars, gets poisoned). Deception is detectable and measurable.
+- **Phase 4 (design phase)**: Strategy evolution — agents adopt winning strategies between games. Tournament-scale adaptation dynamics.
+- **Open Game**: Mainnet deployment where any agent can join and play via a skill file. Agent-playable economic simulation on Base.
 - **LLM agents**: Replace hardcoded strategies with Claude-powered agents that reason about their persona and the game state. Do LLM agents rediscover the same patterns that game theory predicts?
-- **Human players**: Open the mainnet deployment for humans to play alongside agents
 - **Nash equilibrium analysis**: Formally characterize the equilibrium points in each structure
 
 ## Tech Stack

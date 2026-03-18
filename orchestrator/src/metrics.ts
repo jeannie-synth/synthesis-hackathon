@@ -32,6 +32,9 @@ export interface GameMetrics {
   buildCount: number[];       // houses built per strategy
   proposalCount: number;      // mode switch proposals
   proposalPassCount: number;  // proposals that passed
+  // Phase 3: Signaling metrics
+  signalCount: number[];      // total signals per strategy
+  promiseKept: number[];      // signals matching actual votes per strategy
 }
 
 /** Aggregate stats for a set of games (one tournament) */
@@ -52,6 +55,8 @@ export interface TournamentMetrics {
   buildCountByStrategy: { strategy: string; stat: AggStat }[];
   proposals: AggStat;
   proposalPassRate: number;
+  // Phase 3: Signaling metrics
+  promiseKeepingByStrategy: { strategy: string; rate: number; total: number }[];
 }
 
 /** Twin divergence: compare same strategy across two rule sets */
@@ -84,11 +89,15 @@ function extractEventCounters(log: GameLog): {
   buildCount: number[];
   proposalCount: number;
   proposalPassCount: number;
+  signalCount: number[];
+  promiseKept: number[];
 } {
   const n = STRATEGY_NAMES.length;
   const jailEvents = new Array(n).fill(0);
   const buyCount = new Array(n).fill(0);
   const buildCount = new Array(n).fill(0);
+  const signalCount = new Array(n).fill(0);
+  const promiseKept = new Array(n).fill(0);
   let liquidationEvents = 0;
   let proposalCount = 0;
   let proposalPassCount = 0;
@@ -114,13 +123,17 @@ function extractEventCounters(log: GameLog): {
       case "proposalPassed":
         proposalPassCount++;
         break;
+      case "vote":
+        // Phase 3: Track promise-keeping from vote details
+        if (turn.details.keptPromise !== undefined) {
+          signalCount[idx]++;
+          if (turn.details.keptPromise) promiseKept[idx]++;
+        }
+        break;
     }
-
-    // Liquidation: contract handles automatically, no turn log yet.
-    // TODO: detect from PropertyLiquidated events when event log parsing is added.
   }
 
-  return { jailEvents, liquidationEvents, buyCount, buildCount, proposalCount, proposalPassCount };
+  return { jailEvents, liquidationEvents, buyCount, buildCount, proposalCount, proposalPassCount, signalCount, promiseKept };
 }
 
 // ─── Per-game metrics ────────────────────────────────────────────────
@@ -253,6 +266,17 @@ export function computeTournamentMetrics(
   const totalPassed = games.reduce((s, g) => s + g.proposalPassCount, 0);
   const proposalPassRate = totalProposals > 0 ? totalPassed / totalProposals : 0;
 
+  // Phase 3: Promise-keeping rates per strategy
+  const promiseKeepingByStrategy = STRATEGY_NAMES.map((strategy, i) => {
+    const totalSignals = games.reduce((s, g) => s + g.signalCount[i], 0);
+    const totalKept = games.reduce((s, g) => s + g.promiseKept[i], 0);
+    return {
+      strategy,
+      rate: totalSignals > 0 ? totalKept / totalSignals : 0,
+      total: totalSignals,
+    };
+  });
+
   return {
     tournamentId,
     mode,
@@ -269,6 +293,7 @@ export function computeTournamentMetrics(
     buildCountByStrategy,
     proposals: proposalsStat,
     proposalPassRate,
+    promiseKeepingByStrategy,
   };
 }
 

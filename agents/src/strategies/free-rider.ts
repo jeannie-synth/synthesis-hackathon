@@ -62,4 +62,9 @@ export class FreeRiderAgent implements Agent {
   decideJailBuyout(): boolean {
     return false; // Never pay
   }
+
+  signalIntent(state: GameState): boolean {
+    // Lies: always signals cooperation (vote for Prosperity), but actually votes selfishly
+    return state.mode === "Monopolist"; // Claims to want Prosperity — but decideVote is cash-trend-based
+  }
 }

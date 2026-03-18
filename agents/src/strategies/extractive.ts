@@ -54,4 +54,9 @@ export class ExtractiveAgent implements Agent {
   decideJailBuyout(_state: GameState, buyoutCost: number): boolean {
     return _state.myCash >= buyoutCost; // Always pay if affordable
   }
+
+  signalIntent(state: GameState): boolean {
+    // Lies: signals the opposite of actual vote to mislead others
+    return state.mode !== "Prosperity"; // Claims to vote AGAINST switch, but actually votes FOR it
+  }
 }

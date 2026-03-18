@@ -36,6 +36,7 @@ export interface GameState {
   modeSwitchCount: number;
   modeSwitchProposed: boolean;
   votingEnabled: boolean;
+   lastSignals: boolean[]; // Signals from end of previous turn (Phase 3)
   // Convenience: current player's view
   myIndex: number;
   myPosition: number;
@@ -66,6 +67,13 @@ export interface Agent {
 
   /** Should we pay to leave jail early? (Monopolist only) */
   decideJailBuyout(state: GameState, buyoutCost: number): boolean;
+
+  /**
+   * Phase 3: Signal intended vote BEFORE a proposal is made (off-chain only).
+   * Returns the vote the agent *claims* it will cast.
+   * Honest agents signal their true intent; deceptive agents lie.
+   */
+  signalIntent(state: GameState): boolean;
 }
 
 // SpaceType enum values matching Solidity

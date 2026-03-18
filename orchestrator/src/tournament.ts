@@ -7,7 +7,9 @@
 import { setup, createGame } from "./setup.js";
 import { runGameLoop, resetBoardCache } from "./game-loop.js";
 import { saveGameLog } from "./logger.js";
-import { createAgentSet, STRATEGY_ORDER } from "../../agents/src/strategies/index.js";
+import { createAgentSet, createAgent, STRATEGY_ORDER } from "../../agents/src/strategies/index.js";
+import type { StrategyName } from "../../agents/src/strategies/index.js";
+import type { Agent } from "../../agents/src/agent.js";
 import { computeGameMetrics, computeTournamentMetrics, computeTwinDivergence, computePerformanceTable } from "./metrics.js";
 import {
   saveTournamentJSON,
@@ -27,6 +29,8 @@ async function main() {
   const network = (process.env.NETWORK as "anvil" | "base-sepolia") ?? "base-sepolia";
   const rpcUrl = network === "anvil" ? undefined : (process.env.RPC_URL ?? process.env.BASE_SEPOLIA_RPC);
   const votingEnabled = process.env.VOTING === "true"; // Phase 1: false (default), Phase 2+: VOTING=true
+  const evolutionEnabled = process.env.EVOLUTION === "true"; // Phase 4: bottom adopts top strategy
+  const phase = parseInt(process.env.PHASE ?? "0", 10); // 0 = legacy, 1-4 = phased tournament
 
   // Anvil defaults
   const anvilDeployerKey = "0x2a871d0798f97d79848a013d4936a73bf4cc922c825d33c1cf7073dff6d409c6" as `0x${string}`;
@@ -43,6 +47,8 @@ async function main() {
   console.log(`║  Total games: ${gamesPerBoard * 2}`);
   console.log(`║  Strategies: ${STRATEGY_ORDER.join(", ")}`);
   console.log(`║  Voting:     ${votingEnabled ? "enabled (Phase 2+)" : "disabled (Phase 1)"}`);
+  console.log(`║  Evolution:  ${evolutionEnabled ? "enabled (Phase 4)" : "disabled"}`);
+  console.log(`║  Phase:      ${phase > 0 ? phase : "legacy"}`);
   console.log("╚══════════════════════════════════════════════════════╝\n");
 
   // 1. Single deploy — all games share one contract
@@ -50,8 +56,11 @@ async function main() {
   const playerAddresses = agentWallets.map(w => w.address) as Address[];
   const playerWallets = agentWallets.map(w => w.wallet);
 
-  const tournamentId = Date.now();
-  const logDir = `data/games/tournament-${tournamentId}`;
+  // Phase-based labeling: PHASE=1 → tournamentId=100, dir=data/games/phase1-sepolia/
+  const tournamentId = phase > 0 ? phase * 100 : Date.now();
+  const logDir = phase > 0
+    ? `data/games/phase${phase}-${network}`
+    : `data/games/tournament-${tournamentId}`;
 
   const monopolistMetrics: GameMetrics[] = [];
   const prosperityMetrics: GameMetrics[] = [];
@@ -61,6 +70,17 @@ async function main() {
     fisherYatesShuffle([0, 1, 2, 3, 4])
   );
 
+  // Phase 4: Track current strategy assignments (evolves between game pairs)
+  let currentStrategies: StrategyName[] = [...STRATEGY_ORDER];
+  const strategyLog: { gamePair: number; strategies: StrategyName[] }[] = [];
+
+  /** Create agents with current strategy assignments */
+  function createAgentsWithStrategies(addresses: Address[]): Agent[] {
+    return currentStrategies.map((strategy, i) =>
+      createAgent(strategy, `${strategy}-${i}`, addresses[i])
+    );
+  }
+
   // 2. Run twin pairs: game i Monopolist + game i Prosperity share the same player order
   for (let i = 0; i < gamesPerBoard; i++) {
     const progress = `[${i + 1}/${gamesPerBoard}]`;
@@ -68,9 +88,16 @@ async function main() {
     const shuffledAddresses = applyPermutation(playerAddresses, order);
     const shuffledWallets = applyPermutation(playerWallets, order);
 
+    strategyLog.push({ gamePair: i, strategies: [...currentStrategies] });
+    if (evolutionEnabled) {
+      console.log(`  ${progress} Strategies: [${currentStrategies.join(", ")}]`);
+    }
+
+    let pairNetWorths: number[] = new Array(5).fill(0);
+
     // --- Monopolist ---
     try {
-      const agents = applyPermutation(createAgentSet(playerAddresses), order);
+      const agents = applyPermutation(createAgentsWithStrategies(playerAddresses), order);
       const [gameId, n1] = await createGame(publicClient, deployerWallet, contractAddress, tournamentId, 0, shuffledAddresses, 0, 0, votingEnabled, deployerNonce);
       deployerNonce = n1;
       const log = await runGameLoop({
@@ -82,6 +109,11 @@ async function main() {
       const metrics = computeGameMetrics(log, propCounts);
       monopolistMetrics.push(metrics);
 
+      // Accumulate net worths for evolution (un-shuffle back to strategy order)
+      const unshuffledNW = new Array(5).fill(0);
+      for (let j = 0; j < 5; j++) unshuffledNW[order[j]] = metrics.netWorths[j];
+      for (let j = 0; j < 5; j++) pairNetWorths[j] += unshuffledNW[j];
+
       console.log(`  ${progress} Monopolist game ${gameId}: Gini=${metrics.gini.toFixed(4)}, Rounds=${metrics.rounds}, HHI=${metrics.herfindahl.toFixed(4)}`);
     } catch (e: any) {
       console.error(`  ${progress} Monopolist game FAILED: ${e.message?.slice(0, 100)}`);
@@ -89,7 +121,7 @@ async function main() {
 
     // --- Prosperity (same order) ---
     try {
-      const agents = applyPermutation(createAgentSet(playerAddresses), order);
+      const agents = applyPermutation(createAgentsWithStrategies(playerAddresses), order);
       const [gameId, n2] = await createGame(publicClient, deployerWallet, contractAddress, tournamentId, 1, shuffledAddresses, 0, 0, votingEnabled, deployerNonce);
       deployerNonce = n2;
       const log = await runGameLoop({
@@ -101,9 +133,25 @@ async function main() {
       const metrics = computeGameMetrics(log, propCounts);
       prosperityMetrics.push(metrics);
 
+      // Accumulate net worths for evolution (un-shuffle back to strategy order)
+      const unshuffledNW = new Array(5).fill(0);
+      for (let j = 0; j < 5; j++) unshuffledNW[order[j]] = metrics.netWorths[j];
+      for (let j = 0; j < 5; j++) pairNetWorths[j] += unshuffledNW[j];
+
       console.log(`  ${progress} Prosperity game ${gameId}: Gini=${metrics.gini.toFixed(4)}, Rounds=${metrics.rounds}, HHI=${metrics.herfindahl.toFixed(4)}`);
     } catch (e: any) {
       console.error(`  ${progress} Prosperity game FAILED: ${e.message?.slice(0, 100)}`);
+    }
+
+    // Phase 4: Strategy evolution — bottom performer adopts top performer's strategy
+    if (evolutionEnabled && i < gamesPerBoard - 1) {
+      const ranked = pairNetWorths.map((nw, idx) => ({ idx, nw })).sort((a, b) => b.nw - a.nw);
+      const topIdx = ranked[0].idx;
+      const bottomIdx = ranked[ranked.length - 1].idx;
+      if (currentStrategies[bottomIdx] !== currentStrategies[topIdx]) {
+        console.log(`  [evolution] ${currentStrategies[bottomIdx]}-${bottomIdx} (NW=${ranked[ranked.length - 1].nw}) adopts ${currentStrategies[topIdx]} from ${currentStrategies[topIdx]}-${topIdx} (NW=${ranked[0].nw})`);
+        currentStrategies[bottomIdx] = currentStrategies[topIdx];
+      }
     }
   }
 
@@ -122,6 +170,9 @@ async function main() {
   // 6. Save results
   const jsonPath = saveTournamentJSON({
     timestamp: new Date().toISOString(),
+    phase: phase > 0 ? phase : undefined,
+    evolutionEnabled,
+    strategyLog: evolutionEnabled ? strategyLog : undefined,
     tournaments: [monopolistTournament, prosperityTournament],
     twinDivergence,
     performanceTable,

@@ -101,11 +101,29 @@ Agent strategies are drawn from experimental economics and game theory:
 - Logged reasoning becomes part of submission narrative
 - Benchmarks remain hardcoded for reproducibility
 
+### Two Deployment Modes (Day 6 Pivot)
+
+**Batch Tournament** (Sepolia, our 5 agents):
+- Orchestrator holds all keys, creates games, drives all turns, writes JSON logs
+- Feature flags control behavior: `VOTING`, `SIGNALING`, `EVOLUTION`
+- Phase is derived metadata — which flags were active
+- Produces controlled experimental data for the thesis
+- Signaling + evolution are orchestrator-only features (coordinating our agents)
+
+**Open Mainnet Game** (Base Mainnet, any agent):
+- **Contract is the server.** No orchestrator needed.
+- Each agent is their own client — calls contract functions directly via skill file
+- Viewer polls `getFullState()` for spectating
+- Skill file documents the client interface (join, play, rules)
+- Voting is a per-game flag in `createGame(votingEnabled)` — works natively
+- Signaling/evolution don't apply — agents bring their own strategy, no coordinator
+
 ### Phased Build (Each Phase = Stronger Submission)
-- **Phase 1 (must-have)**: Fixed-rule parallel boards, 100 games, benchmark data → *proves thesis*
-- **Phase 2 (should-have)**: Mode-switching votes, propose costs turn → *"can machines keep promises" answer*
-- **Phase 3 (could-have)**: Pre-vote signaling, agents may lie → *trust/betrayal metrics*
-- **Phase 4 (stretch)**: Strategy evolution, agent memory → *emergent adaptation*
+- **Phase 1 (must-have)**: Fixed-rule parallel boards, benchmark data → *proves thesis*
+- **Phase 2 (should-have)**: Mode-switching votes, propose costs turn → *political dynamics*
+- **Phase 3 (batch only)**: Pre-vote signaling, agents may lie → *trust/betrayal metrics*
+- **Phase 4 (batch only)**: Strategy evolution, agent memory → *emergent adaptation*
+- **Open Game (must-have)**: Skill file + mainnet deploy → *any agent can play, real cooperation*
 
 ### Tournament Structure
 | ID | Starting Rules | Voting | Signaling | Evolution | Games | Phase |
@@ -158,12 +176,16 @@ The JSON log schema is the contract between the game engine and all visualizatio
 - Python/Streamlit consuming JSON logs from Layer 1
 - Analytical charts: Gini curves over time, wealth distributions, twin-pair divergence, property heatmaps, treasury flow
 - Single-game replay view for human judges
-- Stretch: human-playable mode via Streamlit UI (board state display, click-to-act, tx submission)
 
-**Layer 4 — Pixel art board replay** (Day 8, stretch)
-- HTML5 canvas or simple web app replaying games from JSON logs
-- 40-space board, colored tokens, property markers
-- Pure charm — for the submission narrative
+**Layer 4 — HTML5 replay viewer** (Day 3, done)
+- SVG board with Orli's art, animated dice, player tokens, event ticker
+- Loads JSON game logs, step-through playback
+- Spectator tool for judges — NOT a play interface (agents play via contract directly)
+
+**Layer 5 — Open game skill file** (Day 7, the multiplier)
+- Documents contract interface for any AI agent to play on mainnet
+- Self-organizing lobby: scan for open games → join or create
+- Turns our project into infrastructure other hackathon agents use
 
 **Why this matters**: The hackathon has no data infrastructure bounty despite being about AI agents that feed off data. Rather than complain, we demonstrate the gap by filling it. Our submission shows a clean data pipeline (on-chain events → structured logs → SQL verification → analytical dashboards → thesis-proving visualizations). When the data proves the thesis, we make the case explicitly: data infrastructure is not optional for agent cooperation.
 
@@ -181,7 +203,7 @@ The JSON log schema is the contract between the game engine and all visualizatio
 
 | Stream | Focus | Can Run In |
 |--------|-------|-----------|
-| C | Contracts — Foundry, Solidity, tests, deployment | Own session |
+| C | Contracts — Foundry, Solidity, tests, deployment (LOCKED — no changes unless bug) | Own session |
 | T | TypeScript — orchestrator, agents, chain wiring | Own session (needs ABI from C) |
 | V | Visualization — Streamlit dashboard, data pipeline | Own session (needs JSON logs from T) |
 | D | Docs, analysis, submission artifacts | Own session (needs results from T+V) |
@@ -431,14 +453,14 @@ The JSON log schema is the contract between the game engine and all visualizatio
 
 ## Day 6 — Mar 18: Phase 3 — Signaling + Full Suite + Dashboard Polish
 
-- [ ] signalIntent() on Agent interface (off-chain)
-- [ ] Per-strategy honesty behavior
-- [ ] Promise-keeping metric
-- [ ] Run all 6 tournaments on Anvil (600 games)
-- [ ] Cross-tournament analysis
-- [ ] **Stream V**: Streamlit dashboard v2 — twin-pair comparisons, property heatmaps, treasury flow, single-game replay
+- [x] signalIntent() on Agent interface (off-chain) — completed Day 7, Session 13
+- [x] Per-strategy honesty behavior — completed Day 7, Session 13
+- [x] Promise-keeping metric — completed Day 7, Session 13
+- [ ] Run Phase 2+3 tournaments on Sepolia (15+15 games each)
+- [ ] Cross-tournament analysis (Phase 1 vs Phase 2 vs Phase 3)
+- [ ] **Stream V**: Streamlit dashboard v2 — twin-pair comparisons, property heatmaps, treasury flow, single-game replay, promise-keeping charts
 
-### Milestone: 600 games, all metrics, preliminary findings, full analytical dashboard
+### Milestone: Phase 1-3 tournament data, all metrics, preliminary findings, full analytical dashboard
 
 ### Day 6 Actuals — Session 9 (parallel session — no code changes to core systems)
 
@@ -493,79 +515,161 @@ The JSON log schema is the contract between the game engine and all visualizatio
 
 ---
 
-## Day 7 — Mar 19: On-Chain Finals + Partner Integrations + Mainnet Hardening
+## Day 7 — Mar 19: Tournaments + Viewer Live Play + Phase 3+4 Dev
 
-- [ ] Tournaments A & B on Base Sepolia (10-20 games each)
-- [ ] Self Protocol agent attestation (if viable)
-- [ ] ENS agent naming
-- [ ] Record all contract addresses + tx hashes
-- [ ] Verify Pyth Entropy + joinGame() work on Sepolia (already in contract from Day 2)
+### Sepolia tournaments (sequential, unattended — ~8-12 hrs total)
+- [ ] Phase 1 tournament completes (RUNNING, ~3-4 hrs remaining)
+- [ ] Top up agent wallets from deployer if needed (check after Phase 1)
+- [ ] Phase 2 tournament: 15+15 games, `VOTING=true`, tournamentId=200 (~3-4 hrs)
+- [ ] Phase 3 tournament: 15+15 games, signaling enabled, tournamentId=300 (~3-4 hrs)
+- [ ] (Stretch) Phase 4 tournament: 15+15 games, evolution, tournamentId=400 (~3-4 hrs, may push overnight)
 
-### Milestone: On-chain proof of results, partner integrations live, mainnet-ready contract
+### Tournament data labeling
+- tournamentId: 100 (Phase 1), 200 (Phase 2), 300 (Phase 3), 400 (Phase 4)
+- Directory: `data/games/phase{N}-sepolia/`
+- Tournament runner takes `PHASE=N` env var → sets tournamentId and directory name
+- Streamlit reads directory name prefix → knows the phase
+
+### Jeannie (parallel with tournaments)
+
+**Phase 3+4 TypeScript** (must complete before Phase 3 tournament starts):
+- [x] Phase 3: `signalIntent()` on Agent interface — returns intended vote before proposal (Day 7, Session 13)
+- [x] Phase 3: per-strategy honesty (Extractive lies, Generative honest, Conditional mirrors, FreeRider lies, Pavlov follows outcome) (Day 7, Session 13)
+- [x] Phase 3: promise-keeping metric in tournament runner (signal vs actual vote comparison) (Day 7, Session 13)
+- [ ] Phase 4: strategy reassignment between games based on net worth ranking from previous game (design discussion needed — rank per-board, not averaged)
+- [x] Anvil-validate Phase 2 (`VOTING=true`, 1 game) — 28 proposals, 13 passed, game completes (Day 7, Session 13)
+- [x] Anvil-validate Phase 3 (1 game pair with signaling) — promise-keeping rates: Extractive 0%, Generative 100%, Pavlov 100%, FreeRider 48%, Conditional 14% (Day 7, Session 13)
+- [ ] Phase 4: Anvil validation (deferred — needs evolution design)
+- [ ] Tournament runner: phase labeling → metadata in tournament JSON (design revised — no PHASE env var, no directory coupling)
+
+**Open Game Skill File** (THE multiplier — invites all hackathon agents to play):
+- [ ] Write `skill.md` — teaches any agent how to play The Landlord's Game on Base Mainnet
+- [ ] Includes: contract address, ABI (key functions), join/create flow, turn actions, rules summary
+- [ ] Self-organizing lobby: agent scans for open game → joinGame() if found, createGame() if not
+- [ ] (Optional) Add `findOpenGame()` view function to contract (~10 lines Solidity) for one-call discovery
+- [ ] Validate joinGame() flow on Anvil (agent 1 creates, agent 2 joins, both play to completion)
+- [ ] Host skill file at a public URL (GitHub raw, or via repo GitHub Pages)
+- [ ] Share in hackathon Telegram once mainnet is live
+
+**Viewer live play mode** (DEPRIORITIZED — agents play via contract, not via viewer):
+- [ ] (Stretch) Wallet connection + action buttons for human play
+- [ ] Viewer remains as spectator/replay tool (already works)
+
+**Streamlit phase awareness**:
+- [ ] Directory selector shows phase label (Phase 1/2/3/4)
+- [ ] Cross-phase comparison page: Gini by phase, strategy rankings by phase
+- [ ] Phase 2+ pages: proposal counts, pass rates, mode switch frequency, voting coalitions
+- [ ] Phase 3+ pages: promise-keeping rates by strategy, signal accuracy
+- [ ] Phase 4 page: strategy convergence chart, adaptation rates
+- [x] Metric explanations (Gini, Herfindahl, twin divergence, treasury, dominance flip, rounds)
+
+### Goldi
+- [ ] Top up agent wallets (check balances after Phase 1)
+- [ ] Review Phase 2 Anvil validation results
+- [ ] ERC-8004 NFT self-custody transfer (15-min window, wallet verification + challenge signature)
+
+### Milestone: Phase 1+2 data in hand. Phase 3+4 code validated. Viewer has live play mode. Dashboard is phase-aware.
 
 ---
 
-## Day 8 — Mar 20: Results + Documentation + Visualization Polish
+## Day 8 — Mar 20: Mainnet Deploy + Documentation + Submission Assembly
 
-- [ ] analyze.ts: cross-tournament comparison, headline findings
-- [ ] README.md: results, how to run, architecture
-- [ ] docs/: updated architecture, game rules, results
-- [ ] PROJECT_DIARY.md: all daily entries
-- [ ] CONVERSATION_LOG.md: collaboration narrative
-- [ ] Unified Fly.io Dockerfile (Node + Python, orchestrator + Streamlit, shared /data volume)
-- [ ] Deploy dashboard + viewer to Fly.io
-- [ ] (Stretch) Base Mainnet: open game for agents & humans
-- [ ] (Stretch) Streamlit human-playable mode: board state display, click-to-act, tx submission
-- [ ] (Stretch) Pixel art board replay from JSON logs (HTML5 canvas)
+### Mainnet deployment
+- [ ] Deploy contract to Base Mainnet (same contract, just different chain)
+- [ ] Fund 5 agent wallets on mainnet with real ETH (minimal — just enough for 1-2 showcase games)
+- [ ] Run 1 showcase twin pair on mainnet (Monopolist + Prosperity)
+- [ ] Viewer live play: verify it works against mainnet contract
+- [ ] Record mainnet contract address + game tx hashes
 
-### Milestone: Submission-ready package with analytical dashboard
+### Hosting
+- [ ] Viewer: deploy to GitHub Pages (single HTML file, 5 min)
+- [ ] Dashboard: deploy to Streamlit Community Cloud (connects to GitHub repo, 10 min)
+- [ ] (Deferred post-hackathon) Unified Fly.io Dockerfile
+
+### Documentation
+- [ ] README.md: architecture, how to run, results section with real data
+- [ ] Fill `docs/submission-draft.md` — all placeholders replaced with actual Gini ratios, dominance flips, findings
+- [ ] CONVERSATION_LOG.md: complete narrative for judges
+- [ ] PROJECT_DIARY.md: entries through Day 8
+
+### Submission prep
+- [ ] Finalize `submissionMetadata` fields (agentFramework, agentHarness, model, skills, tools)
+- [ ] Select 4 showcase games (1 per phase, best examples) for viewer pre-loading
+- [ ] Record 2-min demo video (screen recording: viewer replay + live play + dashboard)
+
+### Goldi
+- [ ] Moltbook post (publish)
+- [ ] Make repo public
+- [ ] Review submission text, README, conversation log
+- [ ] Review showcase game selections
+
+### Milestone: Mainnet live. All artifacts hosted. Submission package complete.
 
 ---
 
-## Day 9 — Mar 21: Initial Deadline
+## Day 9 — Mar 21: Initial Deadline — Submit
 
-- [ ] Final code review with Goldi
-- [ ] All tests green
-- [ ] Clean up repo
-- [ ] Submit
+- [ ] Submit via Devfolio API (`POST /projects` with all required fields)
+- [ ] Include: conversationLog, submissionMetadata, repoURL, trackUUIDs, deployedURL, videoURL
+- [ ] Publish: `POST /projects/:uuid/publish`
+- [ ] Verify: `GET /projects/:uuid` returns `status: "publish"`
+- [ ] Verify: project appears in `GET /projects` listing
+- [ ] Smoke test: viewer URL works, dashboard URL works, repo is public, mainnet contract responds
+- [ ] Phase 4 tournament if not completed (last chance for data)
 
----
-
-## Day 10 — Mar 22: Final Deadline
-
-- [ ] Address any feedback from initial submission
-- [ ] Phase 4 (evolution) if time allows
-- [ ] Final polish + resubmit
+### Milestone: Submitted and verified.
 
 ---
 
-## Critical Path
+## Day 10 — Mar 22: Final Deadline — Polish + Resubmit
+
+- [ ] Address any issues found after initial submission
+- [ ] Update submission with video URL if recorded on Day 9
+- [ ] Run additional mainnet showcase games if gas allows
+- [ ] Final Streamlit polish with complete data
+- [ ] Update `POST /projects/:uuid` with any improvements
+- [ ] Final smoke test all URLs
+
+---
+
+## Critical Path (Revised Day 6)
 
 ```
-Wallet + Faucet (Day 1)
-    ↓
-ABI Extraction (Day 2) ──→ TypeScript wiring (Day 2)
-    ↓                              ↓
-Contract tests (Day 2)      Game loop E2E + JSON logs (Day 2)
-                                   ↓
-                            Tournament runner (Day 3)
-                                   ↓
-                            Sepolia deploy + CDP SQL (Day 4)
-                                   ↓                ↓
-                            Phase 2: voting    Streamlit v1 (Day 5)
-                                   ↓                ↓
-                            Phase 3: signaling Streamlit v2 (Day 6)
-                                   ↓
-                            On-chain finals + joinGame() (Day 7)
-                                   ↓
-                            Results + docs + viz polish (Day 8)
-                                   ↓
-                            Submit (Day 9)
+SEPOLIA (sequential):        Phase 1 (RUNNING) → Phase 2 → Phase 3 → Phase 4
+                                3-4 hrs           3-4 hrs   3-4 hrs   3-4 hrs
+
+JEANNIE (parallel):          Phase 3+4 dev ──→ Anvil validate ──→ Viewer live play ──→ Streamlit v2
+                              (tonight)          (tonight)          (Day 7)              (Day 7)
+
+MAINNET (Day 8):             Deploy ──→ Fund wallets ──→ Showcase game ──→ Verify viewer works
+                              15 min      10 min          30 min            10 min
+
+HOSTING (Day 8):             GitHub Pages (viewer) + Streamlit Cloud (dashboard)
+
+GOLDI (parallel):            Top up wallets → NFT transfer → Moltbook → Repo public → Review
+                              (Day 7)         (Day 7)        (Day 8)    (Day 8)       (Day 8)
+
+SUBMIT (Day 9):              Devfolio API → Verify → Smoke test
 ```
 
-**The project is submittable after Day 4** (Phase 1 complete with on-chain data + CDP verification). Everything after is upside.
+### What's parallelizable RIGHT NOW (while Phase 1 runs on Sepolia)
+1. **Phase 3+4 TypeScript development** — off-chain changes, Anvil validation
+2. **Phase 2 validation on Anvil** — different wallets, no nonce conflict
+3. **Viewer live play mode** — no dependency on tournament data
+4. **Streamlit phase awareness** — can work with existing data, ready when new data arrives
+5. **Tournament runner labeling** — small change, unblocks clean data organization
 
-**Stream V (visualization) is independently parallelizable after Day 3** — it only needs JSON log files from completed tournament runs.
+### What's sequential (cannot parallelize)
+- Sepolia tournaments: one at a time (shared agent wallets = nonce conflicts)
+- Mainnet deploy: needs final contract validation from Sepolia tournaments
+- Submission: needs all artifacts ready
+
+### Minimum viable submission (if time runs out)
+- **Floor**: Phase 1 Sepolia data + dashboard + viewer replay + submission text
+- **Strong**: + Phase 2 voting data + viewer live play on mainnet
+- **Full**: + Phase 3 signaling + Phase 4 evolution + complete cross-phase analysis
+
+**Cut order**: Phase 4 first, then Phase 3, then mainnet live play. Phase 2 is worth fighting for.
 
 ---
 
@@ -604,34 +708,63 @@ Contract tests (Day 2)      Game loop E2E + JSON logs (Day 2)
 
 ## Risk Register
 
+### Resolved risks
+| Risk | Resolution |
+|------|-----------|
+| ~~Sepolia faucet limits~~ | Deployer has 0.615 ETH, agents funded |
+| ~~Game loops forever~~ | Receipt-driven orchestrator + wait-and-resync |
+| ~~Gas exceeds budget~~ | Fixed gas limits (500K writes, 1M createGame) |
+| ~~Strategy design too long~~ | 5 strategies locked Day 1, validated Day 4 |
+| ~~_nextTurn() round bug~~ | Replaced with _finishTurn() + TurnEnded event |
+
+### Active risks (Days 7-10)
 | Risk | Impact | Mitigation |
 |------|--------|-----------|
-| Sepolia faucet limits | Blocks Day 4 | Start dripping Day 1, Anvil for bulk |
-| Game loops forever | Blocks Day 2 | MAX_ROUNDS cap, test win conditions Day 1 |
-| Gas exceeds budget | Blocks on-chain runs | 10-20 on-chain, rest on Anvil |
-| Strategy design takes too long | Blocks Day 3 | Start with 3 existing + 2 simple variants |
-| Commit-reveal too complex | Blocks Day 5 | Skip — simple voting suffices |
-| Phase 4 not reached | Weakens submission | Phases 1-3 already answer track question |
-| _nextTurn() round bug | Corrupts game data | Test + fix Day 1 |
+| Agent wallets run dry mid-tournament | Blocks Sepolia tournaments | Check after Phase 1, top up from deployer |
+| Phase 2 voting bugs on Sepolia | Blocks Phase 2 data | Anvil validation tonight catches bugs first |
+| Overnight tournament crashes | Lose 8 hrs of tournament time | Error recovery built in; add process wrapper |
+| Streamlit Cloud deploy fails | No live dashboard URL | Fall back to screenshots in video |
+| NFT transfer fails | Can't publish submission | Attempt Day 7, retry through Day 9 |
+| Phase 3+4 dev takes too long | No Phase 3/4 data | Phase 2 is already strong; cut 4 first, then 3 |
+| Mainnet gas costs higher than expected | Limits showcase games | Budget 0.01 ETH for 2 games; Base L2 is cheap |
+| Viewer wallet integration breaks | No live play demo | Fall back to replay mode; JSON viewer still works |
 
 ---
 
 ## What "Done" Looks Like (Submission Checklist)
 
-- [ ] Smart contract deployed + verified on Base Sepolia
-- [ ] 200+ games run (Anvil), 20+ games on-chain (Sepolia)
-- [ ] 5 agent strategies, 5 twin pairs, 2 parallel boards
-- [ ] Measurable thesis: Gini divergence between rule sets
-- [ ] Metrics: Gini, Herfindahl, treasury flow, twin divergence, (+ voting/signaling if Phase 2-3)
-- [ ] Structured JSON game logs for all tournament runs
-- [ ] CDP SQL API verification of on-chain events vs local logs
-- [ ] Streamlit dashboard with analytical visualizations (Gini curves, twin-pair comparisons)
-- [ ] Results documented with clear findings
-- [ ] Complete conversation log showing human-agent collaboration
-- [ ] Project diary with daily entries
-- [ ] All code open-source on GitHub
-- [ ] On-chain artifacts: ERC-8004 identity, deployed contracts, game tx hashes
-- [ ] (Stretch) Partner integrations: Self Protocol, ENS
-- [ ] (Stretch) Base Mainnet open game with joinGame() for external players
-- [ ] (Stretch) Streamlit human-playable mode
-- [ ] (Stretch) Pixel art board replay
+### Must-have (submission gates)
+- [ ] ERC-8004 NFT self-custody transfer complete
+- [ ] Moltbook post published with post URL
+- [ ] Repo public on GitHub
+- [ ] Devfolio submission published with all required fields
+- [ ] conversationLog field populated (PROJECT_DIARY.md + CONVERSATION_LOG.md)
+
+### Core deliverables
+- [x] Smart contract deployed on Base Sepolia (0xda1557c9...)
+- [ ] Smart contract deployed on Base Mainnet
+- [ ] 30+ games on Sepolia (Phase 1 tournament)
+- [ ] Open game skill file — any hackathon agent can play via `joinGame()`
+- [x] 5 agent strategies, 5 twin pairs, 2 parallel boards
+- [x] Measurable thesis: Gini divergence confirmed (0.3260 on Sepolia test)
+- [x] Structured JSON game logs
+- [x] CDP SQL API verification queries written and tested
+- [x] Streamlit dashboard with 4 pages + metric explanations
+- [ ] Viewer hosted on GitHub Pages (spectator/replay mode)
+- [ ] Dashboard hosted on Streamlit Community Cloud
+- [ ] README.md with architecture, results, how to run
+- [ ] Results documented with real data (not placeholders)
+- [ ] 2-min demo video (optional but valuable)
+- [ ] Hackathon Telegram announcement inviting agents to play
+
+### Strong additions (Phase 2+)
+- [ ] Phase 2 tournament data (voting dynamics, political coalitions)
+- [ ] Phase 3 tournament data (signaling, promise-keeping metrics)
+- [ ] Cross-phase comparison in dashboard
+- [ ] Dominance flip analysis with real data
+
+### Stretch
+- [ ] Phase 4 tournament data (strategy evolution, convergence)
+- [ ] Partner integrations: Self Protocol, ENS
+- [ ] Viewer live play mode for humans (wallet + action buttons)
+- [ ] Pre-game lobby UI for organizing open games

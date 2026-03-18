@@ -708,3 +708,88 @@ Two test games ran to completion on Base Sepolia. Phase 1 development complete.
 - Run Phase 1 tournament on Sepolia (15+15 games) → on-chain provenance + thesis data
 - Feed tournament data to Streamlit dashboard + viewer
 - Self-custody NFT transfer + Moltbook post (before Day 9)
+
+'---
+
+## Day 7 — March 19, 2026
+
+### Session 13: Phase 2 + Phase 3 Validated on Anvil
+
+**Context**: Phase 1 Sepolia tournament running in parallel. This session focused on implementing Phase 3 (signaling) and validating both Phase 2 (voting) and Phase 3 (signaling) on Anvil.
+
+#### Phase 3 implementation: signalIntent()
+
+Added `signalIntent(state: GameState): boolean` to the Agent interface — an off-chain signal of how an agent *claims* it will vote, collected at the end of each turn (not turn 0). No contract changes.
+
+**Per-strategy honesty behavior**:
+| Strategy | Signal behavior | Rationale |
+|----------|----------------|-----------|
+| Extractive | Lies (opposite of actual vote) | Misleads coalition builders |
+| Generative | Honest (matches actual vote) | Always cooperates |
+| Conditional | Mirrors last observed majority signal | Tit-for-tat applied to signals |
+| FreeRider | Lies (signals cooperation, votes selfishly) | Exploits trust |
+| Pavlov | Honest when winning, lies when losing | Win-stay/lose-shift applied to signaling |
+
+**Signal collection timing** (Goldi's design):
+- End of each turn after turn 0 (before next turn's potential proposal)
+- Final poll at game end (data only, no follow-up action)
+- Signals stored in `lastSignals` array on game state, visible to all agents next turn
+- Conditional agent observes majority signal from others via `observeSignal()` callback
+
+**Promise-keeping metric**: When voting happens, each voter's stored signal is compared to their actual vote. `keptPromise` boolean logged per vote. Metrics infrastructure (already scaffolded in metrics.ts) now receives real data.
+
+#### Phase 2 + Phase 3 Anvil validation results
+
+Ran `NETWORK=anvil VOTING=true CONTRACT_ADDRESS= npx tsx src/index.ts` inside `jeannie-dev` container. Fresh contract deploy on local Anvil.
+
+**Monopolist game** (game 1):
+- Rounds: 28, Turns: 144
+- Gini: 0.0608
+- Net worths: [1340, 1058, 1272, 1002, 1185]
+- **Voting**: 28 proposals, 13 passed, 15 rejected
+- **Signals**: 128 signal entries (every turn after turn 0)
+- **Promise-keeping rates**:
+  - Extractive: 0/24 = **0%** (always lies — confirmed)
+  - Generative: 20/20 = **100%** (always honest — confirmed)
+  - Conditional: 3/21 = **14%** (mirrors liars, diverges from own vote)
+  - FreeRider: 13/27 = **48%** (appears random, but signals cooperation while voting selfishly)
+  - Pavlov: 20/20 = **100%** (honest when winning — was winning this game)
+
+**Prosperity game** (game 2):
+- Rounds: 11, Turns: 56
+- Gini: 0.0362
+- Net worths: [1263, 1293, 1223, 1169, 1068]
+- **Voting**: 5 proposals, data consistent
+- **Promise-keeping rates**: Same pattern (Extractive 0%, Generative 100%, Pavlov 100%, FreeRider 80%, Conditional 20%)
+
+**Thesis signal**: Monopolist Gini 0.0608 vs Prosperity Gini 0.0362 — Monopolist more unequal, consistent with Phase 1 findings.
+
+#### Key observations
+
+1. **Extractive's 0% promise-keeping is the clearest signal** — agents that lie about cooperation are detectable by their signal-vote divergence. This is measurable deception.
+2. **Conditional at 14% is the most interesting result** — Conditional mirrors signals from others, but since Extractive and FreeRider lie, Conditional's mirror of their lies causes its own signal to diverge from its vote. The liar poisons the commons.
+3. **FreeRider at 48% looks like noise** — but it's structural. FreeRider always signals "cooperation" (vote for Prosperity), but actually votes based on cash trend. When cash trend happens to align with the cooperative signal, they look honest. When it doesn't, they don't.
+4. **28 proposals in a Monopolist game** — voting is politically active. Agents below average net worth propose switches frequently. 13/28 passed = near coin flip, suggesting balanced political power.
+
+#### Files changed
+- `agents/src/agent.ts` — added `lastSignals: boolean[]` to GameState interface
+- `orchestrator/src/game-loop.ts` — added `lastSignals` to LocalGameState, initLocalState, toAgentState; added `collectSignals()` helper function; restructured signal collection from inside-proposal-block to end-of-turn; voting compares stored lastSignals for promise-keeping
+
+All strategies already had `signalIntent()` implemented (from a prior scaffolding session). The `observeSignal()` method on ConditionalAgent was also already in place.
+
+#### Decisions made
+- **Signal timing**: End of turn, not inside proposal block — gives richer evolution data across all turns, not just proposal moments
+- **Tasks 3 + 4 deferred**: Strategy evolution (Task 3) and phase labeling (Task 4) need further design discussion. Evolution math needs to rank per-board (not averaged across twin pair — averaging kills the variance the ruleset creates). Phase labeling should use metadata in tournament JSON, not directory structure, to support standalone Fly.io deployment.
+- **Streamlit downstream**: Dashboard needs new panels for promise-keeping rates (bar chart per strategy) and signal evolution timeline. Flagged for subsequent session.
+
+#### Bugs found and fixed
+- Stray `y` character in game-loop.ts line 505 (introduced during editing) — caught by `tsc --noEmit`, fixed immediately
+- `CONTRACT_ADDRESS` in `.env` pointed to Sepolia contract — needed `CONTRACT_ADDRESS=` override for Anvil fresh deploy
+
+### What's next
+
+- Discuss Tasks 3 + 4 design (strategy evolution math, phase labeling architecture)
+- Run Phase 2 tournament on Sepolia once Phase 1 completes (VOTING=true, tournamentId=200)
+- Run Phase 3 tournament on Sepolia (signaling data for dashboard)
+- Streamlit dashboard: add promise-keeping visualization
+- Agent-playable game architecture may inform Tasks 3 + 4 design

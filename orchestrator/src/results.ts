@@ -9,6 +9,9 @@ import type { TournamentMetrics, TwinDivergence, GameMetrics, AggStat, StrategyP
 
 export interface TournamentOutput {
   timestamp: string;
+  phase?: number;
+  evolutionEnabled?: boolean;
+  strategyLog?: { gamePair: number; strategies: string[] }[];
   tournaments: TournamentMetrics[];
   twinDivergence: TwinDivergence[];
   performanceTable: StrategyPerformance[];
