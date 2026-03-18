@@ -535,3 +535,98 @@ The biggest architectural session of the hackathon. Started with the receipt-dri
 - Phase 1 tournament (15 Monopolist + 15 Prosperity)
 - Streamlit dashboard for analytics
 - Update PLAN.md with Day 5 actuals vs planned
+
+---
+
+## Days 4-6 — March 16-18, 2026
+
+### Session 9: Architecture Review, Submission Strategy, CDP SQL, Data Path Design
+
+Parallel exploratory session (no code changes to core systems) while another terminal handled implementation. Focus: architectural understanding, strategic planning, infrastructure wiring.
+
+**Architecture deep dive**:
+- Full walkthrough of contract architecture (Types, Board, LandlordsGame), rent math, agent strategies, voting mechanics, data pipeline
+- Every layer traced from contract through orchestrator through viewer
+
+**Deployment architecture locked**:
+- No database — contract is the state machine, chain is the history
+- Frontend: single HTML file + wallet glue (`window.ethereum`, no SDK, no React)
+- Hosting: Fly.io over Vercel (container vs static)
+- Three non-overlapping data paths:
+  - Orchestrator → JSON logs → Viewer (live spectator + replay)
+  - CDP SQL → Streamlit (on-chain data verification + analytics)
+  - Contract (source of truth for both)
+
+**Submission strategy**:
+- Viewer is Tier 0 priority (human judges have final say)
+- Full Devfolio submission text drafted (`docs/submission-draft.md`)
+- Results section templated with placeholders for tournament data
+- Phase descriptions included (Phases 1-4)
+- Narrative frame: "cooperation is a structural outcome, not an agent property"
+
+**CDP SQL API verified**:
+- Secret API Keys (Ed25519) configured
+- JWT auth tested successfully against `api.cdp.coinbase.com`
+- `base_sepolia.events` confirmed to exist (contract events queryable after deploy)
+- Parameters pre-decoded (`parameters['gameId']` works directly)
+- 8 verification queries written (`docs/cdp-sql-queries.md`)
+- Test script working (`scripts/test-cdp-sql.mjs`)
+- Schema documented: `block_timestamp` (not `timestamp`), must filter by `address` (93 GiB scan limit)
+
+**Turn order bias**:
+- Identified: Extractive always first due to hardcoded `STRATEGY_ORDER`
+- Solution: Fisher-Yates shuffle per game in tournament runner, no contract change
+- Twin pairs share shuffle for controlled comparison
+
+**Metrics refactor — deferred**:
+- Orchestrator computes metrics (`metrics.ts`, `results.ts`) — architecturally wrong (should be Streamlit's job)
+- Not worth rewriting under deadline — working code stays
+- Gini function extraction to shared util: worth doing anytime
+- Post-hackathon: move all analysis to Streamlit Python utils
+
+**Alchemy Smart WebSockets**: Noted for production live spectator mode. Viewer subscribes to contract events directly. Not needed for hackathon.
+
+**Files created**:
+- `docs/submission-draft.md` — full submission text
+- `docs/cdp-sql-queries.md` — 8 CDP SQL verification queries with schema
+- `scripts/test-cdp-sql.mjs` — working CDP SQL test script
+
+**No core system files modified** — parallel terminal safe.
+
+### Session 10: Diagnostic Session — Three Bugs Found and Fixed
+
+Goldi reported `endTurn` reverts looping endlessly in the Docker Anvil container. Jeannie ran a diagnostic session to find the root cause.
+
+**Bug 1 — Silent on-chain reverts (the big one)**:
+- `writeContract()` never checked `receipt.status`. When a tx reverted on-chain, the receipt came back with `status: 'reverted'` and no event logs. `applyReceipt()` processed zero events (no-op). The orchestrator continued as if the tx succeeded.
+- Effect: `rollAndMove` would revert silently → `hasRolled` stayed false → `endTurn` failed with `MustRollFirst` → universal error handler retried forever.
+- Fix: Check `receipt.status === "reverted"` and throw. Now properly caught by error handler, state resyncs, and retry works.
+
+**Bug 2 — Gas estimation unreliable for dice-based functions**:
+- `rollAndMove` uses `keccak256(... block.prevrandao, block.number ...)` for dice. Gas estimation simulates at block N, but execution happens at block N+1. Different dice = different landing = different `_processLanding` code path = different gas usage.
+- `cast run` on reverted txs confirmed: `EvmError: OutOfGas` with `gasLimit == gasUsed`.
+- Fix: Fixed 500K gas limit for all contract writes. Covers worst case (liquidation loop over 40 positions). Gas is cheap on both Anvil and Sepolia.
+
+**Bug 3 — Error decoding blind**:
+- `parseRevertReason()` only checked `e.shortMessage`. Viem puts custom error names deeper in the error tree (`e.cause`, `e.walk()`, `e.cause.cause`).
+- Fix: Walk the full viem error tree. Now correctly surfaces `MustRollFirst`, `NotYourTurn`, etc.
+
+**Diagnostic approach**: Added pre-flight logging before `endTurn` showing `hasRolled`, `gameOver`, `currentIdx`, nonce. First run with diagnostics immediately showed `hasRolled=false` reaching `endTurn` — proved the bug was upstream in `rollAndMove`, not in `endTurn` itself.
+
+**Also confirmed**:
+- Contract `0xda1557c901ff5b7a0d9f0d0da17fef55b2d59d85` is the latest and correct deploy (Day 5, `_finishTurn`, 22 events, `getFullState` with `hasRolled`). `nextGameId=11`.
+- 6 newer contract deploys on the deployer address are zombie retries from orchestrator redeploying when `CONTRACT_ADDRESS` wasn't set.
+- Deployer: 0.615 ETH (plenty).
+- All 5 agent wallets: 0.005 ETH each (funded Day 5, sufficient for test games).
+- "Monopolist" naming stays as hackathon quirk (contract enum is `Monopolist`, consistent everywhere).
+
+**Commit**: `19def39` — orchestrator fixes only, no contract changes.
+
+### What's next
+
+- Run test games on Base Sepolia (receipt-driven orchestrator + gas fix + error decoding)
+- Phase 1 tournament on Sepolia (15+15 games)
+- Streamlit dashboard build
+- Viewer enhancements for submission
+- README update with results when tournament data lands
+- ERC-8004 transfer before Day 9

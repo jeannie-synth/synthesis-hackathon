@@ -440,6 +440,41 @@ The JSON log schema is the contract between the game engine and all visualizatio
 
 ### Milestone: 600 games, all metrics, preliminary findings, full analytical dashboard
 
+### Day 6 Actuals (parallel session — no code changes to core systems)
+
+- [x] Full architecture walkthrough (contract, rent math, agents, voting, data pipeline)
+- [x] Deployment architecture locked: no DB, HTML + wallet glue, Fly.io, CDP SQL → Streamlit only
+- [x] Three data paths defined (orchestrator→JSON→viewer, CDP SQL→Streamlit, contract as truth)
+- [x] Submission text drafted (`docs/submission-draft.md`) — all Devfolio fields + results template
+- [x] CDP SQL API verified live: auth works, `base_sepolia.events` confirmed, schema documented
+- [x] 8 verification queries written (`docs/cdp-sql-queries.md`)
+- [x] CDP SQL test script working (`scripts/test-cdp-sql.mjs`)
+- [x] Turn order bias solution: Fisher-Yates per game, twin pairs share shuffle
+- [x] Viewer priority corrected to Tier 0 for submission (human judges have final say)
+- [x] Metrics refactor deferred (orchestrator keeps computing for hackathon, Streamlit post-deadline)
+- [x] CONVERSATION_LOG.md updated with Session 9
+
+### Day 6 Actuals — Session 10 (diagnostic + orchestrator fixes)
+
+- [x] Diagnosed endTurn revert loop: silent on-chain reverts (receipt.status unchecked)
+- [x] Fixed writeContract to detect reverted receipts and throw
+- [x] Diagnosed gas estimation failure: dice change between simulation and execution
+- [x] Fixed with 500K fixed gas limit (covers worst-case _processLanding paths)
+- [x] Fixed parseRevertReason to walk viem's full error tree
+- [x] Confirmed contract `0xda1557...` is latest and correct (nextGameId=11, Day 5 features)
+- [x] Confirmed deployer funded (0.615 ETH), all 5 agents funded (0.005 ETH each)
+- [x] Confirmed 6 post-0xda1557 deploys are zombie retries (CONTRACT_ADDRESS wasn't set)
+- [x] Commit `19def39`
+- [ ] Run test games on Base Sepolia
+- [ ] Phase 1 tournament on Sepolia
+
+### Day 6 Decisions
+- CDP SQL wires to Streamlit only — not to viewer. Viewer consumes JSON logs.
+- Live spectator = orchestrator writes JSON incrementally, viewer polls. Lag is aesthetic.
+- Alchemy Smart WebSockets: production feature for external spectators, not hackathon.
+- Metrics stay in orchestrator for hackathon. Gini extraction to shared util worth doing anytime.
+- "Monopolist" naming stays as hackathon quirk — consistent everywhere including contract enum.
+
 ---
 
 ## Day 7 — Mar 19: On-Chain Finals + Partner Integrations + Mainnet Hardening
