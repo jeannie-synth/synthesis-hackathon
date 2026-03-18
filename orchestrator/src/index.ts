@@ -46,7 +46,7 @@ async function main() {
   const [gameIdM, nonce2] = await createGame(publicClient, deployerWallet, contractAddress, 1, 0, shuffledAddresses, 0, 0, votingEnabled, deployerNonce);
   deployerNonce = nonce2;
   const logM = await runGameLoop({
-    publicClient, contractAddress, gameId: gameIdM, agents: agentsM, agentWallets: shuffledWallets, logDir,
+    publicClient, contractAddress, gameId: gameIdM, agents: agentsM, agentWallets: shuffledWallets, logDir, mode: "Monopolist",
   });
   saveGameLog(logM, logDir);
 
@@ -56,7 +56,7 @@ async function main() {
   const [gameIdP, nonce3] = await createGame(publicClient, deployerWallet, contractAddress, 1, 1, shuffledAddresses, 0, 0, votingEnabled, deployerNonce);
   deployerNonce = nonce3;
   const logP = await runGameLoop({
-    publicClient, contractAddress, gameId: gameIdP, agents: agentsP, agentWallets: shuffledWallets, logDir,
+    publicClient, contractAddress, gameId: gameIdP, agents: agentsP, agentWallets: shuffledWallets, logDir, mode: "Prosperity",
   });
   saveGameLog(logP, logDir);
 

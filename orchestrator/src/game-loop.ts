@@ -55,6 +55,7 @@ export interface GameLoopConfig {
   agents: Agent[];
   agentWallets: any[];
   logDir?: string; // Directory for orchestrator JSONL log
+  mode?: GameMode; // Explicit mode — avoids stale-read on Sepolia
 }
 
 // ─── Orchestrator telemetry log (JSONL, separate from game JSON) ───
@@ -551,7 +552,9 @@ export async function runGameLoop(config: GameLoopConfig): Promise<GameLog> {
   const orchLog = new OrchestratorLog();
   if (logDir) orchLog.init(logDir, Number(gameId));
 
-  const mode: GameMode = local.mode === 0 ? "Monopolist" : "Prosperity";
+  // Use explicit mode from caller if provided — avoids stale-read on Sepolia
+  // where getFullState may return the previous game's mode
+  const mode: GameMode = config.mode ?? (local.mode === 0 ? "Monopolist" : "Prosperity");
   const log = createGameLog(Number(gameId), mode, agents.map(a => a.address));
 
   console.log(`\n--- Game ${gameId} (${mode}) ---`);
