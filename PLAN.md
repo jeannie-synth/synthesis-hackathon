@@ -519,16 +519,17 @@ The JSON log schema is the contract between the game engine and all visualizatio
 
 ### Sepolia tournaments (sequential, unattended — ~8-12 hrs total)
 - [x] Phase 1 tournament completes
-- [ ] Top up agent wallets from deployer if needed (check after Phase 1)
-- [ ] Phase 2 tournament: 15+15 games, `VOTING=true` (~3-4 hrs) — **BLOCKED by 2 bugs, fixes applied Day 8, testing**
+- [ ] Top up agent wallets from deployer if needed (check after Phase 2)
+- [ ] Phase 2 tournament: 15+15 games, `VOTING=true` — **RUNNING** (launched after commit `12be1f8`)
 - [ ] Phase 3 tournament: 15+15 games, signaling enabled (~3-4 hrs)
 - [ ] (Stretch) Phase 4 tournament: 15+15 games, evolution (~3-4 hrs, may push overnight)
 
-### Day 8 fixes (required for Phase 2 tournament)
-- [x] Bug fix: WebSocket transport drops on long games → switched `createTransport()` to HTTP-only
-- [x] Bug fix: Pending vote deadlock → split voting into proposal + resolution blocks, `AlreadyVoted` tolerance
-- [ ] Validate 1-pair test on Sepolia (GAMES=1, VOTING=true) — running
-- [ ] Clean up dead WebSocket code (toWsUrl, webSocket import)
+### Day 8 fixes (all complete, committed `12be1f8`)
+- [x] Bug fix: WebSocket transport drops → HTTP-only (`createTransport()`, WS path commented out)
+- [x] Bug fix: Vote deadlock → proposal + resolution blocks, catch-all vote reverts, chain resync
+- [x] Bug fix: Empty error strings → `ERROR_SELECTORS` map (17 custom errors, 4-byte hex)
+- [x] 1-pair Sepolia validation: Games 20+21 completed, Gini 0.2571 vs 0.0369, dominance flip confirmed
+- [ ] Validate mode switch mechanism on Anvil (force 3/5 agents to vote yes — confirm mode flips)
 
 ### Tournament data labeling
 - tournamentId: 100 (Phase 1), 200 (Phase 2), 300 (Phase 3), 400 (Phase 4)
@@ -581,14 +582,56 @@ The JSON log schema is the contract between the game engine and all visualizatio
 
 ---
 
-## Day 8 — Mar 20: Mainnet Deploy + Documentation + Submission Assembly
+## Day 8 — Mar 20: Super Tournament (Autonomous Agents) + Mainnet + Submission
 
-### Mainnet deployment
-- [ ] Deploy contract to Base Mainnet (same contract, just different chain)
-- [ ] Fund 5 agent wallets on mainnet with real ETH (minimal — just enough for 1-2 showcase games)
-- [ ] Run 1 showcase twin pair on mainnet (Monopolist + Prosperity)
-- [ ] Viewer live play: verify it works against mainnet contract
-- [ ] Record mainnet contract address + game tx hashes
+### Super Tournament — 5 Autonomous Claude Code Agents
+
+**Concept**: Each of our 5 agent wallets becomes an independent Claude Code instance.
+No orchestrator. Each agent reads `docs/skill-demo.md`, calls the contract directly,
+chooses its own strategy each round, and explains its reasoning.
+
+**Protocol**: 5 rounds × 3 game pairs × 2 modes = 30 games, all with `votingEnabled=true`
+
+Round flow:
+1. Agent 0 creates 3 Monopolist + 3 Prosperity games (tournamentId = 500 + round number)
+2. Agents 1-4 join each game via `joinGame`
+3. All 5 agents play all 6 games to completion (poll `getFullState`, act on their turn)
+4. All agents review on-chain results (`getFullState` for completed games)
+5. Each agent chooses a strategy for the next round and logs reasoning
+6. Round 1: choose based on strategy descriptions alone
+7. Rounds 2-5: choose based on observed on-chain performance data
+
+**Artifacts to create** (Jeannie, before running):
+- [ ] `docs/skill-demo.md` — internal skill file: game rules + ABI + 5 strategy descriptions (from TS source) + super tournament protocol + how to read past results
+- [ ] `docs/agent-prompts/agent-0.md` through `agent-4.md` — launch prompts for 5 Claude Code terminals
+- [ ] Each prompt: wallet index, HD path, env var, role (creator vs joiner), skill-demo.md reference
+
+**Gas estimate** (30 games total):
+- Per game: ~33M gas (~$0.05-0.10 on Base)
+- 30 games: ~$1.50-3.00 total gas
+- Per agent wallet: ~0.005 ETH each
+- Deployer: ~0.01 ETH (deploy + fund wallets)
+- **Total: ~0.035 ETH**
+
+### Phase A: Sepolia validation (FIRST — before mainnet)
+- [ ] Run 1 super tournament round on Sepolia (3 game pairs = 6 games, voting enabled)
+- [ ] Verify: all 5 agents can create/join/play/complete games autonomously
+- [ ] Verify: agents can read completed game states and choose strategies
+- [ ] Verify: turn coordination works (polling getFullState, no orchestrator)
+- [ ] Fix any issues found before mainnet
+
+### Phase B: Mainnet deployment
+- [ ] Goldi funds deployer wallet on Base Mainnet (~0.035 ETH)
+- [ ] Deploy contract to Base Mainnet (same locked contract)
+- [ ] Fund 5 agent wallets on mainnet from deployer (0.005 ETH each)
+- [ ] Record mainnet contract address
+- [ ] Update `docs/skill.md` with mainnet contract address
+- [ ] Update viewer with mainnet contract address
+
+### Phase C: Mainnet super tournament
+- [ ] Run full 5-round super tournament on mainnet (30 games)
+- [ ] Viewer live play: verify spectating works against mainnet
+- [ ] Collect strategy evolution data (which strategies agents converge on per mode)
 
 ### Hosting
 - [ ] Viewer: deploy to GitHub Pages (single HTML file, 5 min)
@@ -607,12 +650,13 @@ The JSON log schema is the contract between the game engine and all visualizatio
 - [ ] Record 2-min demo video (screen recording: viewer replay + live play + dashboard)
 
 ### Goldi
+- [ ] Fund deployer on Base Mainnet (~0.035 ETH)
 - [ ] Moltbook post (publish)
 - [ ] Make repo public
 - [ ] Review submission text, README, conversation log
 - [ ] Review showcase game selections
 
-### Milestone: Mainnet live. All artifacts hosted. Submission package complete.
+### Milestone: Super tournament validated on Sepolia. Mainnet live. All artifacts hosted. Submission package complete.
 
 ---
 
@@ -641,44 +685,41 @@ The JSON log schema is the contract between the game engine and all visualizatio
 
 ---
 
-## Critical Path (Revised Day 6)
+## Critical Path (Revised Day 7)
 
 ```
-SEPOLIA (sequential):        Phase 1 (RUNNING) → Phase 2 → Phase 3 → Phase 4
-                                3-4 hrs           3-4 hrs   3-4 hrs   3-4 hrs
+JEANNIE (Day 7-8):           skill-demo.md ──→ agent prompts ──→ Sepolia validation ──→ fix issues
+                              (now)             (now)              (today)                (today)
 
-JEANNIE (parallel):          Phase 3+4 dev ──→ Anvil validate ──→ Viewer live play ──→ Streamlit v2
-                              (tonight)          (tonight)          (Day 7)              (Day 7)
+SEPOLIA SUPER (Day 8):       1-round validation ──→ fix ──→ (optional: full 5 rounds)
+                              ~1 hr                  TBD      ~4 hrs
 
-MAINNET (Day 8):             Deploy ──→ Fund wallets ──→ Showcase game ──→ Verify viewer works
-                              15 min      10 min          30 min            10 min
+MAINNET (Day 8):             Goldi funds ──→ Deploy ──→ Fund wallets ──→ Super tournament (5 rounds)
+                              (Goldi)         15 min      10 min          ~4 hrs (autonomous agents)
 
 HOSTING (Day 8):             GitHub Pages (viewer) + Streamlit Cloud (dashboard)
 
-GOLDI (parallel):            Top up wallets → NFT transfer → Moltbook → Repo public → Review
-                              (Day 7)         (Day 7)        (Day 8)    (Day 8)       (Day 8)
+GOLDI (parallel):            Fund mainnet → NFT transfer → Moltbook → Repo public → Review
+                              (Day 8)        (Day 7)        (Day 8)    (Day 8)       (Day 8)
 
 SUBMIT (Day 9):              Devfolio API → Verify → Smoke test
 ```
 
-### What's parallelizable RIGHT NOW (while Phase 1 runs on Sepolia)
-1. **Phase 3+4 TypeScript development** — off-chain changes, Anvil validation
-2. **Phase 2 validation on Anvil** — different wallets, no nonce conflict
-3. **Viewer live play mode** — no dependency on tournament data
-4. **Streamlit phase awareness** — can work with existing data, ready when new data arrives
-5. **Tournament runner labeling** — small change, unblocks clean data organization
+### What's parallelizable RIGHT NOW
+1. **skill-demo.md + agent prompts** — file creation, no chain dependency
+2. **Batch Sepolia tournaments** — Phase 2 running, Phase 3 queued (orchestrator)
+3. **Viewer + Streamlit polish** — independent of super tournament
 
-### What's sequential (cannot parallelize)
-- Sepolia tournaments: one at a time (shared agent wallets = nonce conflicts)
-- Mainnet deploy: needs final contract validation from Sepolia tournaments
+### What's sequential
+- Super tournament Sepolia validation → fix issues → mainnet deployment → mainnet super tournament
 - Submission: needs all artifacts ready
 
 ### Minimum viable submission (if time runs out)
-- **Floor**: Phase 1 Sepolia data + dashboard + viewer replay + submission text
-- **Strong**: + Phase 2 voting data + viewer live play on mainnet
-- **Full**: + Phase 3 signaling + Phase 4 evolution + complete cross-phase analysis
+- **Floor**: Phase 1+2 Sepolia data + dashboard + viewer replay + submission text
+- **Strong**: + Phase 3 signaling + super tournament on Sepolia + mainnet contract live
+- **Full**: + 5-round mainnet super tournament with strategy evolution data
 
-**Cut order**: Phase 4 first, then Phase 3, then mainnet live play. Phase 2 is worth fighting for.
+**Cut order**: Mainnet super tournament rounds 2-5 first, then Phase 3 batch, then Streamlit polish.
 
 ---
 
