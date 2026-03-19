@@ -104,9 +104,17 @@ Structured JSON logs (one file per game, directory per tournament)
     ├──→ Streamlit dashboard (Gini curves, twin-pair comparisons, property heatmaps)
     ├──→ Pixel art board replay (stretch)
     └──→ Agentic judges (structured data for knowledge graph parsing)
+
+Viewer has two data paths:
+    Replay mode:  game-*.json files ──→ viewer (file load / URL param)
+    Live mode:    eth_call to getFullState() ──→ vanilla JS ABI decode ──→ viewer
+                  (chain is source of truth during active games;
+                   game-*.json only written on completion via saveGameLog)
 ```
 
 **Key design principle**: The JSON log schema is the contract between the game engine and all downstream consumers. Provision the data shape on Day 2, build the views on Days 5-8.
+
+**Viewer live mode**: Zero external dependencies. ABI decoding is vanilla JS hex word slicing (no ethers.js, no viem). Transport is HTTP `fetch` to RPC endpoint. WebSocket path preserved in `agents/src/chain/client.ts` for future Alchemy upgrade.
 
 **Base partner integration**: Chain deployment + CDP SQL API queries on `base.events` = data partner, not just hosting partner.
 

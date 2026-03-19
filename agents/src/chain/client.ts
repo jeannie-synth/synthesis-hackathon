@@ -52,16 +52,19 @@ export function toWsUrl(httpUrl: string): string | null {
   return null;
 }
 
-/** Create a transport — prefers WebSocket for live RPCs (instant receipt notification),
- *  falls back to HTTP for Anvil or if no WS URL is available. */
+/** Create a transport — HTTP only. WebSocket was dropped because Alchemy disconnects
+ *  on long-running games (especially with voting enabled).
+ *  To re-enable WebSocket, uncomment the block below. */
 export function createTransport(network: "anvil" | "base-sepolia", rpcUrl?: string): Transport {
   const chain = getChain(network);
   const httpUrl = rpcUrl ?? chain.rpcUrls.default.http[0];
 
-  if (network !== "anvil") {
-    const wsUrl = toWsUrl(httpUrl);
-    if (wsUrl) return webSocket(wsUrl);
-  }
+  // WebSocket disabled — Alchemy drops connections on long games with voting.
+  // Uncomment to re-enable for faster receipt notification:
+  // if (network !== "anvil") {
+  //   const wsUrl = toWsUrl(httpUrl);
+  //   if (wsUrl) return webSocket(wsUrl);
+  // }
 
   return http(httpUrl);
 }

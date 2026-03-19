@@ -179,6 +179,13 @@
     color: var(--dim); font-size: 13px; text-align: center; transition: all 0.15s;
   }
   .drop-zone.dragover { border-color: var(--accent); color: var(--text); }
+
+  /* ─── Live mode ─── */
+  .live-badge { display: inline-flex; align-items: center; gap: 5px; padding: 2px 8px; border-radius: 3px; font-size: 11px; font-weight: 700; letter-spacing: 0.5px; background: rgba(40,180,80,0.15); color: #40c080; border: 1px solid #308060; }
+  .live-dot { width: 6px; height: 6px; border-radius: 50%; background: #40c080; animation: livePulse 1.5s infinite; }
+  @keyframes livePulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+  .live-status { font-size: 11px; color: var(--dim); }
+  .live-waiting { text-align: center; padding: 40px; color: var(--dim); font-size: 14px; }
 </style>
 </head>
 <body>
@@ -206,7 +213,9 @@
     <span id="round-label" style="color:var(--dim); font-size:12px;">Round 0</span>
     <span id="mode-badge" class="mode-badge">Monopolist</span>
   </div>
-  <div style="font-size:12px; color:var(--dim);">
+  <div style="display:flex; align-items:center; gap:10px; font-size:12px; color:var(--dim);">
+    <span id="live-badge" class="live-badge" style="display:none"><span class="live-dot"></span>LIVE</span>
+    <span id="live-status" class="live-status" style="display:none"></span>
     <span id="treasury-label">Treasury: $0</span>
   </div>
 </header>
@@ -603,6 +612,170 @@ document.addEventListener('DOMContentLoaded',()=>{
   const params=new URLSearchParams(window.location.search);
   const gu=params.get('game');
   if(gu) fetch(gu).then(r=>r.json()).then(loadGame).catch(e=>console.error('Load failed:',e));
+
+  // ─── Live spectator mode ───
+  // URL: ?live=true&contract=0x...&gameId=42&chain=base
+  const isLive=params.get('live')==='true';
+  if(isLive){
+    const contractAddr=params.get('contract');
+    const liveGameId=parseInt(params.get('gameId')||'1',10);
+    const chain=params.get('chain')||'base';
+    const RPC_MAP={base:'https://mainnet.base.org','base-sepolia':'https://sepolia.base.org',anvil:'http://localhost:8545'};
+    const rpcUrl=RPC_MAP[chain]||RPC_MAP.base;
+
+    if(!contractAddr){console.error('Live mode requires &contract=0x...');return;}
+
+    // getFullState(uint256) selector = keccak256("getFullState(uint256)") first 4 bytes
+    // Verified via: cast sig "getFullState(uint256)" → 0x300235ac
+    const SELECTOR='0x300235ac';
+    const gameIdHex=liveGameId.toString(16).padStart(64,'0');
+
+    // Show viewer immediately
+    document.getElementById('load-screen').style.display='none';
+    document.getElementById('game-viewer').style.display='flex';
+    document.getElementById('live-badge').style.display='inline-flex';
+    document.getElementById('live-status').style.display='inline';
+    document.getElementById('live-status').textContent='Connecting...';
+    // Hide replay controls in live mode
+    document.querySelector('.controls').style.display='none';
+
+    let liveInitialized=false;
+    let lastTurnsTaken=-1;
+
+    async function pollLive(){
+      try{
+        const resp=await fetch(rpcUrl,{method:'POST',headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({jsonrpc:'2.0',method:'eth_call',params:[{to:contractAddr,data:SELECTOR+gameIdHex},'latest'],id:1})});
+        const json=await resp.json();
+        if(json.error){document.getElementById('live-status').textContent='RPC error: '+json.error.message;return;}
+        const decoded=decodeGameState(json.result);
+        if(!decoded){document.getElementById('live-status').textContent='Decode error';return;}
+
+        if(!liveInitialized){
+          const modeStr=decoded.mode===0?'Monopolist':'Prosperity';
+          renderBoard(document.getElementById('board-svg'),modeStr);
+          state.players=decoded.players.map((p,i)=>({address:p.addr,cash:Number(p.cash),position:Number(p.position),
+            inJail:p.inJail,netWorth:0,strategy:p.addr.slice(0,6)+'...'+p.addr.slice(-4)}));
+          liveInitialized=true;
+        }
+
+        // Update state from contract
+        state.mode=decoded.mode===0?'Monopolist':'Prosperity';
+        state.round=Number(decoded.round);
+        state.treasury=Number(decoded.treasury);
+        for(let i=0;i<decoded.players.length;i++){
+          const p=decoded.players[i];
+          if(i<state.players.length){
+            state.players[i].cash=Number(p.cash);
+            state.players[i].position=Number(p.position);
+            state.players[i].inJail=p.inJail;
+          }
+        }
+        state.properties={};
+        const ZERO='0x0000000000000000000000000000000000000000';
+        for(let pos=0;pos<40;pos++){
+          const prop=decoded.properties[pos];
+          if(prop.owner!==ZERO){
+            const ownerIdx=decoded.players.findIndex(p=>p.addr.toLowerCase()===prop.owner.toLowerCase());
+            if(ownerIdx>=0) state.properties[pos]={owner:ownerIdx,houses:prop.houses};
+          }
+        }
+        // Compute net worth
+        for(let i=0;i<state.players.length;i++){
+          let nw=state.players[i].cash;
+          for(const[pos,pr] of Object.entries(state.properties)){if(pr.owner===i)nw+=(BOARD[pos]?.price||0)+pr.houses*50;}
+          state.players[i].netWorth=nw;
+        }
+
+        updateBoard();
+        updateLiveCards(decoded);
+
+        const turnsTaken=Number(decoded.turnsTaken);
+        const pCount=decoded.players.length;
+
+        if(turnsTaken===0){
+          document.getElementById('live-status').textContent=`Waiting for players... (${pCount}/6 joined)`;
+        } else if(decoded.gameOver){
+          document.getElementById('live-status').textContent='Game over!';
+          document.getElementById('live-badge').innerHTML='<span class="live-dot" style="background:#888;animation:none"></span>ENDED';
+          return; // Stop polling
+        } else {
+          const curIdx=Number(decoded.currentPlayerIndex);
+          const curAddr=decoded.players[curIdx]?.addr||'?';
+          document.getElementById('live-status').textContent=
+            `Turn ${turnsTaken} | Round ${state.round} | ${curAddr.slice(0,6)}...${curAddr.slice(-4)}'s turn`;
+        }
+        lastTurnsTaken=turnsTaken;
+      }catch(e){document.getElementById('live-status').textContent='Poll error: '+e.message;}
+      setTimeout(pollLive,5000);
+    }
+
+    function updateLiveCards(decoded){
+      const ct=document.getElementById('player-cards');
+      const curIdx=Number(decoded.currentPlayerIndex);
+      const maxNW=Math.max(...state.players.map(p=>p.netWorth),1);
+      ct.innerHTML='';
+      for(let i=0;i<state.players.length;i++){
+        const p=state.players[i];
+        const act=i===curIdx&&!decoded.gameOver;
+        const win=decoded.gameOver&&decoded.winner.toLowerCase()===decoded.players[i].addr.toLowerCase();
+        const card=document.createElement('div');
+        card.className='player-card'+(act?' active':'')+(win?' winner':'');
+        const badge=win?'<span class="player-badge badge-winner">WINNER</span>':act?'<span class="player-badge badge-active">ACTIVE</span>':'';
+        const jail=p.inJail?' <span style="color:#cc3030">[JAIL]</span>':'';
+        let pc=0;for(const k in state.properties)if(state.properties[k].owner===i)pc++;
+        card.innerHTML=`<div class="player-name"><span class="player-dot" style="background:${PLAYER_COLORS[i]}"></span>${p.strategy}${jail}${badge}</div>
+          <div class="player-stats"><span class="label">Cash:</span><span class="val">$${p.cash}</span><span class="label">Net worth:</span><span class="val">$${p.netWorth}</span><span class="label">Position:</span><span class="val">${BOARD[p.position]?.name||p.position}</span><span class="label">Properties:</span><span class="val">${pc}</span></div>
+          <div class="wealth-bar-bg"><div class="wealth-bar" style="width:${(p.netWorth/maxNW*100).toFixed(1)}%;background:${PLAYER_COLORS[i]}"></div></div>`;
+        ct.appendChild(card);
+      }
+      // Info panel
+      const info=document.getElementById('info-panel');
+      info.innerHTML=`<div class="row"><span class="label">Game:</span><span>#${liveGameId} ${state.mode}</span></div>
+        <div class="row"><span class="label">Chain:</span><span>${chain}</span></div>
+        <div class="row"><span class="label">Players:</span><span>${decoded.players.length}</span></div>
+        <div class="row"><span class="label">Contract:</span><span style="font-size:10px">${contractAddr.slice(0,10)}...${contractAddr.slice(-6)}</span></div>`;
+    }
+
+    // ─── ABI decode: getFullState response (zero-dependency) ───
+    // Known fixed tuple — decode via hex word slicing, no ethers/viem needed.
+    // Layout: 17 scalar slots, offset to players[], properties[40] in-place.
+    pollLive();
+
+    function decodeGameState(hexData){
+      if(!hexData||hexData==='0x') return null;
+      try{
+        const hex=hexData.slice(2+64); // skip 0x prefix + 32-byte ABI offset word
+        const w=(i)=>hex.slice(i*64,(i+1)*64);
+        const uint=(i)=>Number(BigInt('0x'+w(i)));
+        const bool=(i)=>uint(i)!==0;
+        const addr=(i)=>'0x'+w(i).slice(24);
+        const big=(i)=>BigInt('0x'+w(i));
+
+        // Slot 17: byte offset to dynamic players[] → word index
+        const pOff=uint(17)/32;
+        // Slots 18-97: properties[40], 2 words each (address, uint8)
+        const properties=[];
+        for(let i=0;i<40;i++){const b=18+i*2;properties.push({owner:addr(b),houses:uint(b+1)});}
+        // Dynamic players array at offset
+        const nPlayers=uint(pOff);
+        const players=[];
+        for(let i=0;i<nPlayers;i++){const b=pOff+1+i*7;
+          players.push({addr:addr(b),cash:big(b+1),position:big(b+2),
+            inJail:bool(b+3),turnsInJail:uint(b+4),lastContributionRound:big(b+5),
+            dividendsReceived:big(b+6)});}
+
+        return {
+          gameId:uint(0),tournamentId:uint(1),mode:uint(2),treasury:big(3),
+          currentPlayerIndex:big(4),round:big(5),turnsTaken:big(6),
+          gameOver:bool(7),winner:addr(8),lastDice1:uint(9),lastDice2:uint(10),
+          modeSwitchCount:uint(11),modeSwitchProposed:bool(12),votingEnabled:bool(13),
+          hasRolled:bool(14),monopolistWinThreshold:big(15),prosperityWinThreshold:big(16),
+          players,properties,
+        };
+      }catch(e){console.error('Decode error:',e);return null;}
+    }
+  }
 });
 </script>
 </body>

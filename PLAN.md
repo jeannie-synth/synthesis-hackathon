@@ -430,7 +430,7 @@ The JSON log schema is the contract between the game engine and all visualizatio
 - [x] Orchestrator: `NonceManager` per wallet (nonce advanced only after confirmed receipt)
 - [x] Orchestrator: `OrchestratorLog` JSONL telemetry
 - [x] Orchestrator: FY shuffle for turn order bias elimination
-- [x] Orchestrator: WebSocket transport for Sepolia
+- [x] ~~Orchestrator: WebSocket transport for Sepolia~~ — REVERTED Day 8: Alchemy drops WS on long games, switched back to HTTP
 - [x] Orchestrator: Board space cache
 - [x] ABI re-extracted (76 entries)
 - [x] Default network flipped to base-sepolia
@@ -518,11 +518,17 @@ The JSON log schema is the contract between the game engine and all visualizatio
 ## Day 7 — Mar 19: Tournaments + Viewer Live Play + Phase 3+4 Dev
 
 ### Sepolia tournaments (sequential, unattended — ~8-12 hrs total)
-- [ ] Phase 1 tournament completes (RUNNING, ~3-4 hrs remaining)
+- [x] Phase 1 tournament completes
 - [ ] Top up agent wallets from deployer if needed (check after Phase 1)
-- [ ] Phase 2 tournament: 15+15 games, `VOTING=true`, tournamentId=200 (~3-4 hrs)
-- [ ] Phase 3 tournament: 15+15 games, signaling enabled, tournamentId=300 (~3-4 hrs)
-- [ ] (Stretch) Phase 4 tournament: 15+15 games, evolution, tournamentId=400 (~3-4 hrs, may push overnight)
+- [ ] Phase 2 tournament: 15+15 games, `VOTING=true` (~3-4 hrs) — **BLOCKED by 2 bugs, fixes applied Day 8, testing**
+- [ ] Phase 3 tournament: 15+15 games, signaling enabled (~3-4 hrs)
+- [ ] (Stretch) Phase 4 tournament: 15+15 games, evolution (~3-4 hrs, may push overnight)
+
+### Day 8 fixes (required for Phase 2 tournament)
+- [x] Bug fix: WebSocket transport drops on long games → switched `createTransport()` to HTTP-only
+- [x] Bug fix: Pending vote deadlock → split voting into proposal + resolution blocks, `AlreadyVoted` tolerance
+- [ ] Validate 1-pair test on Sepolia (GAMES=1, VOTING=true) — running
+- [ ] Clean up dead WebSocket code (toWsUrl, webSocket import)
 
 ### Tournament data labeling
 - tournamentId: 100 (Phase 1), 200 (Phase 2), 300 (Phase 3), 400 (Phase 4)
@@ -551,9 +557,12 @@ The JSON log schema is the contract between the game engine and all visualizatio
 - [ ] Host skill file at a public URL (GitHub raw, or via repo GitHub Pages)
 - [ ] Share in hackathon Telegram once mainnet is live
 
-**Viewer live play mode** (DEPRIORITIZED — agents play via contract, not via viewer):
+**Viewer live spectator mode**:
+- [x] Drop ethers.js CDN dependency — replaced with zero-dependency vanilla JS ABI decoder (Day 8, Session 15)
+- [x] Fix ABI offset bug — skip Solidity's leading tuple wrapper word (Day 8, Session 15)
+- [x] Live board renders via `eth_call` polling, no external scripts (verified on gameId=18, base-sepolia)
+- [ ] Live ticker (action feed) — needs state-diff detection in `pollLive()` (non-critical, cosmetic)
 - [ ] (Stretch) Wallet connection + action buttons for human play
-- [ ] Viewer remains as spectator/replay tool (already works)
 
 **Streamlit phase awareness**:
 - [ ] Directory selector shows phase label (Phase 1/2/3/4)

@@ -19,6 +19,29 @@ const REVERT_REASONS = [
   "CantBuyInProsperityPark",
 ] as const;
 
+/** 4-byte selectors for custom errors — decoded via `cast sig "ErrorName()"`.
+ *  Custom errors on-chain produce raw hex selectors, not human-readable strings.
+ *  Viem can't decode them without the ABI in the error context. */
+const ERROR_SELECTORS: Record<string, string> = {
+  "0x7c9a1cf9": "AlreadyVoted",
+  "0x99e66ee9": "VotePending",
+  "0xdbd05e83": "AlreadyRolled",
+  "0xe60c8f58": "NotYourTurn",
+  "0xa316da96": "SwitchAlreadyProposed",
+  "0x6b303685": "NoSwitchProposed",
+  "0x00a30971": "GameNotActive",
+  "0x59dc4d72": "PlayerInJail",
+  "0x7c35fd11": "VotingDisabled",
+  "0x94b3c8bf": "MustRollFirst",
+  "0xf5b3d09d": "NotInJail",
+  "0x41c7afef": "NoBuyoutInProsperity",
+  "0x356680b7": "InsufficientFunds",
+  "0xda03c7e9": "PropertyNotAvailable",
+  "0x9a517dab": "NotPropertyOwner",
+  "0x5a7a01c6": "MaxHousesReached",
+  "0xfbc30e0d": "CantBuyInProsperityPark",
+};
+
 /** Parse the contract revert reason from a viem error — walks the full error tree */
 function parseRevertReason(e: any): string {
   // 1. Check all string fields that viem might put the custom error name in
@@ -41,7 +64,24 @@ function parseRevertReason(e: any): string {
     if (walked?.data?.errorName) return walked.data.errorName;
   } catch {}
 
-  // 3. Fallback — dump everything useful
+  // 3. Match raw revert data hex against known 4-byte selectors
+  const dataFields = [
+    e.data, e.cause?.data, e.cause?.cause?.data,
+    typeof e.walk === "function" ? e.walk()?.data?.data : null,
+  ];
+  for (const d of dataFields) {
+    if (typeof d === "string" && d.startsWith("0x") && d.length >= 10) {
+      const selector = d.slice(0, 10).toLowerCase();
+      if (ERROR_SELECTORS[selector]) return ERROR_SELECTORS[selector];
+    }
+    // viem sometimes nests data as { data: "0x..." }
+    if (d && typeof d === "object" && typeof d.data === "string") {
+      const selector = d.data.slice(0, 10).toLowerCase();
+      if (ERROR_SELECTORS[selector]) return ERROR_SELECTORS[selector];
+    }
+  }
+
+  // 4. Fallback — dump everything useful
   const short = e.shortMessage || "";
   const cause = e.cause?.shortMessage || e.cause?.message || "";
   const details = e.details || "";
@@ -602,7 +642,8 @@ export async function runGameLoop(config: GameLoopConfig): Promise<GameLog> {
       // === NORMAL TURN (or freed from jail via buyout) ===
 
       // 1. Optional mode switch proposal (before roll)
-      if (local.votingEnabled && !local.hasRolled && agent.decidePropose(toAgentState(local, currentIdx, boardSpaces))) {
+      if (local.votingEnabled && !local.hasRolled && !local.modeSwitchProposed &&
+          agent.decidePropose(toAgentState(local, currentIdx, boardSpaces))) {
         const receipt = await writeContract(publicClient, wallet, contractAddress, "proposeModeSwitch", [gameId], nonces, orchLog);
         applyReceipt(local, receipt);
         addTurnLog(log, tn, agent.name, agent.strategyName, "proposeModeSwitch", { currentMode: mode });
@@ -610,18 +651,32 @@ export async function runGameLoop(config: GameLoopConfig): Promise<GameLog> {
         for (const a of agents) {
           if (typeof (a as any).observeProposal === "function") (a as any).observeProposal();
         }
+      }
 
-        // All other agents vote — compare against lastSignals for promise-keeping
+      // 1b. Resolve pending vote — handles both fresh proposals and crash recovery
+      if (local.modeSwitchProposed) {
         for (let i = 0; i < agents.length; i++) {
           if (i === currentIdx) continue;
           const voterState = toAgentState(local, i, boardSpaces);
           const vote = agents[i].decideVote(voterState);
           const signaled = local.lastSignals.length > i ? local.lastSignals[i] : undefined;
           const keptPromise = signaled !== undefined ? signaled === vote : undefined;
-          const vReceipt = await writeContract(publicClient, agentWallets[i], contractAddress, "voteModeSwitch", [gameId, vote], nonces, orchLog);
-          applyReceipt(local, vReceipt);
-          addTurnLog(log, tn, agents[i].name, agents[i].strategyName, "vote", { inFavor: vote, signaled, keptPromise });
+          try {
+            const vReceipt = await writeContract(publicClient, agentWallets[i], contractAddress, "voteModeSwitch", [gameId, vote], nonces, orchLog);
+            applyReceipt(local, vReceipt);
+            addTurnLog(log, tn, agents[i].name, agents[i].strategyName, "vote", { inFavor: vote, signaled, keptPromise });
+          } catch (voteErr: any) {
+            // Vote reverted — AlreadyVoted, NoSwitchProposed, or ProposerCannotVote.
+            // On-chain reverts lose revert data (receipt has no reason), so we can't
+            // string-match the custom error. All possible reverts mean "skip this voter."
+            console.log(`  [${agents[i].name}] vote skipped (reverted: ${parseRevertReason(voteErr).slice(0, 60)})`);
+            continue;
+          }
         }
+
+        // Re-read chain state to pick up vote resolution
+        const postVote = await readGameState(publicClient, contractAddress, gameId);
+        Object.assign(local, initLocalState(postVote));
 
         if (local.gameOver) break;
         if (local.currentPlayerIndex !== currentIdx) {
@@ -629,7 +684,9 @@ export async function runGameLoop(config: GameLoopConfig): Promise<GameLog> {
           addTurnLog(log, tn, agent.name, agent.strategyName, "proposalRejected", {});
           continue;
         }
-        addTurnLog(log, tn, agent.name, agent.strategyName, "proposalPassed", { newMode: local.mode === 0 ? "Monopolist" : "Prosperity" });
+        if (!local.modeSwitchProposed) {
+          addTurnLog(log, tn, agent.name, agent.strategyName, "proposalPassed", { newMode: local.mode === 0 ? "Monopolist" : "Prosperity" });
+        }
       }
 
       // 2. Roll and move (skip if already rolled — resuming mid-turn)

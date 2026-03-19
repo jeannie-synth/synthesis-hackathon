@@ -100,13 +100,26 @@ Players cannot go bankrupt. If a player cannot pay, their balance goes to $0 and
 
 This mechanic is original to our simulation — not in Magie's game.
 
-- Any player may **propose a rule switch** once per round
-- All players **vote** (simple majority wins)
+- Any player may **propose a rule switch** before rolling (costs the turn if rejected)
+- The proposer implicitly votes in favor; all other players vote
+- **Passes if**: votesFor + 1 (proposer) > votesAgainst
 - If approved, the game transitions to the other rule set immediately
+- If rejected, the proposer's turn ends (they lose their roll)
 - Properties, positions, and balances carry over
 - The Public Treasury persists across switches
+- Voting is enabled per-game via `votingEnabled` flag in `createGame()`
 
-This allows emergent behavior: agents can collectively decide to change the economic system mid-game.
+This allows emergent behavior: agents can collectively decide to change the economic system mid-game. Proposing has a cost (risking your turn), creating a strategic tradeoff between political action and economic action.
+
+## Pre-Vote Signaling (Phase 3 — Off-Chain)
+
+At the end of each turn (after turn 0), all agents broadcast a **signal** of how they intend to vote if a proposal is made. Signals are non-binding — agents may lie.
+
+- **Honest strategies** (Generative, Pavlov when winning): signal matches actual vote
+- **Deceptive strategies** (Extractive, FreeRider): signal opposite of actual vote or signal cooperation while voting selfishly
+- **Mirroring strategies** (Conditional): mirror the majority signal from others
+
+The **promise-keeping rate** = (signals matching actual votes) / total signals, per strategy. This measures trustworthiness and reveals how deception propagates through the agent ecosystem.
 
 ## Simplifications for Simulation
 

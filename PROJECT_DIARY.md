@@ -793,3 +793,100 @@ All strategies already had `signalIntent()` implemented (from a prior scaffoldin
 - Run Phase 3 tournament on Sepolia (signaling data for dashboard)
 - Streamlit dashboard: add promise-keeping visualization
 - Agent-playable game architecture may inform Tasks 3 + 4 design
+
+---
+
+## Day 8 — March 19, 2026
+
+### Session 14 — Phase 2 Sepolia Tournament Attempt
+
+#### What happened
+
+Attempted to run Phase 2 tournament on Base Sepolia (15+15 games, `VOTING=true`). Two infrastructure bugs blocked completion.
+
+#### Bug 1: WebSocket transport drops on long-running games
+
+**Symptom**: Every game FAILED with "WebSocket request failed. The socket has been closed." 5/5 games crashed before completion.
+
+**Root cause**: `createTransport()` in `agents/src/chain/client.ts` auto-upgrades HTTP Alchemy URLs to WebSocket (`wss://`) for non-Anvil networks (added Day 5 for faster receipt notification). Voting adds more transactions per turn, making games longer. Alchemy's WebSocket connections drop before games finish.
+
+**Fix**: Changed `createTransport()` to always use `http()` transport. WebSocket speed benefit (~2-3s per receipt) is irrelevant when games crash. Dead code (`toWsUrl`, `webSocket` import) remains — cleanup deferred.
+
+**File**: `agents/src/chain/client.ts` lines 55-67
+
+#### Bug 2: Pending vote deadlock — `modeSwitchProposed` blocks `rollAndMove`
+
+**Symptom**: After switching to HTTP, Game 17 got stuck at round 11, turn 59. Conditional-2 in infinite retry loop — `rollAndMove` reverts with empty error, resync shows no state change.
+
+**Root cause**: On-chain query confirmed `modeSwitchProposed=true`. A `voteModeSwitch` tx from Generative failed with a nonce error during the second proposal's voting round. 3/4 votes landed on-chain, but the contract needs 4/4 to resolve the proposal. The orchestrator's game loop only runs voting code when an agent *decides to propose* — it has no recovery path for an already-pending proposal. After the error handler resyncs state (reads `modeSwitchProposed=true` from chain), it tries to `rollAndMove`, which the contract blocks with `VotePending()` revert (line 204 of `LandlordsGame.sol`).
+
+**Fix**: Split the voting logic into two blocks:
+1. **Proposal block** (line 605): Only fires when agent decides to propose AND `!modeSwitchProposed` (prevents double-proposal)
+2. **Vote resolution block** (new, after proposal): Fires whenever `modeSwitchProposed` is true — handles both fresh proposals and crash recovery. Each vote wrapped in try/catch to skip `AlreadyVoted` reverts from agents who voted before the crash.
+
+**File**: `orchestrator/src/game-loop.ts` lines 602-633
+
+#### Files changed
+- `agents/src/chain/client.ts` — `createTransport()` now always uses HTTP, no WebSocket upgrade
+- `orchestrator/src/game-loop.ts` — voting logic split into proposal + resolution, with `AlreadyVoted` tolerance
+
+#### Test status
+- 1-pair test (GAMES=1) running on Sepolia with both fixes applied
+- No proposals triggered yet in test game — vote recovery path not yet validated on-chain
+
+### What's next
+- Confirm test pair completes (validates HTTP transport fix)
+- If a proposal triggers, confirm vote recovery works
+- If test passes: commit, then run full Phase 2 tournament (15+15 games)
+- Clean up dead WebSocket code (`toWsUrl`, `webSocket` import)
+
+---
+
+## Day 8 (cont.) — March 19, 2026
+
+### Session 15 — Viewer: Drop ethers.js, zero-dependency ABI decode
+
+**Context**: Live spectator viewer (`viewer/index.html`) failed to render live game data. Browser wallet extensions (MetaMask/Coinbase Wallet) run SES lockdown that blocks dynamically injected scripts. The viewer was dynamically injecting ethers.js from CDN (`document.createElement('script')` → `document.head.appendChild`), which SES killed with `ERR_NETWORK_IO_SUSPENDED`. The raw `eth_call` RPC succeeded, but ABI decoding never happened because `_abiCoder` was never initialized.
+
+#### Design discussion
+
+Goldi questioned the architecture before accepting any fix:
+
+1. **Why ethers.js at all?** — The viewer needs to decode `getFullState()` ABI responses. The orchestrator writes `.jsonl` event logs live, but `game-*.json` summary files (which the replay viewer consumes) only get written on game completion via `saveGameLog`. During live games, the chain is the source of truth, so the viewer polls `eth_call` directly. The response is ABI-encoded — a decoder is needed.
+
+2. **WebSocket path preservation** — Goldi wanted to ensure we weren't closing off the Alchemy WebSocket path permanently. Confirmed: transport (HTTP vs WebSocket) and decoder are independent layers. The vanilla JS decoder works with any transport — same ABI hex payload regardless. `toWsUrl()` and `webSocket` import remain in `agents/src/chain/client.ts`, one-line change to re-enable.
+
+3. **Zero-dependency principle** — Goldi's direction: "HTTP, no WebSocket, no library bundling." Drop ethers.js entirely. The ABI return type is a known, fixed tuple — decode it with vanilla JS hex slicing.
+
+#### Changes
+
+**`viewer/index.html`** — two edits:
+
+1. **Removed** ethers.js dynamic loader (6 lines: `createElement('script')`, CDN URL, `onload`/`onerror`, `appendChild`) and `_abiCoder` variable. Replaced with direct `pollLive()` call.
+
+2. **Rewrote `decodeGameState()`** — ~25 lines of vanilla JS. Hex word slicing for the ABI tuple:
+   - Slots 0-16: 17 scalar fields (uint256, uint8, bool, address)
+   - Slot 17: byte offset to dynamic `players[]` array
+   - Slots 18-97: `properties[40]` fixed array (2 words each)
+   - At offset: length + N×7 words of player tuples
+
+3. **Bug fix**: Added `+64` hex char skip for Solidity's ABI tuple wrapper (leading offset word `0x20`). First attempt hit `Cannot convert 0x to a BigInt` because the decoder was reading past the end of the hex data — the leading offset word shifted all indices by one.
+
+#### Verification
+
+- Opened `viewer/index.html?live=true&contract=0xda1557c901ff5b7a0d9f0d0da17fef55b2d59d85&gameId=18&chain=base-sepolia`
+- No console errors (only harmless `favicon.ico` 404)
+- Board renders, player cards update, live status shows turn/round info
+- No CDN requests — zero external dependencies
+
+#### Known limitation: Live ticker empty
+
+The action feed (bottom-right ticker panel) is empty in live mode. `addTicker()` is only called from the replay path. Live mode polls aggregate state via `getFullState()` — it doesn't receive per-turn action events. **Future fix**: state-diff detection in `pollLive()` — compare previous poll to current, log changes (turn advanced, property bought, mode switched) to the ticker.
+
+#### Files changed
+- `viewer/index.html` — removed ethers.js CDN loader, rewrote `decodeGameState()` as zero-dependency vanilla JS
+
+### What's next
+- Live ticker state-diff detection (future, non-critical)
+- Continue Phase 2 tournament on Sepolia
+- Commit viewer fix once confirmed stable

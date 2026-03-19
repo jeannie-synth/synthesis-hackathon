@@ -991,3 +991,53 @@ Goldi asked where Alchemy Smart WebSockets come in. Answer: live spectator mode 
 - Metrics refactor deferred with rationale
 
 **No files modified in orchestrator/, agents/, contracts/, or viewer/ — parallel terminal safe.**
+
+---
+
+## Day 8 — March 19, 2026
+
+### [fix] Session 15: Live viewer — drop ethers.js, zero-dep ABI decode
+
+Goldi opened a parallel session to fix the live spectator viewer, which was broken by SES lockdown from browser wallet extensions.
+
+### [discussion] "What's actually going on here?"
+
+The initial fix proposal was simple: self-host ethers.js instead of loading from CDN. Goldi pushed back:
+
+> "wait a minute, I thought we said viem wasn't the problem, what's going on here? let's discuss!"
+
+This led to an architecture review. Goldi asked whether the viewer should be receiving webhooks instead of polling the chain directly. Jeannie traced the data flow gap:
+
+- The orchestrator writes `.jsonl` event logs live (debug format)
+- `game-*.json` summary files only get written on game completion via `saveGameLog()`
+- During live games, there's no JSON to poll — the chain is the source of truth
+- So the live mode had to poll `eth_call` directly, which required ethers.js for ABI decoding
+
+### [decision] Zero-dependency principle
+
+Goldi's direction was clear:
+
+> "HTTP, no WebSocket, no library bundling."
+
+Drop ethers entirely. The ABI return type is a known, fixed tuple — decode it with vanilla JS hex word slicing. No CDN, no bundled library, no dynamic script injection.
+
+### [decision] WebSocket path preserved
+
+Goldi also asked:
+
+> "I'm not sure we want to erase the previous code with the websockets, do we? like close it forever? what if we just pay for alchemy?"
+
+Jeannie clarified that transport (HTTP vs WebSocket) and decoder are independent layers. The vanilla JS decoder works with any transport — same ABI hex payload regardless. WebSocket infrastructure in `client.ts` (`toWsUrl()`, `webSocket` import) is untouched. One-line change to re-enable with Alchemy.
+
+### [implementation] Two fixes applied
+
+1. Replaced ethers.js dynamic loader + ethers-based `decodeGameState()` with direct `pollLive()` call + 25-line vanilla JS ABI decoder
+2. Fixed off-by-one: Solidity wraps the return tuple with a 32-byte offset prefix (`0x20`). First attempt read word 0 as `gameId` when it was actually the offset, causing `Cannot convert 0x to a BigInt` when reading past the hex data
+
+### [verification] Live on base-sepolia
+
+Opened viewer with `gameId=18`, `chain=base-sepolia`. Board renders, player cards update, live status shows turn/round. No console errors, no CDN requests. Only known gap: the action feed ticker is empty in live mode (it only populates in replay mode — future fix via state-diff detection).
+
+### [note] Architecture insight documented
+
+The session surfaced an important architectural observation: the viewer's live mode exists because the orchestrator doesn't write viewer-compatible JSON during active games. The `.jsonl` is debug-only, `game-*.json` is completion-only. If the orchestrator wrote incremental JSON, the viewer wouldn't need chain access at all. Noted as a post-hackathon cleanup.
