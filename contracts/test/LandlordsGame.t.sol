@@ -138,10 +138,9 @@ contract LandlordsGameTest is Test {
     }
 
     function test_createGame_reverts_tooFewPlayers() public {
-        address[] memory solo = new address[](1);
-        solo[0] = alice;
-        vm.expectRevert("2-6 players");
-        game.createGame(1, GameMode.Monopolist, solo, 0, 0, true);
+        address[] memory empty = new address[](0);
+        vm.expectRevert("1-6 players");
+        game.createGame(1, GameMode.Monopolist, empty, 0, 0, true);
     }
 
     // ======== 2. Multi-Game Independence ========

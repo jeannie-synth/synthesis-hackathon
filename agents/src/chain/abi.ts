@@ -176,6 +176,19 @@ export const LANDLORDS_GAME_ABI = [
   },
   {
     "type": "function",
+    "name": "VOTE_DEADLINE_BLOCKS",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
     "name": "buildHouse",
     "inputs": [
       {
@@ -261,6 +274,34 @@ export const LANDLORDS_GAME_ABI = [
     ],
     "outputs": [],
     "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "findOpenGame",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "gameId",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "playerCount",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "mode",
+        "type": "uint8",
+        "internalType": "enum GameMode"
+      },
+      {
+        "name": "found",
+        "type": "bool",
+        "internalType": "bool"
+      }
+    ],
+    "stateMutability": "view"
   },
   {
     "type": "function",
@@ -370,6 +411,16 @@ export const LANDLORDS_GAME_ABI = [
       },
       {
         "name": "prosperityWinThreshold",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "proposalBlock",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "proposerIndex",
         "type": "uint256",
         "internalType": "uint256"
       }
@@ -953,6 +1004,31 @@ export const LANDLORDS_GAME_ABI = [
   },
   {
     "type": "event",
+    "name": "GameStarted",
+    "inputs": [
+      {
+        "name": "gameId",
+        "type": "uint256",
+        "indexed": true,
+        "internalType": "uint256"
+      },
+      {
+        "name": "playerCount",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "players",
+        "type": "address[]",
+        "indexed": false,
+        "internalType": "address[]"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
     "name": "GameWon",
     "inputs": [
       {
@@ -1067,6 +1143,31 @@ export const LANDLORDS_GAME_ABI = [
       },
       {
         "name": "propertiesLost",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "ModeSwitchExpired",
+    "inputs": [
+      {
+        "name": "gameId",
+        "type": "uint256",
+        "indexed": true,
+        "internalType": "uint256"
+      },
+      {
+        "name": "proposer",
+        "type": "address",
+        "indexed": false,
+        "internalType": "address"
+      },
+      {
+        "name": "round",
         "type": "uint256",
         "indexed": false,
         "internalType": "uint256"
@@ -1215,6 +1316,31 @@ export const LANDLORDS_GAME_ABI = [
       },
       {
         "name": "votesAgainst",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "PlayerJoined",
+    "inputs": [
+      {
+        "name": "gameId",
+        "type": "uint256",
+        "indexed": true,
+        "internalType": "uint256"
+      },
+      {
+        "name": "player",
+        "type": "address",
+        "indexed": false,
+        "internalType": "address"
+      },
+      {
+        "name": "newPlayerCount",
         "type": "uint256",
         "indexed": false,
         "internalType": "uint256"

@@ -22,6 +22,7 @@ contract LandlordsGame {
     uint256 public constant DEFAULT_PROSPERITY_WIN = 1000;
     uint8 public constant BOARD_SIZE = 40;
     uint8 public constant JAIL_POSITION = 10;
+    uint256 public constant VOTE_DEADLINE_BLOCKS = 100; // ~3 minutes on Base
 
     // ============ Shared Board State ============
     mapping(uint256 => Space) public spaces;
@@ -52,6 +53,9 @@ contract LandlordsGame {
         // Win thresholds (configurable per game)
         uint256 monopolistWinThreshold;
         uint256 prosperityWinThreshold;
+        // Vote deadline
+        uint256 proposalBlock;  // block when proposal was made
+        uint256 proposerIndex;  // index of the proposer in gamePlayers
     }
 
     mapping(uint256 => GameCore) public games;
@@ -96,6 +100,9 @@ contract LandlordsGame {
     );
     event ContributionMade(uint256 indexed gameId, address indexed player, uint256 round);
     event LiquidationSettled(uint256 indexed gameId, address indexed player, uint256 newCash, uint256 propertiesLost);
+    event PlayerJoined(uint256 indexed gameId, address player, uint256 newPlayerCount);
+    event GameStarted(uint256 indexed gameId, uint256 playerCount, address[] players);
+    event ModeSwitchExpired(uint256 indexed gameId, address proposer, uint256 round);
 
     // ============ Errors ============
     error NotYourTurn();
@@ -141,7 +148,7 @@ contract LandlordsGame {
         uint256 prosperityThreshold,
         bool votingEnabled
     ) external returns (uint256 gameId) {
-        require(playerAddrs.length >= 2 && playerAddrs.length <= 6, "2-6 players");
+        require(playerAddrs.length >= 1 && playerAddrs.length <= 6, "1-6 players");
 
         gameId = nextGameId++;
         GameCore storage g = games[gameId];
@@ -189,6 +196,7 @@ contract LandlordsGame {
             dividendsReceived: 0
         }));
         g.playerCount++;
+        emit PlayerJoined(gameId, msg.sender, g.playerCount);
     }
 
     // ============ Turn Actions ============
@@ -197,11 +205,34 @@ contract LandlordsGame {
     function rollAndMove(uint256 gameId) external {
         GameCore storage g = games[gameId];
         if (g.gameOver) revert GameNotActive();
+        require(g.playerCount >= 2, "Need 2+ players");
+
+        // Auto-expire stale mode switch proposals
+        if (g.modeSwitchProposed && block.number > g.proposalBlock + VOTE_DEADLINE_BLOCKS) {
+            address proposerAddr = gamePlayers[gameId][g.proposerIndex].addr;
+            emit ModeSwitchExpired(gameId, proposerAddr, g.round);
+            g.modeSwitchProposed = false;
+            g.modeSwitchVotesFor = 0;
+            g.modeSwitchVotesAgainst = 0;
+            for (uint256 i = 0; i < g.playerCount; i++) {
+                hasVotedOnSwitch[gameId][gamePlayers[gameId][i].addr] = false;
+            }
+        }
+
         Player storage player = gamePlayers[gameId][g.currentPlayerIndex];
         if (player.addr != msg.sender) revert NotYourTurn();
         if (player.inJail) revert PlayerInJail();
         if (g.hasRolled) revert AlreadyRolled();
         if (g.modeSwitchProposed) revert VotePending();
+
+        // Emit GameStarted on the very first move
+        if (g.turnsTaken == 0) {
+            address[] memory playerAddrs = new address[](g.playerCount);
+            for (uint256 i = 0; i < g.playerCount; i++) {
+                playerAddrs[i] = gamePlayers[gameId][i].addr;
+            }
+            emit GameStarted(gameId, g.playerCount, playerAddrs);
+        }
 
         g.turnsTaken++;
         g.hasRolled = true;
@@ -353,6 +384,8 @@ contract LandlordsGame {
 
         g.modeSwitchProposed = true;
         g.modeSwitchProposer = msg.sender;
+        g.proposalBlock = block.number;
+        g.proposerIndex = g.currentPlayerIndex;
         g.modeSwitchVotesFor = 0;
         g.modeSwitchVotesAgainst = 0;
 
@@ -471,6 +504,17 @@ contract LandlordsGame {
     /// @notice Calculate a player's net worth
     function getNetWorth(uint256 gameId, uint256 playerIndex) external view returns (uint256) {
         return _calculateNetWorth(gameId, playerIndex);
+    }
+
+    /// @notice Find the first open game (not started, not full) for agents to join
+    function findOpenGame() external view returns (uint256 gameId, uint256 playerCount, GameMode mode, bool found) {
+        for (uint256 i = 1; i < nextGameId; i++) {
+            GameCore storage g = games[i];
+            if (!g.gameOver && g.turnsTaken == 0 && g.playerCount > 0 && g.playerCount < 6) {
+                return (i, g.playerCount, g.mode, true);
+            }
+        }
+        return (0, 0, GameMode.Monopolist, false);
     }
 
     // ============ Internal: Landing Effects ============
