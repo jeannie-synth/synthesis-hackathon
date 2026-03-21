@@ -17,6 +17,7 @@ export interface TurnLog {
   strategy: string; // Current strategy assignment — decoupled from agent name for Phase 4 (strategy evolution)
   action: string;
   details: Record<string, unknown>;
+  txHash?: string; // On-chain transaction hash — present for write actions, absent for off-chain (signals, proposal outcomes)
   timestamp: number;
 }
 
@@ -61,8 +62,8 @@ export function createGameLog(gameId: number, mode: string, playerAddresses: Add
   return { gameId, mode, playerAddresses, turns: [], roundSnapshots: [], result: null };
 }
 
-export function addTurnLog(log: GameLog, turnNumber: number, agent: string, strategy: string, action: string, details: Record<string, unknown>) {
-  log.turns.push({ turnNumber, agent, strategy, action, details, timestamp: Date.now() });
+export function addTurnLog(log: GameLog, turnNumber: number, agent: string, strategy: string, action: string, details: Record<string, unknown>, txHash?: string) {
+  log.turns.push({ turnNumber, agent, strategy, action, details, ...(txHash ? { txHash } : {}), timestamp: Date.now() });
 }
 
 export function addRoundSnapshot(log: GameLog, rawState: any, agents: Agent[]) {

@@ -497,10 +497,10 @@ async function writeContract(
     const receipt = await publicClient.waitForTransactionReceipt({ hash });
     nonceManager.advance(address);
     if (receipt.status === "reverted") {
-      orchLog.append({ ts: Date.now(), event: "txReverted", fn: functionName, agent: address.slice(0, 10), durationMs: Date.now() - t0, blockNumber: Number(receipt.blockNumber) });
+      orchLog.append({ ts: Date.now(), event: "txReverted", fn: functionName, agent: address.slice(0, 10), durationMs: Date.now() - t0, blockNumber: Number(receipt.blockNumber), txHash: hash });
       throw new Error(`${functionName} tx reverted on-chain (hash=${hash}, block=${receipt.blockNumber})`);
     }
-    orchLog.append({ ts: Date.now(), event: "txConfirmed", fn: functionName, agent: address.slice(0, 10), durationMs: Date.now() - t0, blockNumber: Number(receipt.blockNumber) });
+    orchLog.append({ ts: Date.now(), event: "txConfirmed", fn: functionName, agent: address.slice(0, 10), durationMs: Date.now() - t0, blockNumber: Number(receipt.blockNumber), txHash: hash });
     return receipt;
   } catch (e: any) {
     await nonceManager.resync(publicClient, address);
@@ -622,7 +622,7 @@ export async function runGameLoop(config: GameLoopConfig): Promise<GameLog> {
           try {
             const receipt = await writeContract(publicClient, wallet, contractAddress, "payJailBuyout", [gameId], nonces, orchLog);
             applyReceipt(local, receipt);
-            addTurnLog(log, tn, agent.name, agent.strategyName, "jailBuyout", { cost: buyoutCost });
+            addTurnLog(log, tn, agent.name, agent.strategyName, "jailBuyout", { cost: buyoutCost }, receipt.transactionHash);
           } catch {
             // Buyout failed — fall through to wait
           }
@@ -632,7 +632,7 @@ export async function runGameLoop(config: GameLoopConfig): Promise<GameLog> {
           // Still in jail — wait (turn ends via _finishTurn in contract)
           const receipt = await writeContract(publicClient, wallet, contractAddress, "waitInJail", [gameId], nonces, orchLog);
           applyReceipt(local, receipt);
-          addTurnLog(log, tn, agent.name, agent.strategyName, "jailWait", { turnsServed: local.players[currentIdx].turnsInJail });
+          addTurnLog(log, tn, agent.name, agent.strategyName, "jailWait", { turnsServed: local.players[currentIdx].turnsInJail }, receipt.transactionHash);
           continue; // Turn is over — _finishTurn advanced to next player
         }
 
@@ -646,7 +646,7 @@ export async function runGameLoop(config: GameLoopConfig): Promise<GameLog> {
           agent.decidePropose(toAgentState(local, currentIdx, boardSpaces))) {
         const receipt = await writeContract(publicClient, wallet, contractAddress, "proposeModeSwitch", [gameId], nonces, orchLog);
         applyReceipt(local, receipt);
-        addTurnLog(log, tn, agent.name, agent.strategyName, "proposeModeSwitch", { currentMode: mode });
+        addTurnLog(log, tn, agent.name, agent.strategyName, "proposeModeSwitch", { currentMode: mode }, receipt.transactionHash);
 
         for (const a of agents) {
           if (typeof (a as any).observeProposal === "function") (a as any).observeProposal();
@@ -664,7 +664,7 @@ export async function runGameLoop(config: GameLoopConfig): Promise<GameLog> {
           try {
             const vReceipt = await writeContract(publicClient, agentWallets[i], contractAddress, "voteModeSwitch", [gameId, vote], nonces, orchLog);
             applyReceipt(local, vReceipt);
-            addTurnLog(log, tn, agents[i].name, agents[i].strategyName, "vote", { inFavor: vote, signaled, keptPromise });
+            addTurnLog(log, tn, agents[i].name, agents[i].strategyName, "vote", { inFavor: vote, signaled, keptPromise }, vReceipt.transactionHash);
           } catch (voteErr: any) {
             // Vote reverted — AlreadyVoted, NoSwitchProposed, or ProposerCannotVote.
             // On-chain reverts lose revert data (receipt has no reason), so we can't
@@ -690,9 +690,11 @@ export async function runGameLoop(config: GameLoopConfig): Promise<GameLog> {
       }
 
       // 2. Roll and move (skip if already rolled — resuming mid-turn)
+      let rollTxHash: string | undefined;
       if (!local.hasRolled) {
         const receipt = await writeContract(publicClient, wallet, contractAddress, "rollAndMove", [gameId], nonces, orchLog);
         applyReceipt(local, receipt);
+        rollTxHash = receipt.transactionHash;
       }
 
       const dice1 = local.lastDice1;
@@ -702,7 +704,7 @@ export async function runGameLoop(config: GameLoopConfig): Promise<GameLog> {
         position: local.players[currentIdx].position,
         spaceName: boardSpaces[local.players[currentIdx].position].name,
         cash: local.players[currentIdx].cash,
-      });
+      }, rollTxHash);
 
       if (local.gameOver) break;
 
@@ -719,6 +721,7 @@ export async function runGameLoop(config: GameLoopConfig): Promise<GameLog> {
         console.log(`  [${agent.name}] endTurn pre-flight: hasRolled=${local.hasRolled}, gameOver=${local.gameOver}, currentIdx=${local.currentPlayerIndex}, expectedIdx=${currentIdx}, inJail=${local.players[currentIdx].inJail}, nonce=${expectedNonce}`);
         const receipt = await writeContract(publicClient, wallet, contractAddress, "endTurn", [gameId], nonces, orchLog);
         applyReceipt(local, receipt);
+        addTurnLog(log, tn, agent.name, agent.strategyName, "endTurn", {}, receipt.transactionHash);
       }
 
     } catch (e: any) {
@@ -802,7 +805,7 @@ async function tryBuyAndBuild(
     try {
       const receipt = await writeContract(publicClient, wallet, contractAddress, "buyProperty", [gameId], nonces, orchLog);
       applyReceipt(local, receipt);
-      addTurnLog(log, turnNumber, agent.name, agent.strategyName, "buy", { position: state.myPosition, price: state.spacePrice });
+      addTurnLog(log, turnNumber, agent.name, agent.strategyName, "buy", { position: state.myPosition, price: state.spacePrice }, receipt.transactionHash);
     } catch { /* Can't buy — silent */ }
   }
 
@@ -812,7 +815,7 @@ async function tryBuyAndBuild(
     try {
       const receipt = await writeContract(publicClient, wallet, contractAddress, "buildHouse", [gameId, BigInt(pos)], nonces, orchLog);
       applyReceipt(local, receipt);
-      addTurnLog(log, turnNumber, agent.name, agent.strategyName, "build", { position: pos });
+      addTurnLog(log, turnNumber, agent.name, agent.strategyName, "build", { position: pos }, receipt.transactionHash);
     } catch { /* Can't build — silent */ }
   }
 }

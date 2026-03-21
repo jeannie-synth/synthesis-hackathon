@@ -14,7 +14,7 @@ import streamlit as st
 
 # ─── Config ───
 
-DATA_ROOT = Path("/data/games")
+DATA_ROOT = Path(os.environ.get("DATA_ROOT", str(Path(__file__).parent.parent / "data" / "games")))
 STRATEGY_COLORS = {
     "Extractive": "#e74c3c",
     "Generative": "#2ecc71",
