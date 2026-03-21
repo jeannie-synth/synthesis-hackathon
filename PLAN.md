@@ -122,7 +122,7 @@ Agent strategies are drawn from experimental economics and game theory:
 - **Phase 1 (must-have)**: Fixed-rule parallel boards, benchmark data → *proves thesis*
 - **Phase 2 (should-have)**: Mode-switching votes, propose costs turn → *political dynamics*
 - **Phase 3 (batch only)**: Pre-vote signaling, agents may lie → *trust/betrayal metrics*
-- **Phase 4 (batch only)**: Strategy evolution, agent memory → *emergent adaptation*
+ - **Phase 4 (batch only)**: Strategy evolution, agent memory → *emergent adaptation*. Per-game strategy selection: agents choose different strategies for Monopolist vs Prosperity games, preventing selection bias against ideological archetypes.
 - **Open Game (must-have)**: Skill file + mainnet deploy → *any agent can play, real cooperation*
 
 ### Tournament Structure
@@ -597,9 +597,11 @@ Round flow:
 2. Agents 1-4 join each game via `joinGame`
 3. All 5 agents play all 6 games to completion (poll `getFullState`, act on their turn)
 4. All agents review on-chain results (`getFullState` for completed games)
-5. Each agent chooses a strategy for the next round and logs reasoning
-6. Round 1: choose based on strategy descriptions alone
+5. Each agent chooses a strategy **per game** (Monopolist and Prosperity separately) and logs reasoning
+6. Round 1: choose based on strategy descriptions alone (STRATEGY_ORDER defaults)
 7. Rounds 2-5: choose based on observed on-chain performance data
+
+**Per-game strategy selection** (Day 9 decision): Agents choose different strategies for Monopolist vs Prosperity games. This prevents selection bias against ideological strategies (Extractive dominates Monopolist but fails in Prosperity → rational agent averaging both would never pick it). Per-game choice IS the thesis: rational agents adapt behavior to the rule set.
 
 **Artifacts to create** (Jeannie, before running):
 - [ ] `docs/skill-demo.md` — internal skill file: game rules + ABI + 5 strategy descriptions (from TS source) + super tournament protocol + how to read past results
@@ -614,11 +616,11 @@ Round flow:
 - **Total: ~0.035 ETH**
 
 ### Phase A: Sepolia validation (FIRST — before mainnet)
-- [ ] Run 1 super tournament round on Sepolia (3 game pairs = 6 games, voting enabled)
-- [ ] Verify: all 5 agents can create/join/play/complete games autonomously
-- [ ] Verify: agents can read completed game states and choose strategies
-- [ ] Verify: turn coordination works (polling getFullState, no orchestrator)
-- [ ] Fix any issues found before mainnet
+- [x] Run 1 super tournament round on Sepolia (1 game pair, voting enabled) — Games 35+36, tournamentId=501
+- [x] Verify: all 5 agents can create/play/complete games — validated
+- [x] Verify: SC dynamics (voting, mode switching, jail, signaling) — all pass
+- [x] Fix issues: dotenv import, esbuild platform, STRATEGY_ORDER defaults
+- [ ] Verify: agents can read completed game states and choose strategies (Rounds 2+ — deferred to mainnet)
 
 ### Phase B: Mainnet deployment
 - [ ] Goldi funds deployer wallet on Base Mainnet (~0.035 ETH)

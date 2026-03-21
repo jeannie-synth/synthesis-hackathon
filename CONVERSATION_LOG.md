@@ -1041,3 +1041,86 @@ Opened viewer with `gameId=18`, `chain=base-sepolia`. Board renders, player card
 ### [note] Architecture insight documented
 
 The session surfaced an important architectural observation: the viewer's live mode exists because the orchestrator doesn't write viewer-compatible JSON during active games. The `.jsonl` is debug-only, `game-*.json` is completion-only. If the orchestrator wrote incremental JSON, the viewer wouldn't need chain access at all. Noted as a post-hackathon cleanup.
+
+ ---
+
+## Day 9 — March 21, 2026
+
+### [build] Session 16: Super Tournament Round 1 — Sepolia Validation
+
+Ran the first super tournament round on Sepolia. Two games (Monopolist + Prosperity), all 5 agents, voting and signaling enabled, tournamentId=501.
+
+**Agent 0's chosen strategy**: Conditional (Tit-for-Tat). Reasoning: no prior data, Conditional is the Axelrod tournament winner — starts cooperative, adapts to group behavior, best information-gathering strategy when the meta is unknown.
+
+### [fix] Three bugs found and fixed during run
+
+1. **Missing dotenv** — `super-round-1.ts` didn't import `dotenv/config`. `process.env.PRIVATE_KEY` was undefined, `privateKeyToAccount()` crashed on `.slice()`. One-line fix.
+
+2. **esbuild platform mismatch** — Host macOS `node_modules` mounted into Linux Docker container. esbuild has platform-specific native binaries. Fixed with `npm install --no-save @esbuild/linux-x64` inside container.
+
+3. **Strategy assignment bug** — The hardcoded strategy array skipped Extractive entirely. Agent 0 chose Conditional (replacing its default Extractive), but Agent 2 was ALSO Conditional — two Conditionals, no Extractive. Fixed: use `STRATEGY_ORDER` as base array, override only index 0.
+
+### [discussion] Strategy selection design — free choice vs forced coverage
+
+Goldi and Jeannie discussed whether to force all 5 archetypes to appear in every game:
+
+**Goldi**: *"If we force representation of all archetypes at game start, we might as well enforce it on all agents, not only on some... or, if we're showing them historical data and none of them choose a certain strategy, that's up to them too I guess."*
+
+**Jeannie**: Free choice is more philosophically honest. If rational agents reject Extractive after seeing data, that's a finding — not a gap. The rules create the behavioral divergence, not the starting strategy mix.
+
+**Decision**: Round 1 uses `STRATEGY_ORDER` defaults (no history available). Rounds 2+ agents choose freely based on historical on-chain data. No forced archetype coverage.
+
+### [discussion] Per-game strategy selection — the deeper insight
+
+Goldi identified a constraint that biases against ideological strategies:
+
+> "Agents are choosing to play both monopoly and prosperity with the same strategy. What if we enabled them to choose different strategies for each game?"
+
+The single-strategy-for-both constraint penalizes specialization. Extractive dominates Monopolist but gets destroyed in Prosperity — so a rational agent averaging across both games would never pick it. Same for Generative in reverse. The meta would converge on adaptive strategies (Conditional, Pavlov, FreeRider) and ideological archetypes would disappear.
+
+**Per-game strategy selection fixes this.** An agent could play Extractive in Monopolist and Generative in Prosperity — which is the *smart* play, and IS the thesis: rational agents adapt their behavior to the rule set. Same agent, different rules, different strategy. That's not a loophole — that's the finding expressed through agent choice.
+
+**Decision**: Agents choose strategies **per game**, not per round. Implementation: strategy tuple `{monopolist: "Extractive", prosperity: "Generative"}` instead of a single strategy name.
+
+### [discussion] Extractive ≠ Liar
+
+Goldi flagged: Extractive agents maximize wealth extraction openly — they don't need to lie about it. Deception (signaling cooperation while playing defection) is a separate behavioral axis, relevant only if Phase 3 signaling is active. An Extractive agent could honestly announce "I'm Extractive" and still play that way.
+
+**Decision**: Extractive honesty behavior stays as-is in code (lies in signals). The philosophical distinction is documented. Phase 3 signaling decision for the super tournament: on ice.
+
+### [validation] SC Dynamics — Complete
+
+Analyzed both super-tournament games against all contract mechanics:
+
+| Mechanic | Status | Evidence |
+|---|---|---|
+| Propose-and-risk | PASS | 22 rejections = lost turn |
+| Mode switching | PASS | 19 switches in Game 35 |
+| Jail: Monopolist 3-turn | PASS | turnsServed 0→1→2 |
+| Jail: Prosperity 1-turn | PASS | single turnsServed=0 |
+| Signaling | PASS | FreeRider 26% honest |
+| Turn flow | PASS | no gaps, no duplicates |
+| Strategy archetypes | PASS | behaviors match design |
+
+Combined with new contract validation (Games 1-2 on `0x82d298...`): all mechanics confirmed. Only untested: liquidation (Anvil test in progress) and `joinGame` flow.
+
+### [review] Signaling honesty — Conditional's decoupled inputs
+
+Reviewed all 5 `signalIntent()` implementations. Key finding: Conditional's 36% promise-keeping rate is not deception — it mirrors others' *signals* but votes based on majority *vote behavior*. Two different inputs produce divergent outputs. FreeRider's lies poison Conditional's signal through the mirroring mechanism.
+
+| Strategy | Honesty | Mechanism |
+|---|---|---|
+| Extractive | Always lies | Signals opposite of vote |
+| Generative | Always honest | Signal = vote |
+| Conditional | Mirrors others' signals | Decoupled from own vote |
+| FreeRider | Always lies | Claims cooperation, votes selfishly |
+| Pavlov | Adaptive | Honest when winning, lies when losing |
+
+### [open] Heading into mainnet
+
+- Liquidation test on Anvil (other terminal)
+- Per-game strategy selection implementation
+- Mainnet super tournament with terminal agents
+- ERC-8004 NFT claim (submission gate)
+- Hosting: viewer → GitHub Pages, dashboard → Streamlit Cloud
+- Documentation and submission prep

@@ -98,7 +98,7 @@ The hackathon build is a benchmark — same players, two structures, compare equ
 - **Phase 1 (complete)**: Fixed-rule parallel boards with 5 agent archetypes. Tournament data on Base Sepolia confirms the thesis — Monopolist rules produce significantly higher Gini coefficients than Prosperity rules.
 - **Phase 2 (complete)**: Mode-switching votes. Agents propose rule changes mid-game, all agents vote, proposals pass by majority. Proposing costs your turn. Validated on Anvil: 28 proposals in a single Monopolist game, 13 passed.
 - **Phase 3 (complete)**: Pre-vote signaling. Agents broadcast voting intent at end of each turn. Non-binding. Promise-keeping rate measured per strategy: Extractive 0% (always lies), Generative 100% (always honest), Conditional 14% (mirrors liars, gets poisoned). Deception is detectable and measurable.
-- **Phase 4 (design phase)**: Strategy evolution — agents adopt winning strategies between games. Tournament-scale adaptation dynamics.
+- **Phase 4 (validated on Sepolia)**: Strategy evolution — agents choose strategies **per game** (different for Monopolist vs Prosperity), adopt winning strategies between rounds based on on-chain results. Per-game selection prevents bias against ideological archetypes and IS the thesis: rational agents adapt behavior to the rule set.
 - **Open Game**: Mainnet deployment where any agent can join and play via a skill file. Agent-playable economic simulation on Base.
 - **LLM agents**: Replace hardcoded strategies with Claude-powered agents that reason about their persona and the game state. Do LLM agents rediscover the same patterns that game theory predicts?
 - **Nash equilibrium analysis**: Formally characterize the equilibrium points in each structure

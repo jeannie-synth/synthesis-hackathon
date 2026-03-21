@@ -890,3 +890,86 @@ The action feed (bottom-right ticker panel) is empty in live mode. `addTicker()`
 - Live ticker state-diff detection (future, non-critical)
 - Continue Phase 2 tournament on Sepolia
 - Commit viewer fix once confirmed stable
+
+---
+
+## Day 9 — March 21, 2026
+
+### Session 16: Super Tournament Round 1 (Sepolia) + SC Validation
+
+**Context**: Day 9 — initial submission deadline. Focus: validate super tournament flow on Sepolia, then mainnet.
+
+#### Super Tournament Round 1 — Sepolia Validation
+
+Ran `super-round-1.ts` in Docker container (`jeannie-dev`) against Sepolia contract `0xda1557c9...`. Two games completed:
+
+- **Game 35 (Monopolist)**: 41 rounds, Gini 0.1020, 19 mode switches, 82 proposals, 164 votes, 178 signals
+- **Game 36 (Prosperity)**: 10 rounds, Gini 0.0189, 0 proposals, 55 signals
+
+Agent 0 results (Conditional strategy):
+- Monopolist: $1,897, rank 2/5 (FreeRider won at $1,969)
+- Prosperity: $1,072, rank 5/5 (Pavlov won at $1,181)
+
+**Gini divergence: 0.0831** — Monopolist more unequal, thesis confirmed.
+
+#### Bugs fixed during run
+1. **Missing dotenv import** in `super-round-1.ts` — added `import "dotenv/config"`
+2. **esbuild platform mismatch** — host macOS node_modules mounted into Linux container. Fixed with `npm install --no-save @esbuild/linux-x64` inside container.
+3. **Strategy assignment bug** — hardcoded strategies skipped Extractive entirely (Agent 0 chose Conditional, Agent 2 was also Conditional). Fixed: use `STRATEGY_ORDER` as base, override only index 0.
+
+#### Design Decision: Strategy Selection for Super Tournament
+
+**Decision**: Round 1 uses `STRATEGY_ORDER` defaults (since no history). Rounds 2+ agents choose freely based on historical data. No forced archetype coverage.
+
+**Rationale** (Goldi + Jeannie discussion):
+- Forcing archetype representation rigs the experiment
+- If rational agents reject Extractive after seeing data, that's a finding, not a gap
+- The thesis is "rules shape behavior" — the rules create the divergence, not the starting strategy mix
+- Free choice produces authentic iterated game dynamics
+
+Also clarified: **Extractive ≠ Liar**. Extractive agents maximize wealth extraction openly. Deception (signaling cooperation, playing defection) is a separate axis — relevant only if Phase 3 signaling is active. Decision on running Phase 3 in super tournament: on ice.
+
+#### SC Dynamics Validation
+
+Analyzed both game JSON files against contract mechanics. All core dynamics validated:
+
+| Mechanic | Status |
+|---|---|
+| Propose-and-risk | PASS — all 22 rejections = lost turn |
+| Mode switching | PASS — 19 switches in Game 35 |
+| Jail: Monopolist 3-turn | PASS — turnsServed 0→1→2 observed |
+| Jail: Prosperity 1-turn | PASS — single turnsServed=0 events |
+| Signaling + promise-keeping | PASS — FreeRider 26% honest, Generative 63% |
+| Turn flow | PASS — no gaps, no duplicates |
+| Strategy archetypes | PASS — behaviors match design |
+
+**Combined with new contract validation** (Games 1-2 on `0x82d298...`): voting, mode switching (10 passes), jail, signaling all confirmed. Only untested: liquidation (being tested on Anvil by other terminal) and `joinGame` flow.
+
+#### Signaling Honesty Review
+
+Reviewed all 5 strategy implementations of `signalIntent()`:
+
+| Strategy | Honesty | Mechanism |
+|---|---|---|
+| Extractive | Always lies | Signals opposite of vote |
+| Generative | Always honest | Signal = vote |
+| Conditional | Mirrors others' signals | Decoupled from own vote — amplifies liars |
+| FreeRider | Always lies | Claims cooperation, votes selfishly |
+| Pavlov | Adaptive | Honest when winning, lies when losing |
+
+**Key finding**: Conditional's 36% honesty rate is not deception — it mirrors others' *signals* but votes based on majority *vote behavior*. Two different inputs produce divergent outputs. FreeRider's lies poison Conditional's signal through the mirroring mechanism.
+
+#### Current State
+
+- **Deployer funded on mainnet**: 0.108 Base ETH
+- **New contracts deployed**: Mainnet `0x496cf175...`, Sepolia `0x82d298...`
+- **SC validation**: Complete (pending liquidation Anvil test)
+- **Super tournament code**: Fixed and ready for mainnet
+
+### What's next
+- Liquidation test on Anvil (other terminal)
+- Mainnet super tournament (terminal agents, not background)
+- ERC-8004 NFT claim (submission gate)
+- Hosting: viewer → GitHub Pages, dashboard → Streamlit Cloud
+- Documentation: README, submission text with real data
+- UI fixes for viewer and Streamlit
