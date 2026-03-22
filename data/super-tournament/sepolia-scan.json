@@ -1,0 +1,786 @@
+[
+  {
+    "contract": "0xa39c342b",
+    "gameId": 1,
+    "mode": 0,
+    "winner": "0x85e33926d447c2696A7779Fa67f226d6EaF5b1d5",
+    "rounds": 45,
+    "treasury": "0",
+    "modeSwitches": 0,
+    "netWorths": [
+      "820",
+      "553",
+      "912",
+      "1418",
+      "2072"
+    ]
+  },
+  {
+    "contract": "0xa39c342b",
+    "gameId": 2,
+    "mode": 1,
+    "winner": "0xae42d435907C78C1a9ccc9508ee9af76A301D716",
+    "rounds": 10,
+    "treasury": "54",
+    "modeSwitches": 0,
+    "netWorths": [
+      "1131",
+      "1099",
+      "1089",
+      "1126",
+      "1031"
+    ]
+  },
+  {
+    "contract": "0xa39c342b",
+    "gameId": 3,
+    "mode": 0,
+    "winner": "0x85e33926d447c2696A7779Fa67f226d6EaF5b1d5",
+    "rounds": 37,
+    "treasury": "0",
+    "modeSwitches": 0,
+    "netWorths": [
+      "2009",
+      "1377",
+      "1350",
+      "778",
+      "911"
+    ]
+  },
+  {
+    "contract": "0xa39c342b",
+    "gameId": 4,
+    "mode": 1,
+    "winner": "0x2F5127d166C77eA01941cF14C7b7F0221BBaFf33",
+    "rounds": 12,
+    "treasury": "94",
+    "modeSwitches": 0,
+    "netWorths": [
+      "1370",
+      "1376",
+      "1269",
+      "1142",
+      "1309"
+    ]
+  },
+  {
+    "contract": "0xa39c342b",
+    "gameId": 5,
+    "mode": 0,
+    "winner": "0x1bF0762288A5e4FD67fD2B0B08321865C8a47a83",
+    "rounds": 35,
+    "treasury": "0",
+    "modeSwitches": 0,
+    "netWorths": [
+      "2044",
+      "1048",
+      "1266",
+      "881",
+      "1261"
+    ]
+  },
+  {
+    "contract": "0xa39c342b",
+    "gameId": 6,
+    "mode": 1,
+    "winner": "0x2F5127d166C77eA01941cF14C7b7F0221BBaFf33",
+    "rounds": 10,
+    "treasury": "3",
+    "modeSwitches": 0,
+    "netWorths": [
+      "1218",
+      "1243",
+      "1204",
+      "1018",
+      "1144"
+    ]
+  },
+  {
+    "contract": "0xa39c342b",
+    "gameId": 7,
+    "mode": 0,
+    "winner": "0x85e33926d447c2696A7779Fa67f226d6EaF5b1d5",
+    "rounds": 37,
+    "treasury": "0",
+    "modeSwitches": 0,
+    "netWorths": [
+      "1138",
+      "1405",
+      "1480",
+      "2117",
+      "1110"
+    ]
+  },
+  {
+    "contract": "0xa39c342b",
+    "gameId": 8,
+    "mode": 1,
+    "winner": "0x85e33926d447c2696A7779Fa67f226d6EaF5b1d5",
+    "rounds": 12,
+    "treasury": "2",
+    "modeSwitches": 0,
+    "netWorths": [
+      "1257",
+      "1092",
+      "1281",
+      "1307",
+      "1231"
+    ]
+  },
+  {
+    "contract": "0xa39c342b",
+    "gameId": 9,
+    "mode": 0,
+    "winner": "0x85e33926d447c2696A7779Fa67f226d6EaF5b1d5",
+    "rounds": 41,
+    "treasury": "0",
+    "modeSwitches": 0,
+    "netWorths": [
+      "2029",
+      "1577",
+      "1630",
+      "1032",
+      "557"
+    ]
+  },
+  {
+    "contract": "0xa39c342b",
+    "gameId": 10,
+    "mode": 1,
+    "winner": "0xae42d435907C78C1a9ccc9508ee9af76A301D716",
+    "rounds": 8,
+    "treasury": "1",
+    "modeSwitches": 0,
+    "netWorths": [
+      "1087",
+      "1172",
+      "1188",
+      "1040",
+      "1172"
+    ]
+  },
+  {
+    "contract": "0xa39c342b",
+    "gameId": 11,
+    "mode": 0,
+    "winner": "0xae42d435907C78C1a9ccc9508ee9af76A301D716",
+    "rounds": 46,
+    "treasury": "0",
+    "modeSwitches": 0,
+    "netWorths": [
+      "2041",
+      "1294",
+      "1657",
+      "828",
+      "1480"
+    ]
+  },
+  {
+    "contract": "0xa39c342b",
+    "gameId": 12,
+    "mode": 1,
+    "winner": "0xae42d435907C78C1a9ccc9508ee9af76A301D716",
+    "rounds": 12,
+    "treasury": "1",
+    "modeSwitches": 0,
+    "netWorths": [
+      "1326",
+      "1006",
+      "1316",
+      "1283",
+      "1128"
+    ]
+  },
+  {
+    "contract": "0xa39c342b",
+    "gameId": 13,
+    "mode": 0,
+    "winner": "0x1bF0762288A5e4FD67fD2B0B08321865C8a47a83",
+    "rounds": 33,
+    "treasury": "0",
+    "modeSwitches": 0,
+    "netWorths": [
+      "880",
+      "1140",
+      "692",
+      "1336",
+      "2002"
+    ]
+  },
+  {
+    "contract": "0xa39c342b",
+    "gameId": 14,
+    "mode": 1,
+    "winner": "0x1bF0762288A5e4FD67fD2B0B08321865C8a47a83",
+    "rounds": 12,
+    "treasury": "2",
+    "modeSwitches": 0,
+    "netWorths": [
+      "1146",
+      "1191",
+      "1040",
+      "1151",
+      "1290"
+    ]
+  },
+  {
+    "contract": "0xa39c342b",
+    "gameId": 15,
+    "mode": 0,
+    "winner": "0xae42d435907C78C1a9ccc9508ee9af76A301D716",
+    "rounds": 42,
+    "treasury": "0",
+    "modeSwitches": 0,
+    "netWorths": [
+      "1169",
+      "1695",
+      "2054",
+      "1337",
+      "1695"
+    ]
+  },
+  {
+    "contract": "0xa39c342b",
+    "gameId": 16,
+    "mode": 1,
+    "winner": "0xae42d435907C78C1a9ccc9508ee9af76A301D716",
+    "rounds": 11,
+    "treasury": "348",
+    "modeSwitches": 0,
+    "netWorths": [
+      "1095",
+      "1091",
+      "1229",
+      "1168",
+      "1009"
+    ]
+  },
+  {
+    "contract": "0xa39c342b",
+    "gameId": 17,
+    "mode": 0,
+    "winner": "0x85e33926d447c2696A7779Fa67f226d6EaF5b1d5",
+    "rounds": 43,
+    "treasury": "0",
+    "modeSwitches": 0,
+    "netWorths": [
+      "638",
+      "1338",
+      "1895",
+      "2011",
+      "1543"
+    ]
+  },
+  {
+    "contract": "0xa39c342b",
+    "gameId": 18,
+    "mode": 1,
+    "winner": "0x1bF0762288A5e4FD67fD2B0B08321865C8a47a83",
+    "rounds": 13,
+    "treasury": "332",
+    "modeSwitches": 0,
+    "netWorths": [
+      "1319",
+      "1084",
+      "1323",
+      "1201",
+      "1091"
+    ]
+  },
+  {
+    "contract": "0xa39c342b",
+    "gameId": 19,
+    "mode": 0,
+    "winner": "0x2F5127d166C77eA01941cF14C7b7F0221BBaFf33",
+    "rounds": 43,
+    "treasury": "0",
+    "modeSwitches": 0,
+    "netWorths": [
+      "1430",
+      "1924",
+      "1098",
+      "1883",
+      "2015"
+    ]
+  },
+  {
+    "contract": "0xa39c342b",
+    "gameId": 20,
+    "mode": 1,
+    "winner": "0xA5CE87AB26BeeB961d84C80CAF75384eBdff852C",
+    "rounds": 11,
+    "treasury": "48",
+    "modeSwitches": 0,
+    "netWorths": [
+      "1292",
+      "1127",
+      "1322",
+      "1028",
+      "1183"
+    ]
+  },
+  {
+    "contract": "0xa39c342b",
+    "gameId": 21,
+    "mode": 0,
+    "winner": "0x85e33926d447c2696A7779Fa67f226d6EaF5b1d5",
+    "rounds": 50,
+    "treasury": "0",
+    "modeSwitches": 0,
+    "netWorths": [
+      "1143",
+      "1050",
+      "209",
+      "1766",
+      "2057"
+    ]
+  },
+  {
+    "contract": "0xa39c342b",
+    "gameId": 22,
+    "mode": 1,
+    "winner": "0xA5CE87AB26BeeB961d84C80CAF75384eBdff852C",
+    "rounds": 11,
+    "treasury": "299",
+    "modeSwitches": 0,
+    "netWorths": [
+      "1071",
+      "1189",
+      "1007",
+      "1187",
+      "1067"
+    ]
+  },
+  {
+    "contract": "0xa39c342b",
+    "gameId": 23,
+    "mode": 0,
+    "winner": "0x2F5127d166C77eA01941cF14C7b7F0221BBaFf33",
+    "rounds": 37,
+    "treasury": "0",
+    "modeSwitches": 0,
+    "netWorths": [
+      "1476",
+      "1512",
+      "432",
+      "1257",
+      "2048"
+    ]
+  },
+  {
+    "contract": "0xa39c342b",
+    "gameId": 24,
+    "mode": 1,
+    "winner": "0x1bF0762288A5e4FD67fD2B0B08321865C8a47a83",
+    "rounds": 12,
+    "treasury": "142",
+    "modeSwitches": 0,
+    "netWorths": [
+      "1182",
+      "1252",
+      "1032",
+      "1120",
+      "1082"
+    ]
+  },
+  {
+    "contract": "0xa39c342b",
+    "gameId": 25,
+    "mode": 0,
+    "winner": "0x1bF0762288A5e4FD67fD2B0B08321865C8a47a83",
+    "rounds": 48,
+    "treasury": "0",
+    "modeSwitches": 0,
+    "netWorths": [
+      "700",
+      "965",
+      "1599",
+      "2061",
+      "1875"
+    ]
+  },
+  {
+    "contract": "0xa39c342b",
+    "gameId": 26,
+    "mode": 1,
+    "winner": "0xA5CE87AB26BeeB961d84C80CAF75384eBdff852C",
+    "rounds": 7,
+    "treasury": "343",
+    "modeSwitches": 0,
+    "netWorths": [
+      "1034",
+      "1056",
+      "1034",
+      "1009",
+      "1034"
+    ]
+  },
+  {
+    "contract": "0xa39c342b",
+    "gameId": 27,
+    "mode": 0,
+    "winner": "0x2F5127d166C77eA01941cF14C7b7F0221BBaFf33",
+    "rounds": 30,
+    "treasury": "0",
+    "modeSwitches": 0,
+    "netWorths": [
+      "881",
+      "1176",
+      "2014",
+      "98",
+      "1481"
+    ]
+  },
+  {
+    "contract": "0xa39c342b",
+    "gameId": 28,
+    "mode": 1,
+    "winner": "0xae42d435907C78C1a9ccc9508ee9af76A301D716",
+    "rounds": 8,
+    "treasury": "2",
+    "modeSwitches": 0,
+    "netWorths": [
+      "1074",
+      "1038",
+      "1074",
+      "1064",
+      "1058"
+    ]
+  },
+  {
+    "contract": "0xa39c342b",
+    "gameId": 29,
+    "mode": 0,
+    "winner": "0x85e33926d447c2696A7779Fa67f226d6EaF5b1d5",
+    "rounds": 42,
+    "treasury": "0",
+    "modeSwitches": 0,
+    "netWorths": [
+      "1138",
+      "1140",
+      "1114",
+      "2026",
+      "832"
+    ]
+  },
+  {
+    "contract": "0xa39c342b",
+    "gameId": 30,
+    "mode": 1,
+    "winner": "0xae42d435907C78C1a9ccc9508ee9af76A301D716",
+    "rounds": 9,
+    "treasury": "2",
+    "modeSwitches": 0,
+    "netWorths": [
+      "1072",
+      "1151",
+      "1308",
+      "1211",
+      "1046"
+    ]
+  },
+  {
+    "contract": "0xda1557c9",
+    "gameId": 20,
+    "mode": 0,
+    "winner": "0x2F5127d166C77eA01941cF14C7b7F0221BBaFf33",
+    "rounds": 31,
+    "treasury": "410",
+    "modeSwitches": 2,
+    "netWorths": [
+      "727",
+      "840",
+      "562",
+      "2015",
+      "1356"
+    ]
+  },
+  {
+    "contract": "0xda1557c9",
+    "gameId": 21,
+    "mode": 1,
+    "winner": "0x85e33926d447c2696A7779Fa67f226d6EaF5b1d5",
+    "rounds": 13,
+    "treasury": "0",
+    "modeSwitches": 0,
+    "netWorths": [
+      "1228",
+      "1223",
+      "1145",
+      "1340",
+      "1378"
+    ]
+  },
+  {
+    "contract": "0xda1557c9",
+    "gameId": 22,
+    "mode": 1,
+    "winner": "0xA5CE87AB26BeeB961d84C80CAF75384eBdff852C",
+    "rounds": 24,
+    "treasury": "0",
+    "modeSwitches": 7,
+    "netWorths": [
+      "1115",
+      "1276",
+      "1308",
+      "1093",
+      "1286"
+    ]
+  },
+  {
+    "contract": "0xda1557c9",
+    "gameId": 23,
+    "mode": 1,
+    "winner": "0x2F5127d166C77eA01941cF14C7b7F0221BBaFf33",
+    "rounds": 12,
+    "treasury": "460",
+    "modeSwitches": 0,
+    "netWorths": [
+      "1146",
+      "1211",
+      "1180",
+      "1227",
+      "1013"
+    ]
+  },
+  {
+    "contract": "0xda1557c9",
+    "gameId": 24,
+    "mode": 1,
+    "winner": "0x85e33926d447c2696A7779Fa67f226d6EaF5b1d5",
+    "rounds": 28,
+    "treasury": "0",
+    "modeSwitches": 7,
+    "netWorths": [
+      "1301",
+      "1162",
+      "1000",
+      "1203",
+      "1635"
+    ]
+  },
+  {
+    "contract": "0xda1557c9",
+    "gameId": 25,
+    "mode": 1,
+    "winner": "0x85e33926d447c2696A7779Fa67f226d6EaF5b1d5",
+    "rounds": 21,
+    "treasury": "0",
+    "modeSwitches": 2,
+    "netWorths": [
+      "1576",
+      "1325",
+      "1094",
+      "1552",
+      "1787"
+    ]
+  },
+  {
+    "contract": "0xda1557c9",
+    "gameId": 26,
+    "mode": 1,
+    "winner": "0x1bF0762288A5e4FD67fD2B0B08321865C8a47a83",
+    "rounds": 29,
+    "treasury": "308",
+    "modeSwitches": 15,
+    "netWorths": [
+      "1922",
+      "1174",
+      "1002",
+      "1436",
+      "1396"
+    ]
+  },
+  {
+    "contract": "0xda1557c9",
+    "gameId": 27,
+    "mode": 1,
+    "winner": "0xae42d435907C78C1a9ccc9508ee9af76A301D716",
+    "rounds": 25,
+    "treasury": "413",
+    "modeSwitches": 10,
+    "netWorths": [
+      "1022",
+      "1136",
+      "1564",
+      "1201",
+      "1089"
+    ]
+  },
+  {
+    "contract": "0xda1557c9",
+    "gameId": 28,
+    "mode": 1,
+    "winner": "0x2F5127d166C77eA01941cF14C7b7F0221BBaFf33",
+    "rounds": 42,
+    "treasury": "0",
+    "modeSwitches": 11,
+    "netWorths": [
+      "1140",
+      "1070",
+      "1768",
+      "1537",
+      "1774"
+    ]
+  },
+  {
+    "contract": "0xda1557c9",
+    "gameId": 29,
+    "mode": 0,
+    "winner": "0x85e33926d447c2696A7779Fa67f226d6EaF5b1d5",
+    "rounds": 35,
+    "treasury": "390",
+    "modeSwitches": 9,
+    "netWorths": [
+      "1078",
+      "2008",
+      "1205",
+      "1658",
+      "1874"
+    ]
+  },
+  {
+    "contract": "0xda1557c9",
+    "gameId": 30,
+    "mode": 1,
+    "winner": "0x2F5127d166C77eA01941cF14C7b7F0221BBaFf33",
+    "rounds": 50,
+    "treasury": "123",
+    "modeSwitches": 11,
+    "netWorths": [
+      "1103",
+      "1968",
+      "1202",
+      "1660",
+      "1369"
+    ]
+  },
+  {
+    "contract": "0xda1557c9",
+    "gameId": 31,
+    "mode": 1,
+    "winner": "0xA5CE87AB26BeeB961d84C80CAF75384eBdff852C",
+    "rounds": 11,
+    "treasury": "432",
+    "modeSwitches": 0,
+    "netWorths": [
+      "1090",
+      "1034",
+      "1262",
+      "1116",
+      "1016"
+    ]
+  },
+  {
+    "contract": "0xda1557c9",
+    "gameId": 32,
+    "mode": 1,
+    "winner": "0x2F5127d166C77eA01941cF14C7b7F0221BBaFf33",
+    "rounds": 36,
+    "treasury": "297",
+    "modeSwitches": 15,
+    "netWorths": [
+      "1026",
+      "1271",
+      "1602",
+      "1334",
+      "1776"
+    ]
+  },
+  {
+    "contract": "0xda1557c9",
+    "gameId": 33,
+    "mode": 1,
+    "winner": "0x85e33926d447c2696A7779Fa67f226d6EaF5b1d5",
+    "rounds": 10,
+    "treasury": "314",
+    "modeSwitches": 0,
+    "netWorths": [
+      "1086",
+      "1111",
+      "1167",
+      "1067",
+      "1061"
+    ]
+  },
+  {
+    "contract": "0xda1557c9",
+    "gameId": 34,
+    "mode": 1,
+    "winner": "0x1bF0762288A5e4FD67fD2B0B08321865C8a47a83",
+    "rounds": 24,
+    "treasury": "0",
+    "modeSwitches": 11,
+    "netWorths": [
+      "1696",
+      "1237",
+      "1004",
+      "1330",
+      "1128"
+    ]
+  },
+  {
+    "contract": "0xda1557c9",
+    "gameId": 35,
+    "mode": 1,
+    "winner": "0xAA5320db645015573604EC83D82E2192380427f3",
+    "rounds": 41,
+    "treasury": "50",
+    "modeSwitches": 19,
+    "netWorths": [
+      "1630",
+      "1897",
+      "1100",
+      "1969",
+      "1556"
+    ]
+  },
+  {
+    "contract": "0xda1557c9",
+    "gameId": 36,
+    "mode": 1,
+    "winner": "0x1e41af65c436e310A0abeA37A563db2ABF5BdD57",
+    "rounds": 10,
+    "treasury": "421",
+    "modeSwitches": 0,
+    "netWorths": [
+      "1113",
+      "1072",
+      "1162",
+      "1118",
+      "1181"
+    ]
+  },
+  {
+    "contract": "0x82d298c5",
+    "gameId": 1,
+    "mode": 0,
+    "winner": "0x85e33926d447c2696A7779Fa67f226d6EaF5b1d5",
+    "rounds": 43,
+    "treasury": "14",
+    "modeSwitches": 10,
+    "netWorths": [
+      "1701",
+      "1326",
+      "814",
+      "2016",
+      "1309"
+    ]
+  },
+  {
+    "contract": "0x82d298c5",
+    "gameId": 2,
+    "mode": 1,
+    "winner": "0x85e33926d447c2696A7779Fa67f226d6EaF5b1d5",
+    "rounds": 15,
+    "treasury": "1",
+    "modeSwitches": 2,
+    "netWorths": [
+      "1250",
+      "1125",
+      "1264",
+      "1525",
+      "1155"
+    ]
+  }
+]
