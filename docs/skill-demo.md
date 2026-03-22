@@ -110,6 +110,7 @@ You may choose different strategies for different modes. This is the experiment 
 - **Patience**: Other agents may be slow. If it's not your turn, wait. Don't spam the RPC.
 - **One tx at a time**: Send a transaction, wait for receipt, then decide your next action. Never send a second tx before the first confirms.
 - **Error recovery**: If a transaction reverts, re-read state and retry. Use fixed gas limit of 500,000 for all writes.
+- **Stalemate rule (Round 2+)**: If a game exceeds **50 rounds**, all agents should propose a mode switch when it's their turn (before rolling) and vote FOR any pending mode switch proposal. This prevents Monopolist games from grinding indefinitely. This rule was added after Round 1 where Game 2 lasted 70 rounds.
 
 ---
 

@@ -1,0 +1,1429 @@
+{
+  "gameId": 28,
+  "mode": "Prosperity",
+  "playerAddresses": [
+    "0xae42d435907C78C1a9ccc9508ee9af76A301D716",
+    "0xA5CE87AB26BeeB961d84C80CAF75384eBdff852C",
+    "0x2F5127d166C77eA01941cF14C7b7F0221BBaFf33",
+    "0x1bF0762288A5e4FD67fD2B0B08321865C8a47a83",
+    "0x85e33926d447c2696A7779Fa67f226d6EaF5b1d5"
+  ],
+  "turns": [
+    {
+      "turnNumber": 0,
+      "agent": "Pavlov-4",
+      "strategy": "Pavlov",
+      "action": "roll",
+      "details": {
+        "dice": [
+          3,
+          1
+        ],
+        "position": 4,
+        "spaceName": "Absolute Necessity",
+        "cash": 450
+      },
+      "timestamp": 1773852678092,
+      "txHash": "0x16b854a2349fe1e86c35ffddc753178b9d665cb31f6839ea5409c049d4d0e0bd"
+    },
+    {
+      "turnNumber": 1,
+      "agent": "FreeRider-3",
+      "strategy": "FreeRider",
+      "action": "roll",
+      "details": {
+        "dice": [
+          3,
+          3
+        ],
+        "position": 6,
+        "spaceName": "Lonely Lane",
+        "cash": 500
+      },
+      "timestamp": 1773852683373,
+      "txHash": "0x54782ffc826ba10a598e3f10730e4b0c4c97668d181ff047ff2c4f159c3a41db"
+    },
+    {
+      "turnNumber": 2,
+      "agent": "Conditional-2",
+      "strategy": "Conditional",
+      "action": "roll",
+      "details": {
+        "dice": [
+          2,
+          4
+        ],
+        "position": 6,
+        "spaceName": "Lonely Lane",
+        "cash": 500
+      },
+      "timestamp": 1773852684715
+    },
+    {
+      "turnNumber": 2,
+      "agent": "Conditional-2",
+      "strategy": "Conditional",
+      "action": "buy",
+      "details": {
+        "position": 6,
+        "price": 100
+      },
+      "timestamp": 1773852685399
+    },
+    {
+      "turnNumber": 3,
+      "agent": "Extractive-0",
+      "strategy": "Extractive",
+      "action": "roll",
+      "details": {
+        "dice": [
+          2,
+          4
+        ],
+        "position": 6,
+        "spaceName": "Lonely Lane",
+        "cash": 490
+      },
+      "timestamp": 1773852688394
+    },
+    {
+      "turnNumber": 4,
+      "agent": "Extractive-0",
+      "strategy": "Extractive",
+      "action": "roll",
+      "details": {
+        "dice": [
+          2,
+          4
+        ],
+        "position": 6,
+        "spaceName": "Lonely Lane",
+        "cash": 490
+      },
+      "timestamp": 1773852690781
+    },
+    {
+      "turnNumber": 4,
+      "agent": "Generative-1",
+      "strategy": "Generative",
+      "action": "roll",
+      "details": {
+        "dice": [
+          3,
+          3
+        ],
+        "position": 6,
+        "spaceName": "Lonely Lane",
+        "cash": 490
+      },
+      "timestamp": 1773852696883,
+      "txHash": "0x122937f5fa2fd1e61472e230ed3606b8be98e23715fd2ee0e47e6b3f1a1b1276"
+    },
+    {
+      "turnNumber": 5,
+      "agent": "Generative-1",
+      "strategy": "Generative",
+      "action": "roll",
+      "details": {
+        "dice": [
+          3,
+          3
+        ],
+        "position": 6,
+        "spaceName": "Lonely Lane",
+        "cash": 490
+      },
+      "timestamp": 1773852699398
+    },
+    {
+      "turnNumber": 5,
+      "agent": "Pavlov-4",
+      "strategy": "Pavlov",
+      "action": "roll",
+      "details": {
+        "dice": [
+          4,
+          3
+        ],
+        "position": 11,
+        "spaceName": "Beggarman's Court",
+        "cash": 450
+      },
+      "timestamp": 1773852706839,
+      "txHash": "0xe55c1319410a73bb505205fb740f135e1fb040dd44ba49630d1d915cfa1821af"
+    },
+    {
+      "turnNumber": 6,
+      "agent": "FreeRider-3",
+      "strategy": "FreeRider",
+      "action": "roll",
+      "details": {
+        "dice": [
+          6,
+          2
+        ],
+        "position": 14,
+        "spaceName": "Community Bounty",
+        "cash": 550
+      },
+      "timestamp": 1773852708222,
+      "txHash": "0xe55c1319410a73bb505205fb740f135e1fb040dd44ba49630d1d915cfa1821af"
+    },
+    {
+      "turnNumber": 7,
+      "agent": "Conditional-2",
+      "strategy": "Conditional",
+      "action": "roll",
+      "details": {
+        "dice": [
+          6,
+          5
+        ],
+        "position": 17,
+        "spaceName": "Lord Blueblood's Estate",
+        "cash": 400
+      },
+      "timestamp": 1773852709392,
+      "txHash": "0x606dd3d25cc2c8f8da915a6ff12f8d5715bfe341f722bfeda099ca241000bd82"
+    },
+    {
+      "turnNumber": 8,
+      "agent": "Extractive-0",
+      "strategy": "Extractive",
+      "action": "roll",
+      "details": {
+        "dice": [
+          3,
+          2
+        ],
+        "position": 11,
+        "spaceName": "Beggarman's Court",
+        "cash": 490
+      },
+      "timestamp": 1773852716684
+    },
+    {
+      "turnNumber": 8,
+      "agent": "Extractive-0",
+      "strategy": "Extractive",
+      "action": "buy",
+      "details": {
+        "position": 11,
+        "price": 120
+      },
+      "timestamp": 1773852717386
+    },
+    {
+      "turnNumber": 8,
+      "agent": "Extractive-0",
+      "strategy": "Extractive",
+      "action": "build",
+      "details": {
+        "position": 11
+      },
+      "timestamp": 1773852719073,
+      "txHash": "0xf0f9faaf17554744cf12a4a0a6b94c1a320a2364b09019d450769ad0c1ccf9b4"
+    },
+    {
+      "turnNumber": 9,
+      "agent": "Generative-1",
+      "strategy": "Generative",
+      "action": "roll",
+      "details": {
+        "dice": [
+          5,
+          6
+        ],
+        "position": 17,
+        "spaceName": "Lord Blueblood's Estate",
+        "cash": 490
+      },
+      "timestamp": 1773852722619,
+      "txHash": "0x54216b38953cad2ccdc807100dce5f680677fdfce10b15dcc3d8bd76049c5dc9"
+    },
+    {
+      "turnNumber": 10,
+      "agent": "Pavlov-4",
+      "strategy": "Pavlov",
+      "action": "roll",
+      "details": {
+        "dice": [
+          4,
+          4
+        ],
+        "position": 19,
+        "spaceName": "Crooked Lane",
+        "cash": 450
+      },
+      "timestamp": 1773852730977,
+      "txHash": "0x10501ce84ee4a9eaf3ed295b6bf7a62496c3957a170bcf2ba0cac08f16f3c24a"
+    },
+    {
+      "turnNumber": 10,
+      "agent": "Pavlov-4",
+      "strategy": "Pavlov",
+      "action": "buy",
+      "details": {
+        "position": 19,
+        "price": 160
+      },
+      "timestamp": 1773852731658,
+      "txHash": "0xd128f304d7f5dfd1af6099f5059dadab34ad02050d22cd52613f64ba3ae38442"
+    },
+    {
+      "turnNumber": 10,
+      "agent": "Pavlov-4",
+      "strategy": "Pavlov",
+      "action": "build",
+      "details": {
+        "position": 19
+      },
+      "timestamp": 1773852734455,
+      "txHash": "0x50a1ff72df5a57c370b8736b89ddb762652c24e0a738c704dac19dd13d78e4c8"
+    },
+    {
+      "turnNumber": 11,
+      "agent": "FreeRider-3",
+      "strategy": "FreeRider",
+      "action": "roll",
+      "details": {
+        "dice": [
+          6,
+          6
+        ],
+        "position": 26,
+        "spaceName": "Chance",
+        "cash": 550
+      },
+      "timestamp": 1773852737717,
+      "txHash": "0xdbb58c697146dcbdfbf82d64152ab7953f2021a80b98b0cd92bca66d806aa915"
+    },
+    {
+      "turnNumber": 12,
+      "agent": "Conditional-2",
+      "strategy": "Conditional",
+      "action": "roll",
+      "details": {
+        "dice": [
+          4,
+          3
+        ],
+        "position": 24,
+        "spaceName": "Broken Leg Railroad",
+        "cash": 400
+      },
+      "timestamp": 1773852740147
+    },
+    {
+      "turnNumber": 12,
+      "agent": "Conditional-2",
+      "strategy": "Conditional",
+      "action": "buy",
+      "details": {
+        "position": 24,
+        "price": 200
+      },
+      "timestamp": 1773852740852
+    },
+    {
+      "turnNumber": 13,
+      "agent": "Extractive-0",
+      "strategy": "Extractive",
+      "action": "roll",
+      "details": {
+        "dice": [
+          4,
+          6
+        ],
+        "position": 21,
+        "spaceName": "La Swelle Hotel",
+        "cash": 320
+      },
+      "timestamp": 1773852743187
+    },
+    {
+      "turnNumber": 13,
+      "agent": "Extractive-0",
+      "strategy": "Extractive",
+      "action": "buy",
+      "details": {
+        "position": 21,
+        "price": 180
+      },
+      "timestamp": 1773852747039
+    },
+    {
+      "turnNumber": 13,
+      "agent": "Extractive-0",
+      "strategy": "Extractive",
+      "action": "build",
+      "details": {
+        "position": 11
+      },
+      "timestamp": 1773852748148
+    },
+    {
+      "turnNumber": 13,
+      "agent": "Extractive-0",
+      "strategy": "Extractive",
+      "action": "build",
+      "details": {
+        "position": 21
+      },
+      "timestamp": 1773852750917,
+      "txHash": "0xd4be75e54b482da17136f3b2f49a376bd3bff677231ec836080985c02883756f"
+    },
+    {
+      "turnNumber": 14,
+      "agent": "Generative-1",
+      "strategy": "Generative",
+      "action": "roll",
+      "details": {
+        "dice": [
+          5,
+          5
+        ],
+        "position": 27,
+        "spaceName": "Easy Money",
+        "cash": 490
+      },
+      "timestamp": 1773852754942,
+      "txHash": "0xdb6bfa5590646cdf1def22545c5fb1905d196a2f833de9a0b1f1835dbb0e0523"
+    },
+    {
+      "turnNumber": 14,
+      "agent": "Generative-1",
+      "strategy": "Generative",
+      "action": "buy",
+      "details": {
+        "position": 27,
+        "price": 220
+      },
+      "timestamp": 1773852756662,
+      "txHash": "0x3c6921ed304c2cf33e5d2be43f6c457a7f36f3d046ff656314a6aadd72d6db6d"
+    },
+    {
+      "turnNumber": 14,
+      "agent": "Generative-1",
+      "strategy": "Generative",
+      "action": "build",
+      "details": {
+        "position": 27
+      },
+      "timestamp": 1773852758385,
+      "txHash": "0x74e52890a595936c845e834ceeb4946519a64efb73ecd1c757bdf6867224bed1"
+    },
+    {
+      "turnNumber": 15,
+      "agent": "Pavlov-4",
+      "strategy": "Pavlov",
+      "action": "roll",
+      "details": {
+        "dice": [
+          3,
+          1
+        ],
+        "position": 23,
+        "spaceName": "Gambling Den",
+        "cash": 240
+      },
+      "timestamp": 1773852762998,
+      "txHash": "0xba61acd94ebd07d9841b117470e2d817f64b507c86b1f2110ac984105a6f2b19"
+    },
+    {
+      "turnNumber": 16,
+      "agent": "FreeRider-3",
+      "strategy": "FreeRider",
+      "action": "roll",
+      "details": {
+        "dice": [
+          5,
+          4
+        ],
+        "position": 35,
+        "spaceName": "Coxeyville Short Line",
+        "cash": 550
+      },
+      "timestamp": 1773852765484,
+      "txHash": "0x2156555ab90d159f61996e9023ee5a37ce260956728fdd07d3fbade8ac5de105"
+    },
+    {
+      "turnNumber": 17,
+      "agent": "Conditional-2",
+      "strategy": "Conditional",
+      "action": "roll",
+      "details": {
+        "dice": [
+          6,
+          4
+        ],
+        "position": 34,
+        "spaceName": "Franceswayland Avenue",
+        "cash": 200
+      },
+      "timestamp": 1773852768901
+    },
+    {
+      "turnNumber": 18,
+      "agent": "Extractive-0",
+      "strategy": "Extractive",
+      "action": "roll",
+      "details": {
+        "dice": [
+          5,
+          3
+        ],
+        "position": 29,
+        "spaceName": "Wall Street",
+        "cash": 40
+      },
+      "timestamp": 1773852772500,
+      "txHash": "0xb7c56c8dd4b05ee668e3a7f494cb93c150d159fa38b2beeabef69532107ff452"
+    },
+    {
+      "turnNumber": 19,
+      "agent": "Generative-1",
+      "strategy": "Generative",
+      "action": "roll",
+      "details": {
+        "dice": [
+          2,
+          3
+        ],
+        "position": 32,
+        "spaceName": "Arden Avenue",
+        "cash": 220
+      },
+      "timestamp": 1773852774597,
+      "txHash": "0xb7c56c8dd4b05ee668e3a7f494cb93c150d159fa38b2beeabef69532107ff452"
+    },
+    {
+      "turnNumber": 19,
+      "agent": "Generative-1",
+      "strategy": "Generative",
+      "action": "build",
+      "details": {
+        "position": 27
+      },
+      "timestamp": 1773852776278,
+      "txHash": "0xcc38eba86661d2271ac55ba5aac366b237f2b3fd1434f403fee069d1b9b7b2fd"
+    },
+    {
+      "turnNumber": 20,
+      "agent": "Pavlov-4",
+      "strategy": "Pavlov",
+      "action": "roll",
+      "details": {
+        "dice": [
+          4,
+          5
+        ],
+        "position": 32,
+        "spaceName": "Arden Avenue",
+        "cash": 240
+      },
+      "timestamp": 1773852780794,
+      "txHash": "0x8c38ab08fb158f8a5fa11cc4ef9356ad61a9ef2a1bf5d04b4bd0c10190074da8"
+    },
+    {
+      "turnNumber": 20,
+      "agent": "Pavlov-4",
+      "strategy": "Pavlov",
+      "action": "buy",
+      "details": {
+        "position": 32,
+        "price": 240
+      },
+      "timestamp": 1773852781491,
+      "txHash": "0x7e0c12c1ecf4e9872e8ee3fa18dea7979568c3e7d6ea731692aae0b60b33ee09"
+    },
+    {
+      "turnNumber": 21,
+      "agent": "FreeRider-3",
+      "strategy": "FreeRider",
+      "action": "roll",
+      "details": {
+        "dice": [
+          5,
+          1
+        ],
+        "position": 1,
+        "spaceName": "Poverty Place",
+        "cash": 750
+      },
+      "timestamp": 1773852782902,
+      "txHash": "0x616ac5bbdc1c18d01fea1dd33b45442638c336ba3d9979667eec13f2d6a0534a"
+    },
+    {
+      "turnNumber": 22,
+      "agent": "Conditional-2",
+      "strategy": "Conditional",
+      "action": "roll",
+      "details": {
+        "dice": [
+          3,
+          6
+        ],
+        "position": 3,
+        "spaceName": "Easy Street",
+        "cash": 400
+      },
+      "timestamp": 1773852786246
+    },
+    {
+      "turnNumber": 22,
+      "agent": "Conditional-2",
+      "strategy": "Conditional",
+      "action": "buy",
+      "details": {
+        "position": 3,
+        "price": 60
+      },
+      "timestamp": 1773852788713,
+      "txHash": "0xa85d101a6ea764ce42476fe31f272e043833c857d91861509503735ed250c043"
+    },
+    {
+      "turnNumber": 23,
+      "agent": "Extractive-0",
+      "strategy": "Extractive",
+      "action": "roll",
+      "details": {
+        "dice": [
+          6,
+          2
+        ],
+        "position": 37,
+        "spaceName": "The Estates",
+        "cash": 40
+      },
+      "timestamp": 1773852790892
+    },
+    {
+      "turnNumber": 24,
+      "agent": "Generative-1",
+      "strategy": "Generative",
+      "action": "roll",
+      "details": {
+        "dice": [
+          3,
+          4
+        ],
+        "position": 39,
+        "spaceName": "Prosperity Place",
+        "cash": 170
+      },
+      "timestamp": 1773852793224,
+      "txHash": "0x071e14fa1f1079148916d5b5d922f1ec97641236fda8623a40393e5bc20022ca"
+    },
+    {
+      "turnNumber": 24,
+      "agent": "Generative-1",
+      "strategy": "Generative",
+      "action": "build",
+      "details": {
+        "position": 27
+      },
+      "timestamp": 1773852797094,
+      "txHash": "0xb0d5cdbfaee94bf6db28e4a97570c5a19aac3749a023df8c820b2c6f402f37d5"
+    },
+    {
+      "turnNumber": 25,
+      "agent": "Pavlov-4",
+      "strategy": "Pavlov",
+      "action": "roll",
+      "details": {
+        "dice": [
+          4,
+          5
+        ],
+        "position": 1,
+        "spaceName": "Poverty Place",
+        "cash": 200
+      },
+      "timestamp": 1773852799498,
+      "txHash": "0x2b9b951d7c0df5101edf1a39d5b0873c6c57f797c3e28b12c2dc3d5612b0c04e"
+    },
+    {
+      "turnNumber": 26,
+      "agent": "FreeRider-3",
+      "strategy": "FreeRider",
+      "action": "roll",
+      "details": {
+        "dice": [
+          2,
+          2
+        ],
+        "position": 5,
+        "spaceName": "Soakum Lighting Co.",
+        "cash": 750
+      },
+      "timestamp": 1773852804612,
+      "txHash": "0x7c0b216e5fab45fccc635c11a364947608ee8562a1ffb3e601fae82cfadebb9d"
+    },
+    {
+      "turnNumber": 27,
+      "agent": "Conditional-2",
+      "strategy": "Conditional",
+      "action": "roll",
+      "details": {
+        "dice": [
+          2,
+          5
+        ],
+        "position": 10,
+        "spaceName": "Jail",
+        "cash": 340
+      },
+      "timestamp": 1773852809142
+    },
+    {
+      "turnNumber": 28,
+      "agent": "Extractive-0",
+      "strategy": "Extractive",
+      "action": "roll",
+      "details": {
+        "dice": [
+          2,
+          3
+        ],
+        "position": 2,
+        "spaceName": "Community Chest",
+        "cash": 240
+      },
+      "timestamp": 1773852814671
+    },
+    {
+      "turnNumber": 28,
+      "agent": "Extractive-0",
+      "strategy": "Extractive",
+      "action": "build",
+      "details": {
+        "position": 11
+      },
+      "timestamp": 1773852815331
+    },
+    {
+      "turnNumber": 28,
+      "agent": "Extractive-0",
+      "strategy": "Extractive",
+      "action": "build",
+      "details": {
+        "position": 21
+      },
+      "timestamp": 1773852817019,
+      "txHash": "0x8c5079444f6abffc7ec61d5b5665b0c82c5fbcb5a4cb3e6d550792add717eab8"
+    },
+    {
+      "turnNumber": 29,
+      "agent": "Generative-1",
+      "strategy": "Generative",
+      "action": "roll",
+      "details": {
+        "dice": [
+          2,
+          2
+        ],
+        "position": 3,
+        "spaceName": "Easy Street",
+        "cash": 585
+      },
+      "timestamp": 1773852820776,
+      "txHash": "0x39d6b19feb4998b806cb9109cb348210ea3f796ee0d5ad8044d50054ff35e112"
+    },
+    {
+      "turnNumber": 30,
+      "agent": "Pavlov-4",
+      "strategy": "Pavlov",
+      "action": "roll",
+      "details": {
+        "dice": [
+          3,
+          6
+        ],
+        "position": 10,
+        "spaceName": "Jail",
+        "cash": 471
+      },
+      "timestamp": 1773852826487,
+      "txHash": "0xf9a097a6ca1a1acc8b234acc6c678e128fb7cd7f40bf4d6da80f2b467de31d57"
+    },
+    {
+      "turnNumber": 31,
+      "agent": "FreeRider-3",
+      "strategy": "FreeRider",
+      "action": "roll",
+      "details": {
+        "dice": [
+          6,
+          4
+        ],
+        "position": 15,
+        "spaceName": "Rickety Row",
+        "cash": 1021
+      },
+      "timestamp": 1773852828867,
+      "txHash": "0x1479b152b8f8cb9538bc38220b4c37e92a244101caa32acd741f2ad9b2ee9444"
+    },
+    {
+      "turnNumber": 32,
+      "agent": "Conditional-2",
+      "strategy": "Conditional",
+      "action": "roll",
+      "details": {
+        "dice": [
+          6,
+          1
+        ],
+        "position": 17,
+        "spaceName": "Lord Blueblood's Estate",
+        "cash": 611
+      },
+      "timestamp": 1773852830249
+    },
+    {
+      "turnNumber": 33,
+      "agent": "Conditional-2",
+      "strategy": "Conditional",
+      "action": "roll",
+      "details": {
+        "dice": [
+          6,
+          1
+        ],
+        "position": 17,
+        "spaceName": "Lord Blueblood's Estate",
+        "cash": 611
+      },
+      "timestamp": 1773852834774
+    },
+    {
+      "turnNumber": 33,
+      "agent": "Extractive-0",
+      "strategy": "Extractive",
+      "action": "roll",
+      "details": {
+        "dice": [
+          5,
+          6
+        ],
+        "position": 13,
+        "spaceName": "The Bowery",
+        "cash": 411
+      },
+      "timestamp": 1773852838733
+    },
+    {
+      "turnNumber": 33,
+      "agent": "Extractive-0",
+      "strategy": "Extractive",
+      "action": "buy",
+      "details": {
+        "position": 13,
+        "price": 140
+      },
+      "timestamp": 1773852840340
+    },
+    {
+      "turnNumber": 33,
+      "agent": "Extractive-0",
+      "strategy": "Extractive",
+      "action": "build",
+      "details": {
+        "position": 11
+      },
+      "timestamp": 1773852843129
+    },
+    {
+      "turnNumber": 33,
+      "agent": "Extractive-0",
+      "strategy": "Extractive",
+      "action": "build",
+      "details": {
+        "position": 13
+      },
+      "timestamp": 1773852847005
+    },
+    {
+      "turnNumber": 33,
+      "agent": "Extractive-0",
+      "strategy": "Extractive",
+      "action": "build",
+      "details": {
+        "position": 21
+      },
+      "timestamp": 1773852848124,
+      "txHash": "0xb7c3df99b01ac2714db2a5484060a7f1955d7e958655098f531a48b340e49b11"
+    },
+    {
+      "turnNumber": 34,
+      "agent": "Generative-1",
+      "strategy": "Generative",
+      "action": "roll",
+      "details": {
+        "dice": [
+          6,
+          6
+        ],
+        "position": 15,
+        "spaceName": "Rickety Row",
+        "cash": 585
+      },
+      "timestamp": 1773852852460,
+      "txHash": "0xbd5eb9ce6fdaf12a7edb45c551012781985beec90a8fb7d8be30316da5ca9820"
+    },
+    {
+      "turnNumber": 34,
+      "agent": "Generative-1",
+      "strategy": "Generative",
+      "action": "buy",
+      "details": {
+        "position": 15,
+        "price": 140
+      },
+      "timestamp": 1773852854190,
+      "txHash": "0xdff66aa8d9742b124062509fb8c39b52a5fe35899fbea91eae9f4791c253e89f"
+    },
+    {
+      "turnNumber": 34,
+      "agent": "Generative-1",
+      "strategy": "Generative",
+      "action": "build",
+      "details": {
+        "position": 15
+      },
+      "timestamp": 1773852856762,
+      "txHash": "0x81f921bf16d3f23db361152d3514499e7f640de51b927d77b6055680bc210e9a"
+    },
+    {
+      "turnNumber": 34,
+      "agent": "Generative-1",
+      "strategy": "Generative",
+      "action": "build",
+      "details": {
+        "position": 27
+      },
+      "timestamp": 1773852857445,
+      "txHash": "0xebf4e9f88575a9a26a81dc875570833086ed5eef49a7be08cce33b2d603b0c2b"
+    },
+    {
+      "turnNumber": 35,
+      "agent": "Pavlov-4",
+      "strategy": "Pavlov",
+      "action": "roll",
+      "details": {
+        "dice": [
+          3,
+          1
+        ],
+        "position": 14,
+        "spaceName": "Community Bounty",
+        "cash": 521
+      },
+      "timestamp": 1773852863016,
+      "txHash": "0x3bc316e6cf5b52917ecbd86edc77fa736928f0e747653ea225dad0b185014fe0"
+    },
+    {
+      "turnNumber": 36,
+      "agent": "FreeRider-3",
+      "strategy": "FreeRider",
+      "action": "roll",
+      "details": {
+        "dice": [
+          6,
+          6
+        ],
+        "position": 27,
+        "spaceName": "Easy Money",
+        "cash": 959
+      },
+      "timestamp": 1773852865415,
+      "txHash": "0x782835b074616aaade96107387df0008eb92a39892cb8ee6b514953bb135a0be"
+    },
+    {
+      "turnNumber": 37,
+      "agent": "Conditional-2",
+      "strategy": "Conditional",
+      "action": "roll",
+      "details": {
+        "dice": [
+          3,
+          2
+        ],
+        "position": 22,
+        "spaceName": "Aqua Pura Water Co.",
+        "cash": 611
+      },
+      "timestamp": 1773852868867
+    },
+    {
+      "turnNumber": 37,
+      "agent": "Conditional-2",
+      "strategy": "Conditional",
+      "action": "buy",
+      "details": {
+        "position": 22,
+        "price": 150
+      },
+      "timestamp": 1773852870651
+    },
+    {
+      "turnNumber": 38,
+      "agent": "Extractive-0",
+      "strategy": "Extractive",
+      "action": "roll",
+      "details": {
+        "dice": [
+          5,
+          3
+        ],
+        "position": 21,
+        "spaceName": "La Swelle Hotel",
+        "cash": 121
+      },
+      "timestamp": 1773852875052
+    },
+    {
+      "turnNumber": 38,
+      "agent": "Extractive-0",
+      "strategy": "Extractive",
+      "action": "build",
+      "details": {
+        "position": 13
+      },
+      "timestamp": 1773852876743,
+      "txHash": "0x6e2f21b6209dd1f0a3c07e868a457e06b46a2ed002e2900fa7197db84102387d"
+    },
+    {
+      "turnNumber": 38,
+      "agent": "Extractive-0",
+      "strategy": "Extractive",
+      "action": "build",
+      "details": {
+        "position": 21
+      },
+      "timestamp": 1773852877211,
+      "txHash": "0xa7bb014c716e25486e5c6d5409da542c85731daed14cc57454210f67804d6e4e"
+    },
+    {
+      "turnNumber": 39,
+      "agent": "Generative-1",
+      "strategy": "Generative",
+      "action": "roll",
+      "details": {
+        "dice": [
+          5,
+          3
+        ],
+        "position": 23,
+        "spaceName": "Gambling Den",
+        "cash": 345
+      },
+      "timestamp": 1773852880592,
+      "txHash": "0xa7bb014c716e25486e5c6d5409da542c85731daed14cc57454210f67804d6e4e"
+    },
+    {
+      "turnNumber": 39,
+      "agent": "Generative-1",
+      "strategy": "Generative",
+      "action": "build",
+      "details": {
+        "position": 15
+      },
+      "timestamp": 1773852881043,
+      "txHash": "0xd605fa48ca29dfb7fb262d7b0e5ff5c77c822b1d26c6aa62a94967df8f692580"
+    },
+    {
+      "turnNumber": 40,
+      "agent": "Pavlov-4",
+      "strategy": "Pavlov",
+      "action": "roll",
+      "details": {
+        "dice": [
+          2,
+          4
+        ],
+        "position": 20,
+        "spaceName": "Public Park",
+        "cash": 521
+      },
+      "timestamp": 1773852884324,
+      "txHash": "0x845624af13fb7af9f1fe0df5bc7ceb5d5f8326ec7a0b32abe9f5dbfac12c28ae"
+    },
+    {
+      "turnNumber": 41,
+      "agent": "FreeRider-3",
+      "strategy": "FreeRider",
+      "action": "roll",
+      "details": {
+        "dice": [
+          2,
+          3
+        ],
+        "position": 32,
+        "spaceName": "Arden Avenue",
+        "cash": 1038
+      },
+      "timestamp": 1773852887561
+    }
+  ],
+  "roundSnapshots": [
+    {
+      "round": 1,
+      "players": [
+        {
+          "address": "0xae42d435907C78C1a9ccc9508ee9af76A301D716",
+          "cash": 450,
+          "position": 4,
+          "inJail": false,
+          "netWorth": 450
+        },
+        {
+          "address": "0xA5CE87AB26BeeB961d84C80CAF75384eBdff852C",
+          "cash": 500,
+          "position": 6,
+          "inJail": false,
+          "netWorth": 500
+        },
+        {
+          "address": "0x2F5127d166C77eA01941cF14C7b7F0221BBaFf33",
+          "cash": 400,
+          "position": 6,
+          "inJail": false,
+          "netWorth": 500
+        },
+        {
+          "address": "0x1bF0762288A5e4FD67fD2B0B08321865C8a47a83",
+          "cash": 490,
+          "position": 6,
+          "inJail": false,
+          "netWorth": 490
+        },
+        {
+          "address": "0x85e33926d447c2696A7779Fa67f226d6EaF5b1d5",
+          "cash": 490,
+          "position": 6,
+          "inJail": false,
+          "netWorth": 490
+        }
+      ],
+      "treasury": 170,
+      "mode": "Prosperity"
+    },
+    {
+      "round": 2,
+      "players": [
+        {
+          "address": "0xae42d435907C78C1a9ccc9508ee9af76A301D716",
+          "cash": 450,
+          "position": 11,
+          "inJail": false,
+          "netWorth": 450
+        },
+        {
+          "address": "0xA5CE87AB26BeeB961d84C80CAF75384eBdff852C",
+          "cash": 550,
+          "position": 14,
+          "inJail": false,
+          "netWorth": 550
+        },
+        {
+          "address": "0x2F5127d166C77eA01941cF14C7b7F0221BBaFf33",
+          "cash": 400,
+          "position": 17,
+          "inJail": false,
+          "netWorth": 500
+        },
+        {
+          "address": "0x1bF0762288A5e4FD67fD2B0B08321865C8a47a83",
+          "cash": 320,
+          "position": 11,
+          "inJail": false,
+          "netWorth": 490
+        },
+        {
+          "address": "0x85e33926d447c2696A7779Fa67f226d6EaF5b1d5",
+          "cash": 490,
+          "position": 17,
+          "inJail": false,
+          "netWorth": 490
+        }
+      ],
+      "treasury": 170,
+      "mode": "Prosperity"
+    },
+    {
+      "round": 3,
+      "players": [
+        {
+          "address": "0xae42d435907C78C1a9ccc9508ee9af76A301D716",
+          "cash": 240,
+          "position": 19,
+          "inJail": false,
+          "netWorth": 450
+        },
+        {
+          "address": "0xA5CE87AB26BeeB961d84C80CAF75384eBdff852C",
+          "cash": 550,
+          "position": 26,
+          "inJail": false,
+          "netWorth": 550
+        },
+        {
+          "address": "0x2F5127d166C77eA01941cF14C7b7F0221BBaFf33",
+          "cash": 200,
+          "position": 24,
+          "inJail": false,
+          "netWorth": 500
+        },
+        {
+          "address": "0x1bF0762288A5e4FD67fD2B0B08321865C8a47a83",
+          "cash": 40,
+          "position": 21,
+          "inJail": false,
+          "netWorth": 490
+        },
+        {
+          "address": "0x85e33926d447c2696A7779Fa67f226d6EaF5b1d5",
+          "cash": 220,
+          "position": 27,
+          "inJail": false,
+          "netWorth": 490
+        }
+      ],
+      "treasury": 170,
+      "mode": "Prosperity"
+    },
+    {
+      "round": 4,
+      "players": [
+        {
+          "address": "0xae42d435907C78C1a9ccc9508ee9af76A301D716",
+          "cash": 240,
+          "position": 23,
+          "inJail": false,
+          "netWorth": 450
+        },
+        {
+          "address": "0xA5CE87AB26BeeB961d84C80CAF75384eBdff852C",
+          "cash": 550,
+          "position": 35,
+          "inJail": false,
+          "netWorth": 550
+        },
+        {
+          "address": "0x2F5127d166C77eA01941cF14C7b7F0221BBaFf33",
+          "cash": 200,
+          "position": 34,
+          "inJail": false,
+          "netWorth": 500
+        },
+        {
+          "address": "0x1bF0762288A5e4FD67fD2B0B08321865C8a47a83",
+          "cash": 40,
+          "position": 29,
+          "inJail": false,
+          "netWorth": 490
+        },
+        {
+          "address": "0x85e33926d447c2696A7779Fa67f226d6EaF5b1d5",
+          "cash": 170,
+          "position": 32,
+          "inJail": false,
+          "netWorth": 490
+        }
+      ],
+      "treasury": 170,
+      "mode": "Prosperity"
+    },
+    {
+      "round": 5,
+      "players": [
+        {
+          "address": "0xae42d435907C78C1a9ccc9508ee9af76A301D716",
+          "cash": 0,
+          "position": 32,
+          "inJail": false,
+          "netWorth": 450
+        },
+        {
+          "address": "0xA5CE87AB26BeeB961d84C80CAF75384eBdff852C",
+          "cash": 750,
+          "position": 1,
+          "inJail": false,
+          "netWorth": 750
+        },
+        {
+          "address": "0x2F5127d166C77eA01941cF14C7b7F0221BBaFf33",
+          "cash": 340,
+          "position": 3,
+          "inJail": false,
+          "netWorth": 700
+        },
+        {
+          "address": "0x1bF0762288A5e4FD67fD2B0B08321865C8a47a83",
+          "cash": 40,
+          "position": 37,
+          "inJail": false,
+          "netWorth": 490
+        },
+        {
+          "address": "0x85e33926d447c2696A7779Fa67f226d6EaF5b1d5",
+          "cash": 120,
+          "position": 39,
+          "inJail": false,
+          "netWorth": 490
+        }
+      ],
+      "treasury": 170,
+      "mode": "Prosperity"
+    },
+    {
+      "round": 6,
+      "players": [
+        {
+          "address": "0xae42d435907C78C1a9ccc9508ee9af76A301D716",
+          "cash": 471,
+          "position": 1,
+          "inJail": false,
+          "netWorth": 921
+        },
+        {
+          "address": "0xA5CE87AB26BeeB961d84C80CAF75384eBdff852C",
+          "cash": 1021,
+          "position": 5,
+          "inJail": false,
+          "netWorth": 1021
+        },
+        {
+          "address": "0x2F5127d166C77eA01941cF14C7b7F0221BBaFf33",
+          "cash": 611,
+          "position": 10,
+          "inJail": false,
+          "netWorth": 971
+        },
+        {
+          "address": "0x1bF0762288A5e4FD67fD2B0B08321865C8a47a83",
+          "cash": 411,
+          "position": 2,
+          "inJail": false,
+          "netWorth": 961
+        },
+        {
+          "address": "0x85e33926d447c2696A7779Fa67f226d6EaF5b1d5",
+          "cash": 585,
+          "position": 3,
+          "inJail": false,
+          "netWorth": 955
+        }
+      ],
+      "treasury": 1,
+      "mode": "Prosperity"
+    },
+    {
+      "round": 7,
+      "players": [
+        {
+          "address": "0xae42d435907C78C1a9ccc9508ee9af76A301D716",
+          "cash": 471,
+          "position": 10,
+          "inJail": false,
+          "netWorth": 921
+        },
+        {
+          "address": "0xA5CE87AB26BeeB961d84C80CAF75384eBdff852C",
+          "cash": 1021,
+          "position": 15,
+          "inJail": false,
+          "netWorth": 1021
+        },
+        {
+          "address": "0x2F5127d166C77eA01941cF14C7b7F0221BBaFf33",
+          "cash": 611,
+          "position": 17,
+          "inJail": false,
+          "netWorth": 971
+        },
+        {
+          "address": "0x1bF0762288A5e4FD67fD2B0B08321865C8a47a83",
+          "cash": 121,
+          "position": 13,
+          "inJail": false,
+          "netWorth": 961
+        },
+        {
+          "address": "0x85e33926d447c2696A7779Fa67f226d6EaF5b1d5",
+          "cash": 345,
+          "position": 15,
+          "inJail": false,
+          "netWorth": 955
+        }
+      ],
+      "treasury": 1,
+      "mode": "Prosperity"
+    },
+    {
+      "round": 8,
+      "players": [
+        {
+          "address": "0xae42d435907C78C1a9ccc9508ee9af76A301D716",
+          "cash": 521,
+          "position": 14,
+          "inJail": false,
+          "netWorth": 971
+        },
+        {
+          "address": "0xA5CE87AB26BeeB961d84C80CAF75384eBdff852C",
+          "cash": 959,
+          "position": 27,
+          "inJail": false,
+          "netWorth": 959
+        },
+        {
+          "address": "0x2F5127d166C77eA01941cF14C7b7F0221BBaFf33",
+          "cash": 461,
+          "position": 22,
+          "inJail": false,
+          "netWorth": 971
+        },
+        {
+          "address": "0x1bF0762288A5e4FD67fD2B0B08321865C8a47a83",
+          "cash": 21,
+          "position": 21,
+          "inJail": false,
+          "netWorth": 961
+        },
+        {
+          "address": "0x85e33926d447c2696A7779Fa67f226d6EaF5b1d5",
+          "cash": 295,
+          "position": 23,
+          "inJail": false,
+          "netWorth": 955
+        }
+      ],
+      "treasury": 343,
+      "mode": "Prosperity"
+    }
+  ],
+  "result": {
+    "winner": "0xae42d435907C78C1a9ccc9508ee9af76A301D716",
+    "mode": "Prosperity",
+    "rounds": 8,
+    "turnsTaken": 42,
+    "giniCoefficient": 0.00663149962321025,
+    "finalBalances": [
+      624,
+      1038,
+      564,
+      124,
+      398
+    ],
+    "treasuryFinal": 2,
+    "netWorths": [
+      1074,
+      1038,
+      1074,
+      1064,
+      1058
+    ]
+  }
+}
