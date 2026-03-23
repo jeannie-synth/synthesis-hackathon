@@ -53,7 +53,7 @@ The rule sets produce the divergence the hypothesis predicts. Monopolist games c
 
 This isn't surprising — it's arithmetic. The value of the experiment is in what the *agents* do within these structures.
 
-i#### Voting self-correction
+#### Voting self-correction
 
 When agents gained the ability to vote on rule changes (Phase 2), the inequality gap collapsed by 79%. Six of seven monopolist-start games voted themselves into Prosperity. Monopolist Gini dropped 48% (0.189 → 0.098); Prosperity Gini rose 94% (0.034 → 0.065) — both modes converged toward a middle point. Political agency partially neutralizes structural determinism.
 
@@ -102,7 +102,7 @@ This is a hackathon experiment, not peer-reviewed research. Our findings are dem
 
 Fixed-rule parallel boards. Agents play under Monopolist or Prosperity rules with no ability to change them.
 
-**Status**: Complete (70+ games on Base Sepolia)
+**Status**: Complete (30 games on Base Sepolia — 15 per mode)
 
 **Metrics**: Gini coefficient, Herfindahl index, twin divergence, rounds to completion, treasury flow rate, strategy rankings.
 
@@ -120,9 +120,9 @@ Mode-switching enabled. Any agent can propose changing the rules mid-game — bu
 
 Agents broadcast voting intent before committing. Non-binding signals — agents may lie.
 
-**Status**: Complete (validated on Anvil + Sepolia)
+**Status**: Sepolia data corrupted (213 transaction resyncs); re-implemented on mainnet for the Inaugural Tournament.
 
-**Key finding**: Deception propagates through the information commons. Conditional cooperators mirror liars' signals, making their own signals unreliable — without any deceptive intent.
+**Key finding**: Agents wrote signals but did not demonstrably read each other's — a finding about the limits of unstructured agent communication. All 5 agents independently requested negotiation mechanics as the game's missing feature.
 
 ### Phase 4 — Inaugural Tournament (Free Strategy Choice)
 
