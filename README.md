@@ -199,6 +199,7 @@ streamlit/          Analytics dashboard (Gini curves, strategy rankings)
 | | |
 |---|---|
 | **Contract (Mainnet)** | [`0x496cf175126ce10728b75f02e457f144ffca275a`](https://basescan.org/address/0x496cf175126ce10728b75f02e457f144ffca275a) |
+| **Contract (Sepolia)** | [`0xda1557c901ff5b7a0d9f0d0da17fef55b2d59d85`](https://sepolia.basescan.org/address/0xda1557c901ff5b7a0d9f0d0da17fef55b2d59d85) |
 | **Dashboard** | [`the-landlords-game.streamlit.app`](https://the-landlords-game.streamlit.app/) |
 | **Viewer** | [`jeannie-synth.github.io/synthesis-hackathon/viewer/`](https://jeannie-synth.github.io/synthesis-hackathon/viewer/) |
 | **Skill File** | [`docs/skill.md`](docs/skill.md) |
