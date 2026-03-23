@@ -192,13 +192,32 @@
 
 <div id="load-screen" class="load-screen">
   <h1>THE LANDLORD'S GAME</h1>
-  <p>Replay Viewer</p>
-  <div class="drop-zone" id="drop-zone">Drop a game JSON file here</div>
-  <span class="or">or</span>
-  <button onclick="document.getElementById('file-input').click()">Choose File</button>
+  <p style="max-width:400px; text-align:center; line-height:1.5;">Same board, two rule sets. Watch AI agents play economics on-chain.</p>
+
+  <div style="margin:16px 0; display:flex; gap:8px; align-items:center;">
+    <input id="game-id-input" type="number" placeholder="Game ID" min="1"
+      style="width:100px; padding:6px 10px; background:var(--panel); color:var(--text);
+      border:1px solid var(--border); border-radius:4px; font-family:inherit; font-size:14px;">
+    <select id="chain-select" style="padding:6px 10px; background:var(--panel); color:var(--text);
+      border:1px solid var(--border); border-radius:4px; font-family:inherit; font-size:13px;">
+      <option value="base">Base Mainnet</option>
+      <option value="base-sepolia">Base Sepolia</option>
+    </select>
+    <button onclick="watchGame()">Watch</button>
+  </div>
+
+  <p style="color:var(--dim); font-size:11px; margin:12px 0 6px;">Or replay a showcase game:</p>
+  <div style="display:flex; gap:8px; flex-wrap:wrap; justify-content:center;">
+    <button onclick="loadDemo('game-1-monopolist.json')" style="border-color:#a03030; color:#e85050;">Game #1 <span style="font-size:10px;">Monopolist</span></button>
+    <button onclick="loadDemo('game-27-monopolist.json')" style="border-color:#a03030; color:#e85050;">Game #27 <span style="font-size:10px;">Monopolist</span></button>
+    <button onclick="loadDemo('game-28-prosperity.json')" style="border-color:#308060; color:#40c080;">Game #28 <span style="font-size:10px;">Prosperity</span></button>
+  </div>
+
+  <div class="drop-zone" id="drop-zone" style="margin-top:16px; padding:18px 36px; font-size:12px;">Drop a game JSON file here</div>
   <input type="file" id="file-input" accept=".json" style="display:none">
-  <p style="font-size:10px; margin-top:12px; color:var(--dim)">
-    Load from URL: <code>?game=path/to/game.json</code>
+
+  <p style="font-size:11px; margin-top:24px; color:var(--dim);">
+    Built with <span style="color:#9b59b6;">&#x1f49c;</span> by <a href="https://www.fractall.xyz" target="_blank" style="color:var(--accent); text-decoration:none;">Fractall</a>
   </p>
 </div>
 
@@ -217,6 +236,7 @@
     <span id="live-badge" class="live-badge" style="display:none"><span class="live-dot"></span>LIVE</span>
     <span id="live-status" class="live-status" style="display:none"></span>
     <span id="treasury-label">Treasury: $0</span>
+    <a href="https://www.fractall.xyz" target="_blank" style="color:var(--dim); text-decoration:none; font-size:10px; margin-left:6px;"><span style="color:#9b59b6;">&#x1f49c;</span> Fractall</a>
   </div>
 </header>
 
@@ -250,6 +270,18 @@
 </div>
 
 <script>
+const DEFAULT_CONTRACT='0x496cf175126ce10728b75f02e457f144ffca275a';
+
+function watchGame(){
+  const gid=document.getElementById('game-id-input').value;
+  const chain=document.getElementById('chain-select').value;
+  if(!gid)return;
+  window.location.search='?contract='+DEFAULT_CONTRACT+'&gameId='+gid+'&chain='+chain;
+}
+function loadDemo(f){
+  fetch('games/'+f).then(r=>r.json()).then(loadGame).catch(e=>console.error('Demo load failed:',e));
+}
+
 const BOARD = [
   {pos:0,name:"Mother Earth",type:"Go",price:0,group:0},{pos:1,name:"Poverty Place",type:"Lot",price:60,group:1},
   {pos:2,name:"Community Chest",type:"Chest",price:0,group:0},{pos:3,name:"Easy Street",type:"Lot",price:60,group:1},
@@ -316,10 +348,12 @@ function renderBoard(svg, mode) {
     const c=spaceCoords(space.pos), g=document.createElementNS(SVG_NS,'g');
     g.id='space-'+space.pos;
 
-    // Owner bar
+    // Owner bar — positioned on OUTER edge of space (away from board center)
     const ow=document.createElementNS(SVG_NS,'rect'); ow.id='owner-'+space.pos;
-    ow.setAttribute('x',c.x+2); ow.setAttribute('y',c.y+c.h-5);
-    ow.setAttribute('width',c.w-4); ow.setAttribute('height',3);
+    if(c.side==='left'){ow.setAttribute('x',c.x+1);ow.setAttribute('y',c.y+2);ow.setAttribute('width',3);ow.setAttribute('height',c.h-4);}
+    else if(c.side==='right'){ow.setAttribute('x',c.x+c.w-4);ow.setAttribute('y',c.y+2);ow.setAttribute('width',3);ow.setAttribute('height',c.h-4);}
+    else if(c.side==='top'){ow.setAttribute('x',c.x+2);ow.setAttribute('y',c.y+1);ow.setAttribute('width',c.w-4);ow.setAttribute('height',3);}
+    else{ow.setAttribute('x',c.x+2);ow.setAttribute('y',c.y+c.h-5);ow.setAttribute('width',c.w-4);ow.setAttribute('height',3);}
     ow.setAttribute('rx','1'); ow.setAttribute('fill','transparent'); g.appendChild(ow);
 
     // Houses
@@ -340,11 +374,25 @@ let playerLastActions={}, diceAnimTimer=null, diceHideTimer=null;
 let state={players:[],properties:{},treasury:0,mode:'',round:0};
 
 function initState(){
-  state.players=gameData.playerAddresses.map((a,i)=>({address:a,cash:500,position:0,inJail:false,netWorth:500,strategy:STRATEGY_NAMES[i]||'Agent-'+i}));
+  // Build address→strategy map from turn data (handles shuffled player order)
+  const addrToStrategy={};
+  for(const t of gameData.turns){
+    const idx=parseInt(t.agent.split('-').pop(),10);
+    if(!isNaN(idx)&&idx<gameData.playerAddresses.length){
+      addrToStrategy[gameData.playerAddresses[idx].toLowerCase()]=t.strategy||t.agent.split('-')[0];
+    }
+  }
+  state.players=gameData.playerAddresses.map((a,i)=>({address:a,cash:500,position:0,inJail:false,netWorth:500,
+    strategy:addrToStrategy[a.toLowerCase()]||'Agent-'+i}));
   state.properties={}; state.treasury=0; state.mode=gameData.mode; state.round=0; playerLastActions={};
 }
 
-function findPlayer(name){return STRATEGY_NAMES.findIndex(s=>name.startsWith(s));}
+function findPlayer(name){
+  // Match agent name like "Pavlov-4" to the player index in playerAddresses
+  const idx=parseInt(name.split('-').pop(),10);
+  if(!isNaN(idx)&&idx<(gameData?gameData.playerAddresses.length:5)) return idx;
+  return STRATEGY_NAMES.findIndex(s=>name.startsWith(s));
+}
 
 // ─── Last action formatting ───
 function fmtAction(t){
@@ -428,13 +476,11 @@ function applyTurn(turn){
     case 'jailWait':case 'jailBuyout':if(pi>=0)state.players[pi].inJail=true;break;
     case 'proposalPassed':state.mode=turn.details.newMode||(state.mode==='Monopolist'?'Prosperity':'Monopolist');break;
   }
+  // Use snapshots only for aggregate state (round, treasury, mode)
+  // Player positions/cash come from turn-by-turn replay, not snapshots
   const snap=findSnapshot(turnIndex);
   if(snap){
     state.round=snap.round; state.treasury=snap.treasury; state.mode=snap.mode;
-    for(let i=0;i<snap.players.length&&i<state.players.length;i++){
-      state.players[i].cash=snap.players[i].cash; state.players[i].position=snap.players[i].position;
-      state.players[i].inJail=snap.players[i].inJail; state.players[i].netWorth=snap.players[i].netWorth;
-    }
   }
   for(let i=0;i<state.players.length;i++){
     let nw=state.players[i].cash;
@@ -483,7 +529,10 @@ function updateBoard(){
     if(hg){hg.innerHTML='';const pr=state.properties[pos];
       if(pr&&pr.houses>0){const c=spaceCoords(pos);
         for(let h=0;h<pr.houses;h++){const hr=document.createElementNS(SVG_NS,'rect');
-          hr.setAttribute('x',c.x+3+h*10);hr.setAttribute('y',c.y+3);
+          if(c.side==='left'){hr.setAttribute('x',c.x+6);hr.setAttribute('y',c.y+3+h*10);}
+          else if(c.side==='right'){hr.setAttribute('x',c.x+c.w-14);hr.setAttribute('y',c.y+3+h*10);}
+          else if(c.side==='top'){hr.setAttribute('x',c.x+3+h*10);hr.setAttribute('y',c.y+6);}
+          else{hr.setAttribute('x',c.x+3+h*10);hr.setAttribute('y',c.y+c.h-14);}
           hr.setAttribute('width',8);hr.setAttribute('height',8);hr.setAttribute('fill','#30a060');
           hr.setAttribute('stroke','#208040');hr.setAttribute('stroke-width','0.5');hr.setAttribute('rx','1');
           hg.appendChild(hr);
@@ -580,9 +629,11 @@ function loadGame(data){
   renderBoard(document.getElementById('board-svg'), data.mode || 'Monopolist');
   updateBoard();updateCards();updateControls();
   document.getElementById('ticker').innerHTML='';
+  document.getElementById('ticker').style.display='none';
+  document.querySelector('.controls').style.display='flex';
   const info=document.getElementById('info-panel');
   const winnerIdx=data.result?data.playerAddresses.findIndex(a=>a.toLowerCase()===data.result.winner.toLowerCase()):-1;
-  const winnerName=winnerIdx>=0?STRATEGY_NAMES[winnerIdx]:'?';
+  const winnerName=winnerIdx>=0?(state.players[winnerIdx]?.strategy||'Player '+winnerIdx):'?';
   info.innerHTML=`<div class="row"><span class="label">Game:</span><span>#${data.gameId} ${data.mode}</span></div>
     <div class="row"><span class="label">Turns:</span><span>${data.turns.length}</span></div>
     <div class="row"><span class="label">Result:</span><span>${data.result?winnerName+' wins (R'+data.result.rounds+')':'In progress'}</span></div>
@@ -602,7 +653,10 @@ document.addEventListener('DOMContentLoaded',()=>{
   function handleFile(e){const f=e.target.files[0];if(f){const r=new FileReader();r.onload=ev=>{stopPlay();loadGame(JSON.parse(ev.target.result));};r.readAsText(f);}}
   document.getElementById('file-input').addEventListener('change',handleFile);
   document.getElementById('file-input-header').addEventListener('change',handleFile);
-  document.getElementById('btn-load-another').addEventListener('click',()=>document.getElementById('file-input-header').click());
+  document.getElementById('btn-load-another').addEventListener('click',()=>{
+    stopPlay();document.getElementById('game-viewer').style.display='none';
+    document.getElementById('load-screen').style.display='flex';
+  });
 
   const dz=document.getElementById('drop-zone');
   dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('dragover');});
@@ -613,17 +667,18 @@ document.addEventListener('DOMContentLoaded',()=>{
   const gu=params.get('game');
   if(gu) fetch(gu).then(r=>r.json()).then(loadGame).catch(e=>console.error('Load failed:',e));
 
-  // ─── Live spectator mode ───
-  // URL: ?live=true&contract=0x...&gameId=42&chain=base
-  const isLive=params.get('live')==='true';
+  // ─── Chain spectator mode ───
+  // URL: ?gameId=42 (uses DEFAULT_CONTRACT + base mainnet)
+  // URL: ?contract=0x...&gameId=42&chain=base-sepolia
+  // URL: ?live=true&contract=0x...&gameId=42 (backwards compat)
+  const chainGameId=params.get('gameId');
+  const isLive=!!chainGameId;
   if(isLive){
-    const contractAddr=params.get('contract');
-    const liveGameId=parseInt(params.get('gameId')||'1',10);
+    const contractAddr=params.get('contract')||DEFAULT_CONTRACT;
+    const liveGameId=parseInt(chainGameId||'1',10);
     const chain=params.get('chain')||'base';
     const RPC_MAP={base:'https://mainnet.base.org','base-sepolia':'https://sepolia.base.org',anvil:'http://localhost:8545'};
     const rpcUrl=RPC_MAP[chain]||RPC_MAP.base;
-
-    if(!contractAddr){console.error('Live mode requires &contract=0x...');return;}
 
     // getFullState(uint256) selector = keccak256("getFullState(uint256)") first 4 bytes
     // Verified via: cast sig "getFullState(uint256)" → 0x300235ac
@@ -641,6 +696,76 @@ document.addEventListener('DOMContentLoaded',()=>{
 
     let liveInitialized=false;
     let lastTurnsTaken=-1;
+    let prevSnapshot=null;
+
+    function takeSnapshot(d){
+      return {
+        turnsTaken:Number(d.turnsTaken),currentPlayerIndex:Number(d.currentPlayerIndex),
+        mode:d.mode,round:Number(d.round),treasury:Number(d.treasury),
+        gameOver:d.gameOver,winner:d.winner,
+        lastDice1:d.lastDice1,lastDice2:d.lastDice2,modeSwitchCount:d.modeSwitchCount,
+        players:d.players.map(p=>({addr:p.addr,cash:Number(p.cash),position:Number(p.position),inJail:p.inJail})),
+        properties:d.properties.map(p=>({owner:p.owner,houses:p.houses}))
+      };
+    }
+
+    function emitTickerFromDiff(prev,curr){
+      const tk=document.getElementById('ticker');
+      const actorIdx=prev.currentPlayerIndex;
+      const actorName=state.players[actorIdx]?state.players[actorIdx].strategy:'Player '+actorIdx;
+      const actorColor=PLAYER_COLORS[actorIdx]||'#888';
+      function addEntry(text,hl){
+        const en=document.createElement('div');
+        en.className='ticker-entry'+(hl?' highlight':'');
+        en.innerHTML='<span class="agent-name" style="color:'+actorColor+'">'+actorName+'</span> '+text;
+        tk.appendChild(en);tk.scrollTop=tk.scrollHeight;
+      }
+      // Dice roll
+      if(curr.lastDice1>0||curr.lastDice2>0){
+        const np=curr.players[actorIdx]?Number(curr.players[actorIdx].position):0;
+        addEntry('['+curr.lastDice1+'+'+curr.lastDice2+'] lands on '+(BOARD[np]?.name||'pos '+np),false);
+        showDice(curr.lastDice1,curr.lastDice2);
+      }
+      // Property purchases
+      const ZERO='0x0000000000000000000000000000000000000000';
+      for(let pos=0;pos<40;pos++){
+        if(prev.properties[pos].owner===ZERO&&curr.properties[pos].owner!==ZERO)
+          addEntry('buys '+(BOARD[pos]?.name||'pos '+pos)+' ($'+BOARD[pos]?.price+')',true);
+      }
+      // House builds
+      for(let pos=0;pos<40;pos++){
+        if(curr.properties[pos].houses>prev.properties[pos].houses)
+          addEntry('builds house on '+(BOARD[pos]?.name||'pos '+pos),true);
+      }
+      // Jail
+      for(let i=0;i<curr.players.length&&i<prev.players.length;i++){
+        const nm=state.players[i]?state.players[i].strategy:'Player '+i;
+        const col=PLAYER_COLORS[i]||'#888';
+        if(!prev.players[i].inJail&&curr.players[i].inJail){
+          const en=document.createElement('div');en.className='ticker-entry highlight';
+          en.innerHTML='<span class="agent-name" style="color:'+col+'">'+nm+'</span> sent to jail';
+          tk.appendChild(en);
+        }
+        if(prev.players[i].inJail&&!curr.players[i].inJail){
+          const en=document.createElement('div');en.className='ticker-entry';
+          en.innerHTML='<span class="agent-name" style="color:'+col+'">'+nm+'</span> released from jail';
+          tk.appendChild(en);
+        }
+      }
+      // Mode switch
+      if(curr.modeSwitchCount>prev.modeSwitchCount){
+        addEntry('mode switched to '+(curr.mode===0?'Monopolist':'Prosperity')+'!',true);
+      }
+      // Game over
+      if(curr.gameOver&&!prev.gameOver){
+        const winIdx=curr.players.findIndex(p=>p.addr.toLowerCase()===curr.winner.toLowerCase());
+        const winName=winIdx>=0?(state.players[winIdx]?.strategy||'Player '+winIdx):curr.winner.slice(0,10);
+        const en=document.createElement('div');en.className='ticker-entry highlight';
+        en.style.fontSize='13px';en.style.fontWeight='bold';
+        en.innerHTML='GAME OVER &mdash; '+winName+' wins!';
+        tk.appendChild(en);tk.scrollTop=tk.scrollHeight;
+      }
+    }
 
     async function pollLive(){
       try{
@@ -690,7 +815,14 @@ document.addEventListener('DOMContentLoaded',()=>{
         updateBoard();
         updateLiveCards(decoded);
 
-        const turnsTaken=Number(decoded.turnsTaken);
+        // State-diff ticker
+        const snap=takeSnapshot(decoded);
+        if(prevSnapshot&&snap.turnsTaken>prevSnapshot.turnsTaken){
+          emitTickerFromDiff(prevSnapshot,snap);
+        }
+        prevSnapshot=snap;
+
+        const turnsTaken=snap.turnsTaken;
         const pCount=decoded.players.length;
 
         if(turnsTaken===0){
