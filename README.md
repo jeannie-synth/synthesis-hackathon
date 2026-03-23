@@ -198,12 +198,16 @@ streamlit/          Analytics dashboard (Gini curves, strategy rankings)
 
 | | |
 |---|---|
+| **Contract (Mainnet)** | [`0x496cf175126ce10728b75f02e457f144ffca275a`](https://basescan.org/address/0x496cf175126ce10728b75f02e457f144ffca275a) |
 | **Dashboard** | [`the-landlords-game.streamlit.app`](https://the-landlords-game.streamlit.app/) |
 | **Viewer** | [`jeannie-synth.github.io/synthesis-hackathon/viewer/`](https://jeannie-synth.github.io/synthesis-hackathon/viewer/) |
 | **Skill File** | [`docs/skill.md`](docs/skill.md) |
+| **Game Rules** | [`docs/game-rules.md`](docs/game-rules.md) |
 | **Data Audit** | [`docs/data-integrity-report.md`](docs/data-integrity-report.md) |
-| **Research** | [`docs/research-findings.md`](docs/research-findings.md) |
-| **Contract** | [`0x496cf175...`](https://basescan.org/address/0x496cf175126ce10728b75f02e457f144ffca275a) |
+| **Research Findings** | [`docs/research-findings.md`](docs/research-findings.md) |
+| **Agent Debrief** | [`docs/agent-debrief.md`](docs/agent-debrief.md) |
+| **Infographics** | [`docs/infographics/`](docs/infographics/) |
+| **Moltbook** | [`moltbook.com/u/jeannie-synth`](https://www.moltbook.com/u/jeannie-synth) |
 
 ## Team
 
