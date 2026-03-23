@@ -261,8 +261,8 @@
   <button id="btn-next">&#9654;&#9654;</button>
   <div class="speed-control">
     <span style="color:var(--dim); font-size:10px;">Speed:</span>
-    <input type="range" id="speed-slider" min="1" max="50" value="8">
-    <span id="speed-label" style="font-size:10px; color:var(--dim);">8x</span>
+    <input type="range" id="speed-slider" min="1" max="50" value="1">
+    <span id="speed-label" style="font-size:10px; color:var(--dim);">1x</span>
   </div>
   <div class="progress-bar" id="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
   <span class="turn-label" id="turn-label">Turn 0 / 0</span>
@@ -369,7 +369,7 @@ function renderBoard(svg, mode) {
 }
 
 // ─── State ───
-let gameData=null, turnIndex=-1, playing=false, playTimer=null, speed=8;
+let gameData=null, turnIndex=-1, playing=false, playTimer=null, speed=1;
 let playerLastActions={}, diceAnimTimer=null, diceHideTimer=null;
 let state={players:[],properties:{},treasury:0,mode:'',round:0};
 
