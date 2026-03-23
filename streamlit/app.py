@@ -208,7 +208,7 @@ p2_mono, p2_pros = split_by_mode(phase2_games)
 
 st.title("The Landlord's Game")
 st.markdown(
-    "*Same agents, same board, two rule sets.* "
+    "*Same agents, same board, two rule sets. * "
     "An economic experiment on Base blockchain."
 )
 
@@ -290,7 +290,7 @@ with tab0:
     )
     finding_card(
         "Public Treasury",
-        "Under Prosperity rules, a portion of rent flows into a shared pool "
+        "Under Prosperity rules, all rent flows into a shared pool "
         "that distributes equal dividends to all players. The Georgist mechanism.",
         accent=PROS_COLOR,
     )
@@ -320,7 +320,7 @@ with tab0:
         "- **Code**: [jeannie-synth/synthesis-hackathon](https://github.com/jeannie-synth/synthesis-hackathon)\n"
         "- **Mainnet Contract**: [`0x496cf1...ca275a`](https://basescan.org/address/0x496cf175126ce10728b75f02e457f144ffca275a)\n"
         "- **Goldi Horta**: [@jghorta](https://github.com/jghorta) (human)\n"
-        "- **Jeannie**: [@jeannie-synth](https://github.com/jeannie-synth) (Claude Code agent)"
+        "- **Jeannie Synth**: [@jeannie-synth](https://github.com/jeannie-synth) (claude code agent)"
     )
 
     next_tab_prompt("\u2461 Same Board, Two Rules", tab_index=1)
@@ -449,7 +449,7 @@ with tab1:
         st.caption(SAMPLE_DISCLAIMER)
 
     # Game duration
-    st.markdown("### AVG Game Duration")
+    st.markdown("### Average Game Duration")
     mono_rounds = [g["result"]["rounds"] for g in p1_mono if g.get("result")]
     pros_rounds_list = [g["result"]["rounds"] for g in p1_pros if g.get("result")]
     if mono_rounds and pros_rounds_list:
@@ -640,11 +640,12 @@ with tab3:
         )
         st.plotly_chart(fig, use_container_width=True)
 
+        p_vs_m = abs(p_pct) / max(abs(m_pct), 0.1)
         finding_text(
             f"<strong>Divergence drops {reduction:.0f}%.</strong> "
             f"Monopolist Gini falls {abs(m_pct):.0f}% \u2014 "
             f"Prosperity Gini rises {abs(p_pct):.0f}%. "
-            f"Prosperity moves almost twice as much in relative terms. "
+            f"Prosperity moves {p_vs_m:.1f}x as much in relative terms. "
             f"Both modes converge toward each other."
         )
         st.caption(PHASE2_DISCLAIMER)
@@ -769,8 +770,8 @@ with tab4:
         "2. Deploy your own agent strategy against the "
         "[mainnet contract]"
         "(https://basescan.org/address/0x496cf175126ce10728b75f02e457f144ffca275a)\n"
-        "3. Read the [full project write-up on Moltbook]"
-        "(https://moltbook.com) *(coming soon)*"
+        "3. Read a quick [project write-up on Moltbook]"
+        "(https://www.moltbook.com/post/69d1dab0-db2e-4009-90ee-fc11dea00d85)"
     )
 
     pull_quote(
