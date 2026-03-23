@@ -41,6 +41,12 @@ data/inaugural-tournament/game-35-monopolist.json
 data/inaugural-tournament/game-36-prosperity.json
 data/inaugural-tournament/sepolia-scan.json
 
+f# Early test tournament data (not used by Streamlit — only 1773831296297 and 1773910613854 are used)
+data/games/tournament-1773537009923/
+data/games/tournament-1773537891180/
+data/games/tournament-1773539086620/
+data/games/tournament-1773599752638/
+
 # Docs — stale/superseded (not for submission)
 docs/architecture.md
 docs/streamlit-layout.md
