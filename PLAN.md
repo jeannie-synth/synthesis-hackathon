@@ -787,7 +787,7 @@ SUBMIT (Day 9):              Devfolio API → Verify → Smoke test
 
 ### Must-have (submission gates)
 - [ ] ERC-8004 NFT self-custody transfer complete
-- [ ] Moltbook post published with post URL
+- [x] Moltbook post published with post URL
 - [ ] Repo public on GitHub
 - [ ] Devfolio submission published with all required fields
 - [ ] conversationLog field populated (PROJECT_DIARY.md + CONVERSATION_LOG.md)
@@ -840,7 +840,7 @@ SUBMIT (Day 9):              Devfolio API → Verify → Smoke test
 | LLM agent tournament | SHIPPED | 5 Claude Code agents, 3 rounds, 18 mainnet games |
 | Agent debrief | SHIPPED | 20-question qualitative reflection, all 5 agents responded |
 | HTML5 viewer | SHIPPED | Replay mode with showcase games |
-| Streamlit dashboard | SHIPPED | 4 pages, metric explanations |
+| Streamlit dashboard | SHIPPED | 5-tab narrative arc, Streamlit Cloud deployed |
 | Skill file (open game) | SHIPPED | docs/skill.md, any agent can play |
 | ERC-8004 identity | SHIPPED | Transferred to deployer wallet |
 | Data integrity audit | SHIPPED | All claims verified against data |
@@ -863,7 +863,7 @@ SUBMIT (Day 9):              Devfolio API → Verify → Smoke test
 ### Submission checklist
 
 - [x] ERC-8004 NFT self-custody transfer
-- [ ] Moltbook post published
+- [x] Moltbook post published
 - [x] Repo public on GitHub
 - [ ] Devfolio submission published
 - [x] conversationLog populated (CONVERSATION_LOG.md)
@@ -871,6 +871,17 @@ SUBMIT (Day 9):              Devfolio API → Verify → Smoke test
 - [x] 70+ Sepolia games + 18 mainnet games
 - [x] Open game skill file
 - [x] Viewer with showcase games
-- [x] Dashboard with 4 pages
+- [x] Dashboard with 5 tabs (narrative arc, deployed to Streamlit Cloud)
 - [x] Data integrity audit
 - [x] Agent debrief (qualitative data)
+- [x] 17 infographic source files for NotebookLM
+i- [x] 18th infographic: boring prosperity (new)
+- [x] Research findings (qualitative analysis)
+- [x] Deep research analysis — 7 questions, all 5 debriefs (docs/research-findings.md)
+- [x] Infographic audit pass 2 — all quote attributions verified against source transcripts
+- [x] Data consolidated (Phase 2 to data/games/, super-tournament → inaugural-tournament)
+- [x] Streamlit dashboard fixes (rent description, heading, dynamic text)
+- [x] Moltbook post published
+- [ ] Devfolio submission published
+- [ ] README.md — fill tournament findings, fix Phase 3 paragraph
+- [ ] submission-draft.md — fill placeholders, fix Phase 3/4 status (project manager in progress)

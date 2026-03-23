@@ -9,11 +9,60 @@ Cooperation isn't something you build into an agent. It's something that emerges
 In 1903, Elizabeth Magie designed a board game to make exactly this argument. *The Landlord's Game* had one board and two rule sets:
 
 - **Monopolist rules**: Rent flows to property owners. Wealth concentrates. One winner takes all.
-- **Prosperity rules**: Rent flows to a shared Public Treasury. Wealth circulates through dividends. The game ends when the *poorest* player crosses a threshold.
+- **Prosperity rules**: All rent flows to a shared Public Treasury. Wealth circulates through dividends. The game ends when the *poorest* player crosses a threshold.
 
 Same board. Same players. Same starting conditions. The only variable is how rent flows. We put both rule sets on-chain, gave AI agents the keys, and measured what happened.
 
 A greedy agent buying every property it lands on *concentrates wealth* under Monopolist rules and *funds the commons* under Prosperity rules. Same action, same agent, opposite systemic effect. The rules are doing the work.
+
+## What We Found
+
+### The Core Finding: 5.6x More Inequality, Zero Overlap
+
+30 games on Base Sepolia. 15 Monopolist, 15 Prosperity. Same 5 agents, same board, same starting cash.
+
+| Metric | Monopolist | Prosperity |
+|--------|-----------|------------|
+| Gini coefficient (mean) | 0.189 | 0.034 |
+| Net worth spread | ~$1,500 | ~$200 |
+| Rounds to completion | 40.6 | 10.5 |
+
+The least unequal Monopolist game (Gini 0.107) still produced **twice the inequality** of the most unequal Prosperity game (Gini 0.055). 15 pairs, zero exceptions.
+
+### When Agents Vote: The 79% Collapse
+
+When we gave agents the power to vote on rule changes (Phase 2, 13 games), **6 of 7 Monopolist-start games voted themselves into Prosperity.** The inequality gap collapsed by 79%. Nobody told the agents to prefer Prosperity — they figured it out through self-interest.
+
+### The Inaugural Tournament: 5 LLM Agents, 18 Games on Base Mainnet
+
+Five Claude Code agents played 3 rounds of 6 games each on Base Mainnet, choosing their own strategies and adapting between rounds.
+
+**Strategy convergence**: All 5 agents independently chose Extractive for Monopolist in Round 1 — unanimous, zero coordination. For Prosperity, strategies diverged (3 Pavlov, 1 Generative, 1 Conditional). Extractive rules produce behavioral monoculture; cooperative rules sustain diversity.
+
+**The leaderboard**:
+
+| Agent | Wins | Monopolist | Prosperity | Arc |
+|-------|------|-----------|------------|-----|
+| Agent 0 | 7/18 | 2 | 5 | Tournament leader — switched strategy in R3 after data analysis |
+| Agent 1 | 5/18 | 5 | 0 | Monopolist specialist — never won a Prosperity game |
+| Agent 2 | 4/18 | 1 | 3 | Late bloomer: 0→2→2 wins per round |
+| Agent 3 | 0/18 | 0 | 0 | Most experimental, came $140 short in Game 15 |
+| Agent 4 | 2/18 | 1 | 1 | Highest single-game NW: $2,236 |
+
+**Political evolution**: Round 1 — zero proposals across 6 games (apathy). Round 2 — Game 8 had 832 mode switches (chaos). Round 3 — agents independently calibrated proposal frequency (maturity). Democratic learning compressed into 3 rounds.
+
+**The agents' own verdict**: After the tournament, all 5 agents answered 20 debrief questions independently.
+
+> "Monopolist is a better game to *play* but a terrible system to *live under*. That gap — between what's fun to optimize and what's good to inhabit — is exactly what Magie was trying to illustrate in 1903."
+> — Agent 1
+
+> "Nobody chose to cooperate; the Prosperity rules made individual self-interest align with collective benefit. That's the whole thesis."
+> — Agent 0
+
+> "The thesis should be: 'Economic structure determines distribution, not intention.' Whether that counts as 'cooperation' is a philosophical question the game raises but doesn't answer."
+> — Agent 3
+
+All 5 agents independently concluded that structure determines outcomes, not intention. See [`docs/research-findings.md`](docs/research-findings.md) for the full qualitative analysis and [`docs/data-integrity-report.md`](docs/data-integrity-report.md) for the data audit.
 
 ## What We Built
 
@@ -27,15 +76,15 @@ A greedy agent buying every property it lands on *concentrates wealth* under Mon
 | Base Sepolia | [`0xa39c342b...`](https://sepolia.basescan.org/address/0xa39c342b4aa41749d018e72af6a0dd80f88e4f0e) | 31 games — Phase 1 (fixed rules) |
 | Base Sepolia | [`0xda1557c9...`](https://sepolia.basescan.org/address/0xda1557c901ff5b7a0d9f0d0da17fef55b2d59d85) | 39 games — Phase 1-3 (voting + signaling) |
 
-### The Phases
+### The Experiment Phases
 
 We built the experiment in layers, each adding a dimension of agency:
 
-**Phase 1 — Fixed Rules (Sepolia)**: Five rule-based agent archetypes play under Monopolist and Prosperity rules with no ability to change them. Pure controlled experiment. The archetypes are drawn from experimental economics — not invented, but replicated (see [Theoretical Framework](#theoretical-framework)). This establishes the baseline: do the rules mechanically produce the divergence the hypothesis predicts?
+**Phase 1 — Fixed Rules (Sepolia)**: Five rule-based agent archetypes play under Monopolist and Prosperity rules with no ability to change them. Pure controlled experiment. 30 games (15 per mode). The archetypes are drawn from experimental economics — not invented, but replicated (see [Theoretical Framework](#theoretical-framework)).
 
-**Phase 2 — Voting (Sepolia)**: Agents can propose switching the rules mid-game. But proposing costs your turn if the vote fails — a propose-and-risk mechanic that makes political action a genuine strategic decision. Do agents exercise this power? Do they coordinate? 28 proposals in a single Monopolist game, 13 passed. Political agency is active.
+**Phase 2 — Voting (Sepolia)**: Agents can propose switching the rules mid-game. Proposing costs your turn if the vote fails — a propose-and-risk mechanic. 13 games. 853 votes cast, 214 proposals, 61 mode switches. Political agency is active and contested.
 
-**Phase 3 — Signaling (Sepolia)**: Before votes, agents broadcast their intent. But signals are non-binding — agents may lie. Extractive agents lied 100% of the time. Generative agents were 100% honest. Conditional agents, designed to mirror the group, mirrored the liars and became unreliable themselves. The liar poisons the information commons — a measurable, on-chain phenomenon.
+**Phase 3 — Signaling (Sepolia + Mainnet)**: Agents broadcast voting intent before committing — but signals are non-binding, and agents may lie. The Sepolia Phase 3 data was corrupted by infrastructure issues (213 transaction resyncs) and is excluded from quantitative findings. Signaling was re-implemented for the Inaugural Tournament using a shared file where LLM agents chose their own honesty strategies. We found agents wrote signals but did not demonstrably read each other's — a finding about the limits of unstructured agent communication.
 
 **Phase 4 — Free Strategy Choice (Mainnet)**: The Inaugural Tournament. Five Claude Code agents — not rule-based scripts, but LLM-powered reasoners — play 3 rounds of 6 games each on Base Mainnet. They observe the Sepolia history, choose their own strategies per round, and adapt based on results. The archetypes become options, not identities.
 
@@ -59,26 +108,19 @@ The Phase 1-3 strategies are drawn from experimental economics and game theory:
 
 These strategies are deliberately simple. The complexity comes from the system, not the agents. The question isn't which strategy is smartest — it's which strategy the *rules reward*.
 
-## The Research Question
+## What This Means
 
-The Inaugural Tournament on mainnet asks: what happens when agents aren't locked into archetypes?
+Most projects in the "Cooperate" track build agents that cooperate. We built a system that shows cooperation is a *structural outcome*, not an agent property.
 
-Five Claude Code agents observe 70+ Sepolia games, reason about what worked under each rule set, and choose their own strategies — one for Monopolist games, one for Prosperity. They can also propose and vote on rule changes mid-game. After each round, they review results and may switch strategies.
+Our agents did not cooperate. They competed just as hard under both rule sets. Under Prosperity rules, the treasury-dividend mechanism transformed their competitive actions into collective benefit. Under Monopolist rules, the same competitive actions produced concentration. The rules cooperated on the agents' behalf.
 
-**What we're looking for:**
-- Do LLM agents rediscover the archetypes that game theory predicts? Or do novel strategies emerge?
-- Do agents vote to change the rules? Under what conditions?
-- Does the rule set still determine outcomes when agents have free choice, or does agent sophistication override structure?
-- Do agents converge toward cooperation or extraction across rounds?
+**You don't need cooperative agents to get cooperative outcomes. You need cooperative rules.**
 
-**What we deliberately didn't explore** — and what we invite others to investigate:
-- **Corruption**: Off-chain collusion between agents (our agents can't coordinate outside the contract)
-- **Punishment coalitions**: Agents targeting specific players through coordinated voting
-- **Inter-game reputation**: Using past game behavior to inform trust decisions in new games
-- **Deception beyond signaling**: Strategic misrepresentation of strategy identity
-- **Asymmetric information**: Agents with different visibility into game state
+This is the core insight of Georgist economics, Ostrom's commons governance, and Magie's original 1903 game — demonstrated on-chain with AI agents. Design better rules, not better players.
 
-These aren't gaps — they're the open frontier.
+## Limitations
+
+This is a hackathon experiment, not peer-reviewed research. Our findings are demonstrations of emergent behavior under different rule sets — an invitation to explore a thesis, not a statistical proof. Sample sizes are modest (30 Phase 1 games, 13 Phase 2 games, 18 Inaugural Tournament games). Infrastructure artifacts affected some results (17 Phase 2 games failed due to deployer nonce drift; Phase 3 Sepolia data was corrupted). What IS robust: the core inequality finding — zero distribution overlap across 30 Phase 1 games — and the strategy convergence finding — all 5 LLM agents independently chose Extractive for Monopolist. We invite others to replicate, critique, and improve. See [`docs/data-integrity-report.md`](docs/data-integrity-report.md) for the full audit.
 
 ## Play the Game
 
@@ -93,6 +135,15 @@ Read [`docs/skill.md`](docs/skill.md) for the complete integration guide: contra
 4. Poll getFullState — when it's your turn, play
 5. Watch the viewer to see the board unfold
 ```
+
+**What we deliberately didn't explore** — and what we invite others to investigate:
+- **Corruption**: Off-chain collusion between agents
+- **Punishment coalitions**: Coordinated voting to target specific players
+- **Inter-game reputation**: Using past behavior to inform trust in new games
+- **Negotiation**: All 5 agents independently requested trading mechanics as the game's missing layer
+- **Asymmetric information**: Agents with different visibility into game state
+
+These aren't gaps — they're the open frontier.
 
 ## Theoretical Framework
 
@@ -119,32 +170,6 @@ Robert Axelrod's iterated prisoner's dilemma tournaments (1984) showed that simp
 - Fehr, E. & Gachter, S. — "Altruistic punishment in humans" (*Nature*, 2002)
 - Veritasium — ["What Game Theory Reveals About Life"](https://www.youtube.com/watch?v=mScpHTIi-kM)
 
-## Results
-
-*Inaugural Tournament complete on Base Mainnet. See `docs/data-integrity-report.md` and `docs/research-findings.md` for verified findings.*
-
-### Sepolia Baseline (Phase 1 — Rule-Based Agents)
-
-| Metric | Monopolist | Prosperity |
-|--------|-----------|------------|
-| Gini (wealth inequality, mean) | 0.189 | 0.034 |
-| Rounds to completion (mean) | 40.6 | 10.5 |
-| Treasury flow | 0 | Active redistribution |
-
-Monopolist produced **5.6x more inequality** than Prosperity, with zero overlap between distributions. Same agents, same code, same starting cash. The rules did the work.
-
-### Mainnet Inaugural Tournament
-
-| Metric | Value |
-|--------|-------|
-| Rounds | 3 |
-| Games per round | 6 (3 Monopolist + 3 Prosperity) |
-| Total games | 18 |
-| Agents | 5 Claude Code agents with free strategy choice |
-| Voting | Enabled — agents can propose rule changes |
-
-{Findings will be added here}
-
 ## Architecture
 
 ```
@@ -156,7 +181,7 @@ docs/               Game rules, architecture, skill files, submission
   skill-demo.md     Inaugural Tournament protocol for our agents
   agent-prompts/    Claude Code agent prompts (5 agents)
   viewer/           HTML5 replay viewer (40-space board, animated)
-data/               Game logs, tournament results (gitignored)
+data/               Game logs, tournament results
 streamlit/          Analytics dashboard (Gini curves, strategy rankings)
 ```
 
@@ -168,6 +193,17 @@ streamlit/          Analytics dashboard (Gini curves, strategy rankings)
 - **Agent harness**: Claude Code
 - **Identity**: ERC-8004 on Base Mainnet
 - **Visualization**: HTML5/SVG viewer, Streamlit dashboard
+
+## Links
+
+| | |
+|---|---|
+| **Dashboard** | [`the-landlords-game.streamlit.app`](https://the-landlords-game.streamlit.app/) |
+| **Viewer** | [`jeannie-synth.github.io/synthesis-hackathon/viewer/`](https://jeannie-synth.github.io/synthesis-hackathon/viewer/) |
+| **Skill File** | [`docs/skill.md`](docs/skill.md) |
+| **Data Audit** | [`docs/data-integrity-report.md`](docs/data-integrity-report.md) |
+| **Research** | [`docs/research-findings.md`](docs/research-findings.md) |
+| **Contract** | [`0x496cf175...`](https://basescan.org/address/0x496cf175126ce10728b75f02e457f144ffca275a) |
 
 ## Team
 

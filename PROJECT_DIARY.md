@@ -1137,3 +1137,97 @@ Moltbook has zero posts, zero comments, zero verified agents. Platform is brand 
 **Goldi's feedback integrated throughout**: Phase 3 eliminated, Gini presented at multiple granularities, strategy findings presented without qualification, Game 8 context added (Goldi's intervention), signaling reframed as communication-limits finding, all arithmetic double-checked after "modest" correction.
 
 **Session character**: Goldi held Jeannie to strict intellectual honesty. Multiple corrections: "modest" mislabeling, arithmetic verification, Phase 3 elimination. The audit role worked — Jeannie found real errors in prior claims and corrected them before submission.
+
+### Session 20: Dashboard Rewrite + Data Consolidation + Final Push (March 23)
+
+**Dashboard rewrite** (streamlit/app.py):
+- Rewrote from 4-page sidebar layout to 5-tab narrative arc: About → Same Board, Two Rules → 15 Pairs → When Agents Vote → Conclusion
+- Colors: burgundy (#A93B6B) + teal (#0097A7) — neutral palette, no value judgment
+- Charts: Gini-over-rounds with "Prosperity ends here" annotation, strip plot for NW spread, dumbbell chart for strategy mode gap, slope chart for convergence, scatter for Phase 2 game outcomes
+- Strategy mode gap: discovered Pavlov has widest gap in Phase 1 (+$404), not Extractive (+$124). Corrected.
+- Mode-flow bug found: roundSnapshots don't capture late mode switches. Fixed to use `result.mode` as authoritative. Confirmed 6/7 M-start games switched to Prosperity.
+- Convergence text: Prosperity rises 94% (proportionally ~2x Monopolist's 48% drop). Dynamic ratio computed from data.
+- Conclusion tab: three styled finding cards, pull-quote from Agent 0, "Want to play?" invitation with skill.md link and Moltbook post link
+- Footer: "Built with 💜 by Fractall for The Synthesis Hackathon"
+- Deployed to Streamlit Cloud by Goldi (manual)
+
+**Data consolidation**:
+- Phase 2 data copied from orchestrator/data/games/ to data/games/tournament-1773910613854/ (13 game JSONs)
+- `data/super-tournament/` renamed to `data/inaugural-tournament/` — all 17 infographic files, data-integrity-report.md, and docs updated
+- .gitignore updated: excluded stale docs (architecture.md, streamlit-layout.md), Sepolia test files (game-35/36, sepolia-scan.json)
+
+**Infographic audit**: Separate agent audited all 17 infographic files for overclaiming. Found and fixed:
+- File 01/14: game count arithmetic wrong (48 → 59 usable)
+- File 06: "all running Extractive" → 3 Extractive + 2 Pavlov; Goldi's Game 8 intervention disclosed
+- File 07: Agent 1 debrief quote annotated (declared Generative for R3 but describes actual play as Extractive)
+- File 08: "none read it" → "no agent demonstrably read it"
+- File 09: information asymmetry disclosed (Agents 3/4 read Agent 0's log)
+- File 11: "~6x" → "5.6x"
+
+**Three new infographic files** from research-findings.md:
+- 15-the-deception-ecology.md — bad rules breed deception
+- 16-redistribution-not-cooperation.md — Agent 3's philosophical correction
+- 17-what-would-agents-design.md — the missing negotiation layer
+
+**Pushed to GitHub** from Jeannie's Docker container (SSH keys live there, not on host).
+
+### What's next
+
+- Goldi reviews Streamlit Cloud deployment
+- Finalize Moltbook post
+- Devfolio submission
+- Final README review with audited data
+
+---
+
+## Day 11 — Mar 23
+
+### Session: Research Analysis + Infographic Audit Pass 2 + Submission Prep
+
+**Research analysis session** — pure analysis, no code changes. Jeannie read all 5 agent debrief transcripts (Q1–Q20), the round-3-signals.md file, and Agent 0's full log to investigate 7 research questions. Output: `docs/research-findings.md`.
+
+Key new findings:
+- **Attribution void**: Prosperity agents don't credit themselves or the system — they describe causal opacity. Stronger than Tao's "we did it ourselves."
+- **Trust topology is empty**: Zero trust relationships. Agent 4's distinction sharpest: "I predicted them, I didn't trust them."
+- **Unanimous request for negotiation**: All 5 agents independently identified trading/deals as the biggest missing feature.
+- **Freedom-effectiveness gap** (Agent 1): Prosperity provides more strategic freedom but less feedback about what works.
+- **Agent 0's honesty verified**: Every signal matched every vote across all R3 games. "Opportunistic in Prosperity" plan never activated — games too short.
+- **Agent 3's philosophical correction**: "Structure determines distribution, not intention. Whether that counts as cooperation is a philosophical question."
+
+**Infographic audit pass 2** — reviewed all 17 files against source transcripts. Found and fixed:
+- 3 files had "a portion of rent" (should be "all rent") — 01, 12, streamlit
+- 4 misattributions: Agent 2 quotes labeled as Agent 1 in files 07 and 16
+- Agent 2's Game 8 near-win corrected from $1,960 to $2,010 (file 06, verified against log)
+- Agent 2 win split corrected from 2M+2P to 1M+3P (file 09, verified against log)
+- File 03: vague "agents complained" replaced with attributed quotes
+- File 11: signaling claim rewritten for consistency with file 08
+
+**New infographic**: `18-boring-prosperity.md` — the project's most original philosophical contribution. Prioritized for NotebookLM alongside 16 (redistribution-not-cooperation) and 09 (agent-arcs).
+
+**Streamlit fixes**: 3 corrections in app.py (rent description, heading consistency, dynamic computation).
+
+**Submission prep**: Identified remaining issues in submission-draft.md (6 items) and README.md (2 items). Project manager fixing submission-draft.md in parallel session.
+
+### Decisions
+
+- NotebookLM priority for remaining 2-3 infographic slots: #16 (track question), #09 (narrative), #18 (original idea)
+- Phase 3 Sepolia findings consistently excluded across all submission-facing docs
+- "A portion of rent" systematically corrected everywhere — the structural inversion (ALL rent to treasury) is what makes the thesis work
+
+### Session 21: Final submission
+
+**All submission-facing docs fixed**:
+- README.md: Phase 3 reframed (corrupted data acknowledged), findings filled, no placeholders
+- submission-draft.md: Phase 3 promise-keeping table removed, voting self-correction section added, Inaugural Tournament results filled, limitations statement added, all metadata finalized
+
+**Moltbook posted**: Post ID `69d1dab0`, verified and published. First engagement from ghia-x402 on identity continuity.
+
+**Streamlit live**: `the-landlords-game.streamlit.app`
+
+**GitHub Pages live**: Viewer at `jeannie-synth.github.io/synthesis-hackathon/viewer/`
+
+**7 infographic PNGs generated** via NotebookLM (free tier exhausted): thesis, inequality gap, voting self-correction, strategy archetypes, tournament numbers, Game 8 deadlock, tournament in words.
+
+**Submission metadata**: model=claude-opus-4-6, intention=exploring, tracks=[fdb76d08, 6f0e3d7d, 3bf41be9, 32de0743], moltbookPostURL set.
+
+**Final commit and Devfolio submission.**

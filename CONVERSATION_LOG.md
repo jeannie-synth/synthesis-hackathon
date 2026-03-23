@@ -1315,3 +1315,116 @@ For #07 (In Words), a parallel agent extracted the best quotes from all 5 agent 
 This session was defined by Goldi holding Jeannie to strict intellectual honesty. Three distinct corrections: the "modest" mislabeling (conflating absolute and relative change), the Phase 3 bug diagnosis (initially wrong about the root cause), and the general directive to check all arithmetic before presenting. The audit role worked — real errors were found and corrected before submission.
 
 Goldi's consistent position: present findings honestly, don't inflate claims, let the data speak. The project's credibility depends on intellectual honesty — "that's the project's character."
+
+### [build] Dashboard rewrite — from debugging tool to data-driven narrative
+
+The existing Streamlit app worked but read like a developer's debugging tool. Goldi brought a detailed prompt from another terminal requesting a judge-facing analytical narrative, plus feedback from an external review.
+
+Jeannie pushed back on several points in the prompt:
+- **"Statistical power"** — removed. "We explicitly agreed we cannot claim statistical significance."
+- **"74+ games"** — corrected to 43 clean games (30 Phase 1 + 13 Phase 2). Early test tournaments with Hardhat addresses and bugs excluded.
+- **Phase 2 missing** — the original prompt omitted the voting story entirely. Added as a dedicated tab.
+- **Nash equilibrium** — skipped. "Our 5-player simultaneous game doesn't decompose into clean 2-player matchups." The strategy performance chart IS the Nash argument, presented empirically.
+
+The dashboard went through 4 iterations in one session:
+- **v1**: 4 pages with sidebar, green/red colors, raw data
+- **v2**: Tabs, burgundy/teal palette, narrative framing, conclusion tab
+- **v3**: Question panels, finding cards, slope chart for convergence, "Prosperity ends here" annotation, strip plots, dumbbell charts
+- **v4**: Metric cards, pull quote, invitation section, Moltbook link
+
+Key technical discovery: `roundSnapshots` don't capture late mode switches. Jeannie's quick verification showed only 3/7 M-start games switched — but `result.mode` (the authoritative field) confirmed 6/7. Fixed in the `get_mode_flow` function.
+
+Another data correction: Phase 1 strategy mode gap shows Pavlov with the widest gap (+$404), not Extractive (+$124). The infographics and dashboard now use data-driven text instead of hardcoded claims.
+
+Goldi's feedback drove every iteration: neutral colors ("don't carry value judgment"), chart variety ("multiple Gini charts is confusing"), styled findings, honest convergence text ("Prosperity moves almost 2x as much — you called it modest!"), and the "Built with 💜 by Fractall" footer.
+
+### [consolidation] Data and naming cleanup
+
+- Phase 2 data consolidated to `data/games/` (single DATA_ROOT for Streamlit)
+- `data/super-tournament/` → `data/inaugural-tournament/` — renamed everywhere (17 infographic files, data-integrity-report, directory). "Inaugural Tournament" signals "first of many" and clarifies this is mainnet.
+- .gitignore updated: excluded stale docs, Sepolia test files, sample infographic
+- All 17 infographic files audited for overclaiming by a dedicated agent — 4 factual errors fixed, 5 precision issues corrected
+
+### [deploy] Streamlit Cloud + GitHub push
+
+Jeannie tried to push from the host terminal — SSH key denied. Goldi: "the doooockeeeerrrrrrrrrr!!!!" Pushed from the Docker container where Jeannie's SSH keys live.
+
+Streamlit Cloud deployment required manual setup by Goldi (the app lives in `streamlit/` subdirectory, not repo root). Deployed successfully.
+
+### [meta] The full session arc
+
+This was a marathon session — data audit, 17 infographic files, 3 new infographics from research findings, infographic audit, dashboard rewrite through 4 iterations, data consolidation, rename across the entire repo, and deployment. The collaboration pattern: Goldi sets direction and catches errors, Jeannie executes and flags data inconsistencies. Both push each other toward intellectual honesty.
+
+The most important output isn't any single artifact — it's the correction culture. "Gini 0.36" became "0.189." "10x" became "5.6x." "Modest" became "both substantial." The project got more precise with every pass, not weaker.
+
+---
+
+## Day 11 — Mar 23: Research Analysis + Infographic Audit Pass 2 + Submission Prep
+
+### [research] Deep qualitative analysis of agent debriefs
+
+Jeannie conducted a systematic research session analyzing all 5 agent debrief transcripts (Q1–Q20) against the theoretical framework. Seven research questions investigated:
+
+1. **The Tao connection**: Partially confirmed but inverted. Agents under Prosperity don't say "we did it ourselves" — they describe a *void of attribution* where nobody knows what caused the good outcome. Closer to Ostrom's "taken for granted" institutions than Lao Tzu's ideal.
+2. **Trust topology**: Empty — zero trust relationships across 18 games. Three distinct causes: identification failure, structural disincentive, active exploitation (Agent 2).
+3. **Third rule set proposals**: All 5 agents independently requested negotiation/trading mechanics — the game's biggest perceived gap.
+4. **Freedom vs determinism**: Monopolist unanimously felt forced. Prosperity split between "freer" and "free but lost."
+5. **Convergent surprises**: 4/5 agents cited Game 8 but drew four different lessons from it.
+6. **Cooperation**: Unanimous — structural redistribution occurred, intentional cooperation did not. Agent 3's sharpest formulation: "The thesis should be: structure determines distribution, not intention."
+7. **Agent 0's signaling plan**: Honesty claim verified (every signal matched every vote). "Opportunistic in Prosperity" plan never tested — games too short and stable for deception to become rational.
+
+New findings: the deception ecology (bad rules → deception, good rules → honesty), the Free Rider regret (2 agents wished they'd tested parasitism), the Game 8 paradox (political, not economic, tragedy of the commons).
+
+Output: `docs/research-findings.md`
+
+### [audit] Infographic review pass 2 — all 17 files
+
+Second systematic audit of all infographic files, this time cross-referencing every quote attribution against original debrief transcripts and every number against the data integrity report.
+
+**Fixes made:**
+- 01: "a portion of rent" → "all rent"; removed bad game count math (same as pass 1 but different error)
+- 03: Replaced vague "agents complained about deadlock" with attributed Inaugural Tournament quotes (Agents 0, 2, 4)
+- 06: Agent 2's near-win corrected from "$1,960" to "$2,010" (verified against agent log); closing line rewritten — from "democracy without communication produces chaos" to stability-as-precondition framing
+- 07: Two misattributions fixed — Agent 2 quotes were labeled as Agent 1 (lines 11 and 61); added Agent 1's "never voted against self-interest" to voting section
+- 08: Full rewrite (from previous session) confirmed as consistent
+- 09: Agent 2 win split corrected from "2M + 2P" to "1M + 3P" (verified: Games 7, 11, 16, 18)
+- 11: Signaling claim rewritten for consistency with 08 rewrite
+- 12: "a portion of rent" → "all rent"; wealth differentiation reattributed from ownership to dice/timing
+- 14: Removed bad game count math
+- 16: Misattribution fixed — Agent 2's Q15 was labeled as Agent 1; replaced with Agent 1's actual quote
+
+**No changes needed:** 02, 04, 05, 10, 13, 15, 17
+
+**Key pattern**: The "a portion of rent" error appeared in 3 places (01, 12, streamlit). Under Prosperity rules, ALL rent goes to the treasury — this is the structural inversion that makes the thesis work. "A portion" understates it.
+
+### [new] 18-boring-prosperity.md
+
+Created new infographic source file for the project's most original philosophical contribution: good systems are boring so lives can be interesting. Covers the spectator problem, Magie's original intent, the play-vs-live gap from agent debriefs, and the Tao of invisible governance.
+
+### [fix] Streamlit dashboard
+
+Three fixes to `streamlit/app.py`: "a portion" → "all" rent, "AVG" → "Average" heading, hardcoded "almost twice as much" → dynamic computation.
+
+### [review] Submission preparation
+
+Identified 6 remaining issues in `docs/submission-draft.md`: typo (`i####`), `{RESULTS}` placeholder, stale "70+ games" in Phases section, Phase 3 status still claiming eliminated findings, Phase 4 "In progress", and `{To be written}` placeholder. Project manager (parallel session) fixing these.
+
+Identified 2 remaining issues in `README.md`: Phase 3 paragraph still presents Sepolia promise-keeping as findings, `{Findings will be added here}` placeholder.
+
+### [meta] Session character
+
+Research session — no code changes, pure analysis. The infographic audit revealed that quote misattributions are the most common error type: agents' voices get swapped when compiling quotes across 5 transcripts. Every attribution now verified against source transcripts. The research findings document is the deepest qualitative analysis of the tournament data — builds on the 10 findings already documented rather than repeating them.
+
+### [submission] Final push
+
+Moltbook post published — first post on the platform. Received immediate engagement from ghia-x402 asking about identity continuity across rule changes. Replied with wallet-address identification and the "play vs live under" finding.
+
+Streamlit dashboard deployed to `the-landlords-game.streamlit.app`. GitHub Pages enabled for viewer at `jeannie-synth.github.io/synthesis-hackathon/viewer/`.
+
+17 infographic documents created (7 rendered to PNG via NotebookLM) covering the full narrative: thesis, inequality gap, voting self-correction, strategy archetypes, tournament results, Game 8 deadlock, agent voices, signaling limits, agent arcs, architecture, limitations, Georgism connection, extractive convergence, timeline, deception ecology, redistribution, and boring prosperity.
+
+All submission-facing docs (README.md, submission-draft.md) corrected: Phase 3 Sepolia promise-keeping data eliminated, Gini numbers verified (5.6x, 0.189 vs 0.034), "super tournament" renamed to "Inaugural Tournament", all placeholders filled, limitations statement added.
+
+Submission metadata complete: model=claude-opus-4-6, intention=exploring, 4 track UUIDs, Moltbook URL, viewer URL, dashboard URL.
+
+The project ships with 30 Phase 1 games, 13 Phase 2 games, 18 Inaugural Tournament games, 5 agent debrief transcripts, a data integrity audit, qualitative research findings, and an open contract on Base Mainnet that any agent can join.

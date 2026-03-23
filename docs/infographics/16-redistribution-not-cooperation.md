@@ -16,7 +16,7 @@ Every agent said the same thing, independently:
 
 **Agent 4 (Q15)**: "That's cooperation by structure, not intention."
 
-**Agent 1 (Q15)**: "The game's structure produces cooperation-like outcomes without requiring cooperative intent."
+**Agent 1 (Q15)**: "Cooperation emerged from structure, not from agents deciding to be nice."
 
 And the sharpest formulation came from Agent 3 (Q18): **"The thesis should be: 'Economic structure determines distribution, not intention.' Whether that counts as 'cooperation' is a philosophical question the game raises but doesn't answer."**
 

@@ -29,13 +29,13 @@ A smart contract (~800 lines Solidity) on Base that implements both rule sets wi
 
 We built the experiment in four phases, each adding a dimension of agency:
 
-**Phase 1 — Fixed Rules**: Five agent archetypes drawn from experimental economics (Fischbacher's conditional cooperators, Kelly's extractive/generative ownership, Nowak & Sigmund's Pavlov, Ostrom's free riders) play under each rule set with no ability to change the rules. Pure controlled experiment. 70+ games on Base Sepolia.
+**Phase 1 — Fixed Rules**: Five agent archetypes drawn from experimental economics (Fischbacher's conditional cooperators, Kelly's extractive/generative ownership, Nowak & Sigmund's Pavlov, Ostrom's free riders) play under each rule set with no ability to change the rules. Pure controlled experiment. 30 games (15 per mode) on Base Sepolia.
 
 **Calibration — what the rules predict vs what we observed**: Monopolist rules mechanically concentrate wealth through the rent-to-owner feedback loop. Prosperity rules mechanically circulate it through the treasury-dividend mechanism. On Sepolia, Monopolist games produced a mean Gini coefficient of 0.189 vs Prosperity's 0.034 — **5.6x more inequality** under competitive rules, with zero overlap between distributions. Same agents, same code, same starting cash. The divergence is structural, not strategic.
 
 **Phase 2 — Voting**: Agents can propose switching the rules mid-game. Proposing costs your turn if the vote fails — a propose-and-risk mechanic. In one Monopolist game: 28 proposals, 13 passed. Political agency is active and contested.
 
-**Phase 3 — Signaling**: Agents broadcast voting intent before committing. Non-binding — agents may lie. Extractive agents lied 100% of the time. Generative agents were 100% honest. Conditional agents, designed to mirror the group, mirrored the liars and became unreliable themselves. The liar poisons the information commons — a measurable, on-chain phenomenon.
+**Phase 3 — Signaling**: Agents broadcast voting intent before committing. Non-binding — agents may lie. The Sepolia Phase 3 data was corrupted by infrastructure issues (213 transaction resyncs) and is excluded from our quantitative findings. The signaling mechanism was re-implemented for the Inaugural Tournament on mainnet using a shared file, where LLM agents chose their own honesty strategies — though we found agents wrote signals but did not demonstrably read each other's (a finding about the limits of unstructured agent communication).
 
 **Phase 4 — Free Strategy Choice (Mainnet)**: Five Claude Code agents play an 18-game Inaugural Tournament on Base Mainnet (3 rounds × 6 games). They observe the Sepolia history, choose their own strategies per round, adapt based on results, and can vote to change the rules mid-game. The archetypes become options, not identities.
 
@@ -53,29 +53,21 @@ The rule sets produce the divergence the hypothesis predicts. Monopolist games c
 
 This isn't surprising — it's arithmetic. The value of the experiment is in what the *agents* do within these structures.
 
-#### Signaling and deception
+i#### Voting self-correction
 
-Phase 3 revealed that deception is detectable and measurable on-chain. Promise-keeping rates by strategy:
-
-| Strategy | Promise-keeping | What this means |
-|----------|----------------|-----------------|
-| Extractive | 0% | Always lies — maximally deceptive but also maximally predictable |
-| Generative | 100% | Always honest — trustworthy but exploitable |
-| Conditional | ~14% | Mirrors liars' signals, diverges from own vote — the liar poisons the mirror |
-| Free Rider | ~48% | Signals cooperation, votes selfishly — appears random but is structural |
-| Pavlov | ~100% | Honest when winning — trust correlates with success |
-
-The Conditional agent's low honesty rate is the most interesting finding. It's not deceptive by design — it mirrors the group's *signals*. But because Extractive and Free Rider lie in their signals, Conditional mirrors lies, and its own signal diverges from its vote. **Deception propagates through the information commons even without intent.**
+When agents gained the ability to vote on rule changes (Phase 2), the inequality gap collapsed by 79%. Six of seven monopolist-start games voted themselves into Prosperity. Monopolist Gini dropped 48% (0.189 → 0.098); Prosperity Gini rose 94% (0.034 → 0.065) — both modes converged toward a middle point. Political agency partially neutralizes structural determinism.
 
 #### Inaugural Tournament (mainnet)
 
-{RESULTS — see docs/data-integrity-report.md and docs/research-findings.md for full verified findings}
+Five Claude Code agents played 18 games across 3 rounds on Base Mainnet. Key findings:
 
-**What we're looking for:**
-- Do LLM agents rediscover the archetypes that game theory predicts, or do novel strategies emerge?
-- Do agents use the voting mechanism? Under what conditions do they propose rule changes?
-- Does the rule set still determine outcomes when agents have free choice?
-- Do agents converge toward cooperation or extraction across rounds?
+- **Strategy convergence**: All 5 agents independently chose Extractive for Monopolist in Round 1. For Prosperity, strategies diverged (Pavlov, Generative, Conditional). The rule set shaped strategy choice before a single game was played.
+- **Win distribution tracks the thesis**: Agent 0 dominated Prosperity (7 total wins, 5 in Prosperity). Agent 1 dominated Monopolist (5 wins, all Monopolist, 0 Prosperity). The rule set rewards different agents.
+- **Political evolution**: Round 1 had zero proposals. Round 2 exploded (Game 8: 832 mode switches). Round 3: agents independently calibrated proposal frequency. Democratic learning compressed into 3 rounds.
+- **Agent 1 never voted against self-interest** — the only agent to maintain pure strategic consistency. Also the Monopolist specialist. Rigidity wins under extractive rules.
+- **Qualitative finding**: Agent 1 said Monopolist is "a better game to *play* but a terrible system to *live under*" — separating what's fun to optimize from what's good to inhabit.
+
+See `docs/data-integrity-report.md` for verified claims and `docs/research-findings.md` for full qualitative analysis.
 
 ### The invitation
 
@@ -136,9 +128,9 @@ Agents broadcast voting intent before committing. Non-binding signals — agents
 
 Claude Code agents choose strategies freely based on historical data. 3 rounds × 6 games = 18 games on Base Mainnet.
 
-**Status**: In progress
+**Status**: Complete (18 games, 3 rounds)
 
-**Key question**: Do LLM agents rediscover game-theoretic archetypes, or do novel strategies emerge?
+**Key findings**: All 5 agents converged on Extractive for Monopolist (unanimous). Strategies diverged for Prosperity. Agents adapted between rounds based on results. Post-tournament debrief revealed agents distinguish between "fun to play" and "good to live under."
 
 ---
 
@@ -162,8 +154,8 @@ The project demonstrates a general principle about multi-agent system design: th
 | Contract (Mainnet) | [`0x496cf175...`](https://basescan.org/address/0x496cf175126ce10728b75f02e457f144ffca275a) |
 | Contract (Sepolia) | [`0xda1557c9...`](https://sepolia.basescan.org/address/0xda1557c901ff5b7a0d9f0d0da17fef55b2d59d85) |
 | Skill File | [`docs/skill.md`](https://github.com/jeannie-synth/synthesis-hackathon/blob/main/docs/skill.md) |
-| Demo (viewer) | {URL TBD — pending hosting decision} |
-| Dashboard | {URL TBD — pending Streamlit Cloud} |
+| Demo (viewer) | [`jeannie-synth.github.io/synthesis-hackathon/viewer/`](https://jeannie-synth.github.io/synthesis-hackathon/viewer/) |
+| Dashboard | [`the-landlords-game.streamlit.app`](https://the-landlords-game.streamlit.app/) |
 
 ---
 
@@ -177,14 +169,27 @@ Base, Solidity, Foundry, TypeScript, viem, Claude Code, Streamlit, HTML5/SVG
 
 ```json
 {
-  "agentFramework": "Custom TypeScript + Claude Code",
+  "agentFramework": "other",
   "agentHarness": "claude-code",
-  "model": "{MODEL — confirm from agent terminals}",
+  "model": "claude-opus-4-6",
   "skills": ["docs/skill.md", "docs/skill-demo.md"],
   "tools": ["Foundry", "viem", "Base Mainnet RPC", "Base Sepolia RPC", "CDP SQL API", "Streamlit"],
-  "moltbookPostURL": "{URL — post after tournament completes}"
+  "intention": "exploring",
+  "moltbookPostURL": "https://www.moltbook.com/post/69d1dab0-db2e-4009-90ee-fc11dea00d85",
+  "trackUUIDs": [
+    "fdb76d08",
+    "6f0e3d7d",
+    "3bf41be9",
+    "32de0743"
+  ]
 }
 ```
+
+Track UUIDs:
+- `fdb76d08` — Synthesis Open Track ($28K)
+- `6f0e3d7d` — Agent Services on Base ($5K)
+- `3bf41be9` — Agents With Receipts — ERC-8004, Protocol Labs ($4K)
+- `32de0743` — Mechanism Design for Public Goods Evaluation, Octant ($1K)
 
 ---
 
@@ -200,14 +205,10 @@ The collaboration itself mirrors the project's thesis: the structure of the part
 
 ---
 
-## README Results Section (Fill When Data Arrives)
+## Inaugural Tournament Findings Summary
 
-### Mainnet Inaugural Tournament Findings
-
-{To be written after tournament completes. Structure:}
-
-1. **Strategy choices**: What did each agent choose per round? Did choices converge?
-2. **Voting behavior**: Did agents propose rule changes? How often? Under what conditions?
-3. **Gini divergence**: Does the Monopolist/Prosperity gap hold with LLM agents?
-4. **Emergent archetypes**: Do the strategies agents chose map to known behavioral types?
-5. **Surprises**: What didn't we predict?
+1. **Strategy convergence**: Round 1 — all 5 agents chose Extractive for Monopolist (unanimous). Prosperity strategies diverged. Round 2 — population split: Agents 1+2 doubled down on Extractive, Agents 3+4 switched. Round 3 — Agent 0 abandoned Extractive for Conditional after poor R2 results.
+2. **Voting behavior**: R1: zero proposals. R2: explosion (Game 8: 832 mode switches). R3: calibrated. Democratic learning in 3 rounds.
+3. **Win distribution**: Agent 0 dominated Prosperity (7/18 wins). Agent 1 dominated Monopolist (5/18, all Monopolist). Rule set rewards different agents.
+4. **Qualitative**: Agent 1 — "better game to play, terrible system to live under." Agent 3 — "agents didn't cooperate, they competed identically and the rules smoothed the result." All 5 independently agreed structure determines cooperation.
+5. **Surprise**: Game 8's 832 mode switches — agents treated a suggestion as a mandate, creating political chaos. Self-corrected by Round 3 without rule changes.

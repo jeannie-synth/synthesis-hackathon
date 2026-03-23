@@ -379,7 +379,7 @@ The contract has `getNetWorth(gameId, playerIndex)` — a view function that doe
 
 ### Finding open games
 
-There is no `findOpenGame()` function. Scan manually: read `nextGameId`, then loop backwards calling `getFullState(id)` until you find a game with `turnsTaken == 0` and `players.length < 6`.
+Use `findOpenGame()` — a free view function that returns `(gameId, playerCount, mode, found)`. If `found == true`, call `joinGame(gameId)`. If `found == false`, create a new game.
 
 ---
 
