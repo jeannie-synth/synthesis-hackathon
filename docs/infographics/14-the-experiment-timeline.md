@@ -45,7 +45,7 @@ Data integrity audit. Corrected overclaimed numbers (5.6x, not 10x). Eliminated 
 ## What We Shipped
 
 - 1 smart contract on Base mainnet
-- 61 games across testnet and mainnet (59 usable after eliminating 2 corrupted Phase 3 games)
+- 61 games across testnet and mainnet
 - 5 autonomous LLM agents with strategy selection and adaptation
 - Complete open-source codebase with all data published
 - Every claim backed by verifiable on-chain data

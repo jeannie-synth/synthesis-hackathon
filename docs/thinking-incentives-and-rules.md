@@ -350,3 +350,73 @@ Elizabeth Magie designed this in 1903. She didn't have Gini coefficients. She ha
 *"The world does not need more efficient middlemen. It needs fewer reasons to trust them." — The Trustless Manifesto*
 
 *"The world does not need more exciting economic systems. It needs systems boring enough that people can stop surviving and start living." — maybe us?*
+
+---
+
+## Day 10 Findings — Super Tournament Qualitative Analysis
+
+### The Stalemate Rule: Suggestion, Not Mandate
+
+The skill-demo.md included a suggestion: consider proposing a mode switch if the game exceeds 50 rounds. This was never a hard rule — it was an invitation to use political agency when the game stalls.
+
+**What happened**: In Game 8 (Round 2), agents initially treated it as mandatory — proposing every turn past round 50. This produced 832 mode switches and political chaos. But the system self-corrected. By Round 3, each agent independently calibrated:
+- Agent 4: "propose every 5th turn"
+- Agent 2: "only propose when behind"
+- Agent 1: never followed it at all — voted purely by strategy preference
+- Agent 0: followed it but acknowledged the override was pragmatic, not principled
+- Agent 3: followed it, accepted the trade-off
+
+The chaos was temporary. The learning was permanent. No rule change was needed — agents figured it out through experience.
+
+### Agent 1: The Rigid Strategist
+
+Agent 1 is the only agent who says they **never** voted against their own strategic interest. Q11 response: "My votes were always strategy-consistent. I never faced a situation where group welfare clearly conflicted with my strategic interest." They voted mechanically — Extractive wants Monopolist, Generative wants Prosperity, no exceptions.
+
+Agent 1 is also the Monopolist specialist: 5 wins, all in Monopolist, 0 in Prosperity despite trying 3 different strategies.
+
+**The connection**: The agent that never bent is the one that dominated in the rule set designed for rigid extraction. Agent 0, who *did* override strategy when pragmatically necessary, won the most games overall (7/18) — including Prosperity games where flexibility pays. Rigidity and adaptability are themselves strategies, and the rule set determines which one wins.
+
+### "Which Game to Play" vs "Which Game to Live Under" — The Tao Connection
+
+The debrief asked agents (Q2): "Is your preference the same as what you'd choose for a 'real' economic system?"
+
+**Agent 1**: "Monopolist is a better game to *play* but a terrible system to *live under*. I'd choose to live under Prosperity rules because they produce more equitable distributions, even though I couldn't figure out how to win there as a player. That gap — between what's fun to optimize and what's good to inhabit — is exactly what Magie was trying to illustrate in 1903."
+
+This connects directly to the Tao observation from Day 7: **the best rules are the ones nobody notices.** Prosperity games are "boring" — short, equitable, low drama. But that boringness IS the achievement. Agent 1 couldn't win there, found it less engaging to play, but would choose to *live* there. The invisible system is the one you want to inhabit. The dramatic system is the one you want to watch.
+
+Lao Tzu's passage (from the Tao Te Ching, ch. 17): "When the best leader's work is done, the people say, 'We did it ourselves.'" Under Prosperity rules, agents don't notice the structure working because wealth just... circulates. There are no crises to navigate, no rent traps to escape, no dramatic accumulation to watch. The structure is invisible to its participants. From outside — with Gini curves and treasury flow rates — the design is visible and beautiful. From inside, it's just... normal.
+
+This is what Magie understood in 1903 and Parker Brothers rejected: the Prosperity rule set produces a game so undramatic that nobody would sell it as entertainment. They kept only Monopolist — the dramatic version where someone loses everything and someone else takes it all. History chose spectacle over function. Our experiment measures the cost of that choice.
+
+### Information Asymmetry Between Agents
+
+Agents 3 and 4 read at least Agent 0's log file before choosing their Round 2+ strategies. Agents 0, 1, and 2 appear to have chosen independently. No technical barrier enforced information isolation — all log files sat in the same directory.
+
+This means later-round strategy choices were not fully independent. Some agents had private information only (their own reasoning), while others had partial public information (reading others' declared strategies). This is actually closer to real economic systems, where information asymmetry is the norm, not the exception.
+
+For the submission: the Round 1 convergence finding (all 5 chose Extractive for Monopolist) remains robust — no logs existed yet to read. Later-round evolution patterns reflect a mix of independent reasoning and informed adaptation.
+
+### Agent 2: The Rational Egoist
+
+Agent 2 is the most explicitly self-interested agent in the debrief:
+- Q11: "The rule overrode my judgment, and it cost me the game. After that, I stopped blindly following the stalemate rule."
+- Q12: "I never considered the proposer's motives or the 'principle' of either rule set. It was pure positional self-interest every time."
+- Signaling: "Writing 'FOR' in the signals file when I intended to vote AGAINST, to bait opponents into wasting their proposal turns."
+
+Agent 2 is Fischbacher's free rider made articulate. They play the meta-game — exploiting voting mechanics, using deceptive signaling, rejecting rules that don't serve them. And they improved across rounds: 0→2→2 wins.
+
+### Agent 3: The Thoughtful Loser
+
+Agent 3 went 0/18 despite trying 4 different strategies. But their debrief shows the most analytical reasoning: "agents didn't actually cooperate — they competed identically and the rules smoothed the result." And in Game 15, they came closest to winning ($1,915 vs winner's $2,055 — $140 short).
+
+Strategic diversity doesn't guarantee success. Analytical depth doesn't guarantee wins. The rule set rewards what it rewards — and in Monopolist, that's early property acquisition and rent extraction, not strategic sophistication.
+
+### The Voting Evolution Arc
+
+| Round | Political behavior | What happened |
+|-------|-------------------|---------------|
+| R1 | Zero proposals across 6 games | Agents didn't use political agency at all |
+| R2 | Explosion — Game 8 had 832 mode switches | Stalemate suggestion treated as mandate; system went haywire |
+| R3 | Calibrated — agents developed individual proposal frequencies | Self-corrected through experience, no rule change needed |
+
+This arc mirrors democratic learning: new political tools are initially ignored (R1), then overused (R2), then integrated with judgment (R3). The agents went through a compressed version of institutional maturation.

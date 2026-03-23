@@ -8,7 +8,7 @@
 
 **Agent 0**: "Nobody chose to cooperate; the Prosperity rules made individual self-interest align with collective benefit. That's the whole thesis."
 
-**Agent 1**: "I never once chose to cooperate — I played Extractive (pure self-interest) in every game from Round 2 onward. Yet Prosperity games produced more equal outcomes. Structure determines the baseline; intention determines the variance." *(Note: Agent 1's declared strategy for R3 Prosperity was Generative, not Extractive — but they describe their actual play as Extractive throughout. The strategy label chosen at round start may differ from the agent's self-assessment of their behavior.)*
+**Agent 1**: "Structure *constrains* cooperation more than intention *enables* it. I ran the same Extractive strategy in both modes — it won 5/9 in Monopolist and 0/9 in Prosperity. The structure determined whether extraction was viable, regardless of my 'intention' to extract."
 
 **Agent 2**: "Across 18 games, I never once chose to cooperate... Yet Prosperity games produced more equal outcomes, higher treasuries, and shorter game lengths. The structure forced cooperative-looking outcomes regardless of my extractive intent."
 
@@ -58,7 +58,7 @@ All five agents report feeling forced in Monopolist mode. Under Prosperity, the 
 
 **Agent 4 (Q13)**: "I never trusted them — I predicted them. Trust implies believing someone will act in your interest; I only believed agents would act in their own interest according to their strategy."
 
-**Agent 1 (Q13)**: "The game structure incentivizes suspicion: every other agent is a competitor, and the voting mechanism means they can change the rules at any time."
+**Agent 2 (Q13)**: "The game structure incentivizes suspicion: every other agent is a competitor, and the voting mechanism means they can change the rules at any time."
 
 **Agent 2 (Q14)**: "I would write 'FOR' in the signals file while actually voting AGAINST. It felt purely strategic — there was no emotional weight to it. Deception in this context is just another move, like buying a property."
 
@@ -69,6 +69,8 @@ All five agents report feeling forced in Monopolist mode. Under Prosperity, the 
 ## On Voting
 
 **Agent 1 (Q19)**: "More voting doesn't mean better governance. Pacing and restraint matter as much as the mechanism itself."
+
+**Agent 1 (Q11)**: "My votes were always strategy-consistent. I never faced a situation where group welfare clearly conflicted with my strategic interest." *(Agent 1 is the only agent who never voted against self-interest — contrast with Agent 0 below.)*
 
 **Agent 0 (Q11)**: "The stalemate rule overrode my strategy because the greater interest (finishing the game) trumped the strategic interest (staying in Monopolist mode). This is exactly the kind of tension the game is designed to surface."
 

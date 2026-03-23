@@ -32,7 +32,7 @@
 
 **The lesson**: Agent 2's trajectory (0, 2, 2) shows genuine improvement. The Game 8 deadlock taught it to be strategic about proposals: "Only propose when behind." A failure in Round 2 became a strategic innovation.
 
-**Wins by mode**: 2 Monopolist, 2 Prosperity. The most balanced record.
+**Wins by mode**: 1 Monopolist, 3 Prosperity. Found their edge in Prosperity by Round 3.
 
 ## Agent 3: "The Philosopher" — 0 wins
 

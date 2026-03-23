@@ -26,11 +26,11 @@ Same agents. Same board. Same competitive drive. 5.6x more inequality under Mono
 ## The Georgist Mechanism
 
 In our Prosperity mode, the treasury works like a simplified land value tax:
-1. A portion of rent payments flows into a shared treasury (instead of all going to the property owner)
+1. All rent payments flow into a shared treasury (instead of going to the property owner)
 2. The treasury distributes dividends to all players periodically
 3. This creates a floor: even players who don't own property receive income from the commons
 
-The effect: wealth still differentiates (property owners still earn more), but the gap stays narrow. No one goes broke. Everyone reaches the finish line. The game ends 4x faster because collective wealth grows faster than individual extraction.
+The effect: wealth still differentiates (dice rolls, timing, and property purchases create variation), but the gap stays narrow. No one goes broke. Everyone reaches the finish line. The game ends 4x faster because collective wealth grows faster than individual extraction.
 
 ## What Henry George Would Recognize
 

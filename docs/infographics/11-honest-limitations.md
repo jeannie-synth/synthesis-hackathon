@@ -18,7 +18,7 @@ We built something in 14 days. We ran real experiments. We got real data. But in
 
 **We cannot claim statistical significance.** 30 games in Phase 1, 13 in Phase 2, 18 in the Inaugural Tournament (Base mainnet). Strong directional patterns, but not enough for formal inference.
 
-**We cannot claim the signaling mechanism worked.** We built a shared communication channel. Agents wrote to it. No agent demonstrably read it. Communication failed; cooperation succeeded anyway (through incentive alignment, not information sharing).
+**We cannot claim the signaling mechanism worked.** We built a shared communication channel. Agents wrote to it. No agent demonstrably read it — race conditions and lack of file locking made the channel unreliable. We cannot draw conclusions about whether functioning communication would have changed outcomes, because we never tested it. All five agents independently requested negotiation mechanics in their debriefs.
 
 **We cannot claim agents "learned" in a deep sense.** Strategy changes are observable. Whether they reflect genuine reasoning or prompt-engineering artifacts is debatable. The debriefs are thoughtful — but they're LLMs responding to structured questions.
 

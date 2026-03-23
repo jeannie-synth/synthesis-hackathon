@@ -1,6 +1,6 @@
 # The Landlord's Game — Super Tournament Skill File
 
-> Internal skill file for autonomous Claude Code agents playing the 5-round super tournament on Base Mainnet.
+> Internal skill file for autonomous Claude Code agents playing the 5-round Inaugural Tournament on Base Mainnet.
 
 You are one of 5 autonomous agents playing The Landlord's Game. There is **no orchestrator** — you call the contract directly, poll for your turn, choose your own strategy, and log your reasoning on every decision.
 
@@ -33,7 +33,7 @@ Your `.env` file contains:
 | Contract | Games | What |
 |----------|-------|------|
 | `0xa39c342b4aa41749d018e72af6a0dd80f88e4f0e` | 31 | Phase 1 tournament (fixed rules, no voting) |
-| `0xda1557c901ff5b7a0d9f0d0da17fef55b2d59d85` | 39 | Phase 1+2 tournaments + super tournament round 1 (voting enabled) |
+| `0xda1557c901ff5b7a0d9f0d0da17fef55b2d59d85` | 39 | Phase 1+2 tournaments + Inaugural Tournament round 1 (voting enabled) |
 | `0x82d298c50d53575b8c0dfbd72885d6584114eb04` | 3 | V2 contract validation |
 
 Use `BASE_SEPOLIA_RPC` and `getFullState(gameId)` to scan these. Loop from gameId 1 to `nextGameId - 1`.
@@ -110,7 +110,8 @@ You may choose different strategies for different modes. This is the experiment 
 - **Patience**: Other agents may be slow. If it's not your turn, wait. Don't spam the RPC.
 - **One tx at a time**: Send a transaction, wait for receipt, then decide your next action. Never send a second tx before the first confirms.
 - **Error recovery**: If a transaction reverts, re-read state and retry. Use fixed gas limit of 500,000 for all writes.
-- **Stalemate rule (Round 2+)**: If a game exceeds **50 rounds**, all agents should propose a mode switch when it's their turn (before rolling) and vote FOR any pending mode switch proposal. This prevents Monopolist games from grinding indefinitely. This rule was added after Round 1 where Game 2 lasted 70 rounds.
+- **Stale RPC reads**: After writing a transaction on Base Mainnet, the next read may return pre-transaction state (RPC load balancing). Always re-read and verify state changes after writes before proceeding.
+- **Stalemate guidance (Round 2+)**: If a game exceeds **50 rounds**, you may consider proposing a mode switch or voting FOR pending proposals to prevent indefinite grinding. **This is a suggestion, not a mandate.** Propose when it makes strategic sense — not every turn. In Game 8 (Round 2), agents treated this as mandatory and proposed every turn, creating 832 mode switches and a voting deadlock. Use your judgment.
 
 ---
 
@@ -121,7 +122,7 @@ You may choose different strategies for different modes. This is the experiment 
 2. Is it my turn? → players[currentPlayerIndex].addr == myAddress
 3. Am I in jail?
    Yes → waitInJail(gameId) [turn ends automatically]
-         OR payJailBuyout(gameId) if Monopolist mode [then continue to step 4]
+         OR payJailBuyout(gameId) if Monopolist mode — costs $50 × remaining turns ($150/$100/$50) [then continue to step 4]
    No → continue
 
 4. Should I propose a mode switch? (votingEnabled && !hasRolled && !modeSwitchProposed)
@@ -378,7 +379,7 @@ The contract has `getNetWorth(gameId, playerIndex)` — a view function that doe
 
 ### Finding open games
 
-The contract has `findOpenGame()` — returns the first game that hasn't started and isn't full. Useful for joiners.
+There is no `findOpenGame()` function. Scan manually: read `nextGameId`, then loop backwards calling `getFullState(id)` until you find a game with `turnsTaken == 0` and `players.length < 6`.
 
 ---
 

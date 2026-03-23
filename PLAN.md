@@ -820,3 +820,57 @@ SUBMIT (Day 9):              Devfolio API → Verify → Smoke test
 - [ ] Partner integrations: Self Protocol, ENS
 - [ ] Viewer live play mode for humans (wallet + action buttons)
 - [ ] Pre-game lobby UI for organizing open games
+
+---
+
+## Final Status — Day 10, March 22, 2026
+
+### What shipped
+
+| Deliverable | Status | Notes |
+|-------------|--------|-------|
+| Smart contract (Sepolia) | SHIPPED | 3 contracts, 73+ games |
+| Smart contract (Mainnet) | SHIPPED | 0x496cf1..., 18+ games |
+| Phase 1: Fixed rules | SHIPPED | 30 games, Gini divergence confirmed |
+| Phase 2: Voting | SHIPPED | 13/30 games (infra failures), voting dynamics captured |
+| Phase 3: Signaling | SHIPPED | 2 Sepolia games + Round 3 mainnet with shared signal file |
+| Phase 4: Strategy evolution | SHIPPED | Mainnet super tournament — LLM agents with free choice |
+| 5 agent strategies | SHIPPED | Extractive, Generative, Conditional, FreeRider, Pavlov |
+| Receipt-driven orchestrator | SHIPPED | Zero stale-read failures |
+| LLM agent tournament | SHIPPED | 5 Claude Code agents, 3 rounds, 18 mainnet games |
+| Agent debrief | SHIPPED | 20-question qualitative reflection, all 5 agents responded |
+| HTML5 viewer | SHIPPED | Replay mode with showcase games |
+| Streamlit dashboard | SHIPPED | 4 pages, metric explanations |
+| Skill file (open game) | SHIPPED | docs/skill.md, any agent can play |
+| ERC-8004 identity | SHIPPED | Transferred to deployer wallet |
+| Data integrity audit | SHIPPED | All claims verified against data |
+| CONVERSATION_LOG.md | SHIPPED | Full collaboration narrative |
+| README.md | SHIPPED | Thesis, architecture, results, invitation |
+
+### What we skipped
+
+| Planned | Why skipped |
+|---------|-------------|
+| 15+15 Phase 2 games | Deployer nonce drift killed 17/30. 13 sufficient. |
+| Partner integrations (ENS, Self, Celo, Status L2) | No time, no honest claim without real integration |
+| MetaMask Delegation | msg.sender incompatibility with player tracking |
+| OpenServ integration | Didn't use their SDK |
+| 5-round super tournament | Reduced to 3 — voting makes games longer |
+| 2-min demo video | Time spent on data integrity instead |
+| Nash equilibrium formal analysis | Hackathon scope, not academic |
+| Viewer live ticker | Nice-to-have, not critical |
+
+### Submission checklist
+
+- [x] ERC-8004 NFT self-custody transfer
+- [ ] Moltbook post published
+- [x] Repo public on GitHub
+- [ ] Devfolio submission published
+- [x] conversationLog populated (CONVERSATION_LOG.md)
+- [x] Smart contract on Mainnet
+- [x] 70+ Sepolia games + 18 mainnet games
+- [x] Open game skill file
+- [x] Viewer with showcase games
+- [x] Dashboard with 4 pages
+- [x] Data integrity audit
+- [x] Agent debrief (qualitative data)
