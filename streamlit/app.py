@@ -1,6 +1,10 @@
 """
 The Landlord's Game — Analytical Dashboard
-Reads JSON game logs from data/games/tournament-*/ directories.
+A data-driven narrative for hackathon judges and beyond.
+
+Data: 43 verified games across two phases on Base Sepolia.
+- Phase 1: 30 games (15 Monopolist, 15 Prosperity) — fixed rules, no voting
+- Phase 2: 13 games (7 M-start, 6 P-start) — voting enabled
 """
 
 import json
@@ -14,7 +18,16 @@ import streamlit as st
 
 # ─── Config ───
 
-DATA_ROOT = Path(os.environ.get("DATA_ROOT", str(Path(__file__).parent.parent / "data" / "games")))
+DATA_ROOT = Path(
+    os.environ.get("DATA_ROOT", str(Path(__file__).parent.parent / "data" / "games"))
+)
+PHASE1_TOURNAMENT = "tournament-1773831296297"
+PHASE2_TOURNAMENT = "tournament-1773910613854"
+
+MONO_COLOR = "#e74c3c"
+PROS_COLOR = "#2ecc71"
+MODE_COLORS = {"Monopolist": MONO_COLOR, "Prosperity": PROS_COLOR}
+
 STRATEGY_COLORS = {
     "Extractive": "#e74c3c",
     "Generative": "#2ecc71",
@@ -23,77 +36,19 @@ STRATEGY_COLORS = {
     "Pavlov": "#9b59b6",
 }
 
-# ─── Metric explanations ───
-
-METRIC_EXPLANATIONS = {
-    "gini": (
-        "Gini Coefficient",
-        "Measures wealth inequality on a scale from 0 (perfect equality — everyone has the same) "
-        "to 1 (perfect inequality — one player has everything). Developed by statistician Corrado Gini in 1912. "
-        "In our experiment, comparing Gini between Monopolist and Prosperity rule sets shows whether "
-        "the economic structure itself drives inequality, independent of agent behavior."
-    ),
-    "herfindahl": (
-        "Herfindahl-Hirschman Index (HHI)",
-        "Measures property concentration — how evenly properties are distributed among players. "
-        "Ranges from 1/N (perfectly spread) to 1.0 (one player owns everything). "
-        "Used in antitrust economics to measure market concentration. "
-        "High HHI under Monopolist rules suggests the rent mechanic creates property monopolies; "
-        "lower HHI under Prosperity suggests shared treasury redistributes purchasing power."
-    ),
-    "twin_divergence": (
-        "Twin Divergence",
-        "The difference in net worth for the *same* agent strategy playing under different rule sets. "
-        "Because twin pairs use identical code and the same shuffled player order, any divergence "
-        "is attributable to the rules alone — not to agent design or starting position. "
-        "This is the core of the controlled experiment."
-    ),
-    "treasury": (
-        "Public Treasury",
-        "Under Prosperity rules, rent on unowned properties flows to a shared treasury instead of "
-        "disappearing. When the treasury accumulates enough, it distributes equal dividends to all players. "
-        "This mechanic — inspired by Elizabeth Magie's original 1903 Prosperity rules and Georgist economics — "
-        "is the structural mechanism that drives wealth redistribution without requiring agent cooperation."
-    ),
-    "dominance_flip": (
-        "Dominance Flip",
-        "When a strategy that ranks high under one rule set drops in rank under the other. "
-        "For example, if Extractive (Always Defect) ranks #1 under Monopolist rules but #5 under Prosperity, "
-        "that flip proves the thesis: the same greedy behavior produces different outcomes depending on "
-        "how rent flows. The agent didn't change — the system did."
-    ),
-    "rounds": (
-        "Rounds to Completion",
-        "How many rounds (full cycles through all 5 players) before a winner is declared. "
-        "Monopolist games end when any player's net worth crosses a threshold (individual accumulation). "
-        "Prosperity games end when the *poorest* player crosses a threshold (collective floor). "
-        "Comparing game length reveals whether cooperative or extractive structures resolve faster."
-    ),
-}
-
-
-def strategy_from_agent(agent_name: str) -> str:
-    """Extract strategy from agent name like 'Extractive-0'."""
-    return agent_name.rsplit("-", 1)[0]
-
 
 # ─── Data loading ───
 
 
+def strategy_from_agent(agent_name: str) -> str:
+    return agent_name.rsplit("-", 1)[0]
+
+
 @st.cache_data
-def list_tournaments() -> list[str]:
-    if not DATA_ROOT.exists():
+def load_tournament(tournament_id: str) -> list[dict]:
+    path = DATA_ROOT / tournament_id
+    if not path.exists():
         return []
-    dirs = sorted(
-        [d.name for d in DATA_ROOT.iterdir() if d.is_dir()],
-        reverse=True,
-    )
-    return dirs
-
-
-@st.cache_data
-def load_tournament(tournament_dir: str) -> list[dict]:
-    path = DATA_ROOT / tournament_dir
     games = []
     for f in sorted(path.glob("game-*.json")):
         with open(f) as fp:
@@ -101,13 +56,13 @@ def load_tournament(tournament_dir: str) -> list[dict]:
     return games
 
 
-def games_by_mode(games: list[dict]) -> tuple[list[dict], list[dict]]:
+def split_by_mode(games: list[dict]) -> tuple[list[dict], list[dict]]:
     mono = [g for g in games if g.get("mode") == "Monopolist"]
     pros = [g for g in games if g.get("mode") == "Prosperity"]
     return mono, pros
 
 
-# ─── Metric computation from roundSnapshots ───
+# ─── Metric computation ───
 
 
 def gini(values: list[float]) -> float:
@@ -120,7 +75,6 @@ def gini(values: list[float]) -> float:
 
 
 def compute_gini_timeseries(game: dict) -> list[dict]:
-    """Compute Gini per round from roundSnapshots."""
     rows = []
     for snap in game.get("roundSnapshots", []):
         net_worths = [p["netWorth"] for p in snap["players"]]
@@ -128,64 +82,14 @@ def compute_gini_timeseries(game: dict) -> list[dict]:
     return rows
 
 
-def compute_treasury_timeseries(game: dict) -> list[dict]:
-    rows = []
-    for snap in game.get("roundSnapshots", []):
-        rows.append({"round": snap["round"], "treasury": snap["treasury"]})
-    return rows
-
-
-def compute_wealth_timeseries(game: dict) -> pd.DataFrame:
-    """Per-player net worth over rounds."""
-    rows = []
-    for snap in game.get("roundSnapshots", []):
-        for i, p in enumerate(snap["players"]):
-            rows.append({
-                "round": snap["round"],
-                "player": f"Player {i}",
-                "address": p["address"][:10],
-                "netWorth": p["netWorth"],
-                "cash": p["cash"],
-            })
-    return pd.DataFrame(rows)
-
-
-# ─── Turn log analysis ───
-
-
-def extract_event_counts(games: list[dict]) -> pd.DataFrame:
-    """Count actions per strategy across games."""
-    counts: dict[str, dict[str, int]] = {}
-    for game in games:
-        for turn in game.get("turns", []):
-            strat = strategy_from_agent(turn["agent"])
-            action = turn["action"]
-            if strat not in counts:
-                counts[strat] = {}
-            counts[strat][action] = counts[strat].get(action, 0) + 1
-    rows = []
-    for strat, actions in counts.items():
-        for action, count in actions.items():
-            rows.append({"strategy": strat, "action": action, "count": count})
-    return pd.DataFrame(rows) if rows else pd.DataFrame(columns=["strategy", "action", "count"])
-
-
-# ─── Strategy performance ───
-
-
 def strategy_performance(games: list[dict]) -> pd.DataFrame:
-    """Mean net worth per strategy across games."""
-    # Map addresses to strategy names from turn logs
     rows = []
     for game in games:
         result = game.get("result")
         if not result:
             continue
-        # Build address→strategy map from turns
         addr_to_strat: dict[str, str] = {}
         for turn in game.get("turns", []):
-            addr = None
-            # Find address by agent index
             agent_name = turn["agent"]
             idx_str = agent_name.rsplit("-", 1)[-1]
             if idx_str.isdigit():
@@ -193,7 +97,6 @@ def strategy_performance(games: list[dict]) -> pd.DataFrame:
                 if idx < len(game["playerAddresses"]):
                     addr = game["playerAddresses"][idx]
                     addr_to_strat[addr] = strategy_from_agent(agent_name)
-
         for i, nw in enumerate(result["netWorths"]):
             addr = game["playerAddresses"][i]
             strat = addr_to_strat.get(addr, f"Player-{i}")
@@ -206,86 +109,191 @@ def strategy_performance(games: list[dict]) -> pd.DataFrame:
     return pd.DataFrame(rows) if rows else pd.DataFrame()
 
 
+def count_actions(games: list[dict], action_type: str) -> int:
+    count = 0
+    for game in games:
+        for turn in game.get("turns", []):
+            if turn["action"] == action_type:
+                count += 1
+    return count
+
+
+def count_mode_switches(games: list[dict]) -> int:
+    total = 0
+    for game in games:
+        for turn in game.get("turns", []):
+            if turn["action"] == "proposalPassed":
+                total += 1
+    return total
+
+
+def get_mode_flow(games: list[dict]) -> pd.DataFrame:
+    """For each game, get start mode and end mode.
+
+    Uses result.mode as the authoritative final mode — roundSnapshots
+    can lag behind late mode switches.
+    """
+    rows = []
+    for game in games:
+        start_mode = game.get("mode", "Unknown")
+        result = game.get("result", {})
+
+        # Primary: result.mode (authoritative, set at game end)
+        end_mode_raw = result.get("mode")
+        if isinstance(end_mode_raw, int):
+            end_mode = "Monopolist" if end_mode_raw == 0 else "Prosperity"
+        elif isinstance(end_mode_raw, str):
+            end_mode = end_mode_raw
+        else:
+            # Fallback: track through proposalPassed turn log entries
+            current = start_mode
+            for t in game.get("turns", []):
+                if t["action"] == "proposalPassed":
+                    new = t.get("details", {}).get("newMode")
+                    if new:
+                        current = new
+            end_mode = current
+
+        rows.append({
+            "gameId": game["gameId"],
+            "startMode": start_mode,
+            "endMode": end_mode,
+        })
+    return pd.DataFrame(rows)
+
+
 # ═══════════════════════════════════════════════════
-#  PAGES
+#  APP SETUP
 # ═══════════════════════════════════════════════════
 
-st.set_page_config(page_title="The Landlord's Game", page_icon="🎲", layout="wide")
+st.set_page_config(
+    page_title="The Landlord's Game",
+    page_icon="\U0001f3b2",
+    layout="wide",
+)
+
+# Load data
+phase1_games = load_tournament(PHASE1_TOURNAMENT)
+phase2_games = load_tournament(PHASE2_TOURNAMENT)
+p1_mono, p1_pros = split_by_mode(phase1_games)
+p2_mono, p2_pros = split_by_mode(phase2_games)
 
 # ─── Sidebar ───
 
 st.sidebar.title("The Landlord's Game")
 st.sidebar.markdown("*Same agents, same board, two rule sets.*")
-
-tournaments = list_tournaments()
-if not tournaments:
-    st.error("No tournament data found. Run a tournament first, then reload.")
-    st.stop()
-
-selected_tournament = st.sidebar.selectbox("Tournament", tournaments)
-games = load_tournament(selected_tournament)
-mono_games, pros_games = games_by_mode(games)
-
-st.sidebar.markdown(f"**Games loaded:** {len(games)} ({len(mono_games)} M / {len(pros_games)} P)")
+st.sidebar.markdown("---")
 
 page = st.sidebar.radio(
-    "Page",
-    ["Thesis", "Strategy Performance", "Game Dynamics", "Single Game Explorer"],
+    "Navigate",
+    [
+        "Same Board, Two Rules",
+        "15 Pairs, Zero Exceptions",
+        "When Agents Vote",
+        "About This Experiment",
+    ],
 )
 
+st.sidebar.markdown("---")
+st.sidebar.caption(
+    "Built for [The Synthesis Hackathon](https://www.thesynthesis.ai/) "
+    "on Base blockchain."
+)
+st.sidebar.caption("Goldi Horta + Jeannie (Claude Code)")
+
+
 # ═══════════════════════════════════════════════════
-#  PAGE 1: THESIS
+#  PAGE 1: SAME BOARD, TWO RULES
 # ═══════════════════════════════════════════════════
 
-if page == "Thesis":
-    st.title("The Thesis")
+if page == "Same Board, Two Rules":
+    st.title("Same Board, Two Rules")
     st.markdown(
-        "> **Same agents, different rules, different outcomes.** "
-        "Economic structure determines whether agents cooperate — not intention."
+        "Five AI agents played an economic board game on Base blockchain. "
+        "Same agents, same starting conditions. The only variable: **the rules.**"
+    )
+    st.markdown(
+        "**Monopolist** rules send all rent to property owners. "
+        "**Prosperity** rules share a portion through a public treasury. "
+        "Here's what happened across **30 games** on Base Sepolia."
     )
 
-    with st.expander("What is the Gini coefficient?"):
-        st.markdown(METRIC_EXPLANATIONS["gini"][1])
-
-    # Terminal Gini comparison
-    mono_ginis = [g["result"]["giniCoefficient"] for g in mono_games if g.get("result")]
-    pros_ginis = [g["result"]["giniCoefficient"] for g in pros_games if g.get("result")]
+    # Gini metrics
+    mono_ginis = [g["result"]["giniCoefficient"] for g in p1_mono if g.get("result")]
+    pros_ginis = [g["result"]["giniCoefficient"] for g in p1_pros if g.get("result")]
 
     if mono_ginis and pros_ginis:
-        col1, col2, col3 = st.columns(3)
-        col1.metric("Monopolist Gini (mean)", f"{sum(mono_ginis)/len(mono_ginis):.4f}")
-        col2.metric("Prosperity Gini (mean)", f"{sum(pros_ginis)/len(pros_ginis):.4f}")
-        ratio = (sum(mono_ginis)/len(mono_ginis)) / max(sum(pros_ginis)/len(pros_ginis), 0.001)
-        col3.metric("Inequality Ratio", f"{ratio:.1f}x", delta=f"Monopolist {ratio:.1f}x more unequal")
+        mean_m = sum(mono_ginis) / len(mono_ginis)
+        mean_p = sum(pros_ginis) / len(pros_ginis)
+        ratio = mean_m / max(mean_p, 0.001)
 
-    # Gini curves over rounds (mean across games)
-    st.subheader("Gini Coefficient Over Rounds")
+        col1, col2, col3 = st.columns(3)
+        col1.metric("Monopolist Mean Gini", f"{mean_m:.3f}")
+        col2.metric("Prosperity Mean Gini", f"{mean_p:.3f}")
+        col3.metric("Inequality Ratio", f"{ratio:.1f}x")
+
+    st.markdown(
+        "> **Gini coefficient** measures wealth inequality: "
+        "0 = perfect equality (everyone has the same), "
+        "1 = total inequality (one player has everything). "
+        "Higher Gini = more unequal."
+    )
+
+    # Chart 1: Terminal Gini box plot
+    st.markdown("### Zero Overlap")
+    st.markdown(
+        "The least unequal Monopolist game (Gini 0.107) still produced "
+        "**2x the inequality** of the most unequal Prosperity game (0.055)."
+    )
+
+    gini_dist = []
+    for g in mono_ginis:
+        gini_dist.append({"Rule Set": "Monopolist", "Gini": g})
+    for g in pros_ginis:
+        gini_dist.append({"Rule Set": "Prosperity", "Gini": g})
+    if gini_dist:
+        df = pd.DataFrame(gini_dist)
+        fig = px.box(
+            df, x="Rule Set", y="Gini", color="Rule Set",
+            color_discrete_map=MODE_COLORS,
+            template="plotly_white",
+        )
+        fig.update_layout(height=380, showlegend=False,
+                          yaxis_title="Gini Coefficient")
+        st.plotly_chart(fig, use_container_width=True)
+
+    # Chart 2: Gini over rounds
+    st.markdown("### Inequality Diverges From Round 1")
+    st.markdown(
+        "The gap isn't gradual. Monopolist and Prosperity games diverge "
+        "from the very first rounds and never converge."
+    )
 
     gini_rows = []
-    for game in mono_games:
+    for game in p1_mono:
         for row in compute_gini_timeseries(game):
-            gini_rows.append({**row, "mode": "Monopolist", "gameId": game["gameId"]})
-    for game in pros_games:
+            gini_rows.append({**row, "mode": "Monopolist"})
+    for game in p1_pros:
         for row in compute_gini_timeseries(game):
-            gini_rows.append({**row, "mode": "Prosperity", "gameId": game["gameId"]})
+            gini_rows.append({**row, "mode": "Prosperity"})
 
     if gini_rows:
         df_gini = pd.DataFrame(gini_rows)
-        # Mean Gini per round per mode
         df_mean = df_gini.groupby(["mode", "round"])["gini"].agg(["mean", "std"]).reset_index()
         fig = go.Figure()
-        for mode, color in [("Monopolist", "#e74c3c"), ("Prosperity", "#2ecc71")]:
+        for mode, color in [("Monopolist", MONO_COLOR), ("Prosperity", PROS_COLOR)]:
             subset = df_mean[df_mean["mode"] == mode]
             fig.add_trace(go.Scatter(
                 x=subset["round"], y=subset["mean"], mode="lines",
-                name=mode, line=dict(color=color, width=2),
+                name=mode, line=dict(color=color, width=3),
             ))
-            # Confidence band
             if "std" in subset.columns:
+                upper = subset["mean"] + subset["std"]
+                lower = (subset["mean"] - subset["std"]).clip(lower=0)
                 fig.add_trace(go.Scatter(
                     x=pd.concat([subset["round"], subset["round"][::-1]]),
-                    y=pd.concat([subset["mean"] + subset["std"], (subset["mean"] - subset["std"])[::-1]]),
-                    fill="toself", fillcolor=color, opacity=0.15,
+                    y=pd.concat([upper, lower[::-1]]),
+                    fill="toself", fillcolor=color, opacity=0.12,
                     line=dict(color="rgba(0,0,0,0)"), showlegend=False,
                 ))
         fig.update_layout(
@@ -294,182 +302,335 @@ if page == "Thesis":
         )
         st.plotly_chart(fig, use_container_width=True)
 
-    # Terminal Gini distribution
-    st.subheader("Terminal Gini Distribution")
-    gini_dist_rows = []
-    for g_val in mono_ginis:
-        gini_dist_rows.append({"mode": "Monopolist", "gini": g_val})
-    for g_val in pros_ginis:
-        gini_dist_rows.append({"mode": "Prosperity", "gini": g_val})
+    # Game duration
+    st.markdown("### Game Duration")
+    mono_rounds = [g["result"]["rounds"] for g in p1_mono if g.get("result")]
+    pros_rounds = [g["result"]["rounds"] for g in p1_pros if g.get("result")]
+    if mono_rounds and pros_rounds:
+        c1, c2 = st.columns(2)
+        c1.metric("Monopolist Mean Rounds", f"{sum(mono_rounds)/len(mono_rounds):.1f}")
+        c2.metric("Prosperity Mean Rounds", f"{sum(pros_rounds)/len(pros_rounds):.1f}")
+        st.markdown(
+            "Prosperity games end **~4x faster**. When wealth is shared, "
+            "everyone reaches the finish line sooner. When wealth concentrates, "
+            "the game drags on as the leader slowly squeezes out the rest."
+        )
 
-    if gini_dist_rows:
-        df_dist = pd.DataFrame(gini_dist_rows)
-        fig = px.box(df_dist, x="mode", y="gini", color="mode",
-                     color_discrete_map={"Monopolist": "#e74c3c", "Prosperity": "#2ecc71"},
-                     template="plotly_white")
+
+# ═══════════════════════════════════════════════════
+#  PAGE 2: THE EVIDENCE
+# ═══════════════════════════════════════════════════
+
+elif page == "15 Pairs, Zero Exceptions":
+    st.title("15 Pairs, Zero Exceptions")
+    st.markdown(
+        "Games were run in pairs: one Monopolist, one Prosperity, same agents. "
+        "**Every single pair** showed the same pattern."
+    )
+
+    # Chart 1: Per-pair divergence
+    st.markdown("### Every Pair Tells the Same Story")
+
+    mono_ginis = {g["gameId"]: g["result"]["giniCoefficient"]
+                  for g in p1_mono if g.get("result")}
+    pros_ginis = {g["gameId"]: g["result"]["giniCoefficient"]
+                  for g in p1_pros if g.get("result")}
+
+    # Pairs: odd=monopolist, even=prosperity (1+2, 3+4, ...)
+    pairs = []
+    for m_id in sorted(mono_ginis.keys()):
+        p_id = m_id + 1
+        if p_id in pros_ginis:
+            div = mono_ginis[m_id] - pros_ginis[p_id]
+            pairs.append({
+                "Pair": f"Games {m_id}-{p_id}",
+                "Divergence": div,
+                "M Gini": mono_ginis[m_id],
+                "P Gini": pros_ginis[p_id],
+            })
+
+    if pairs:
+        df_pairs = pd.DataFrame(pairs)
+        fig = px.bar(
+            df_pairs, y="Pair", x="Divergence", orientation="h",
+            color="Divergence",
+            color_continuous_scale=[[0, PROS_COLOR], [0.5, "#f5f5f5"], [1, MONO_COLOR]],
+            template="plotly_white",
+        )
+        fig.update_layout(
+            height=500, coloraxis_showscale=False,
+            xaxis_title="Gini Divergence (Monopolist \u2212 Prosperity)",
+            yaxis_title="",
+        )
+        st.plotly_chart(fig, use_container_width=True)
+        st.markdown(
+            f"All **{len(pairs)} pairs** show positive divergence. "
+            f"Range: {min(p['Divergence'] for p in pairs):.3f} to "
+            f"{max(p['Divergence'] for p in pairs):.3f}. No exceptions."
+        )
+
+    # Chart 2: Strategy performance
+    st.markdown("### Who Thrives Where?")
+    df_perf = strategy_performance(phase1_games)
+    if not df_perf.empty:
+        df_agg = df_perf.groupby(["strategy", "mode"])["netWorth"].mean().reset_index()
+        fig = px.bar(
+            df_agg, x="strategy", y="netWorth", color="mode", barmode="group",
+            color_discrete_map=MODE_COLORS,
+            template="plotly_white",
+            labels={"netWorth": "Mean Net Worth ($)", "strategy": "Strategy"},
+        )
+        fig.update_layout(height=400)
+        st.plotly_chart(fig, use_container_width=True)
+
+        st.markdown(
+            "**Extractive** has the widest mode gap \u2014 most sensitive to the rule set. "
+            "Competitive under Monopolist, worst under Prosperity. "
+            "**Generative** barely changes across modes. "
+            "The rule set determines whether extraction pays."
+        )
+
+    # Chart 3: Net worth distributions
+    st.markdown("### Wealth Spread")
+    nw_rows = []
+    for game in phase1_games:
+        result = game.get("result")
+        if not result:
+            continue
+        for nw in result["netWorths"]:
+            nw_rows.append({"Rule Set": game["mode"], "Net Worth": nw})
+    if nw_rows:
+        df_nw = pd.DataFrame(nw_rows)
+        fig = px.violin(
+            df_nw, x="Rule Set", y="Net Worth", color="Rule Set",
+            color_discrete_map=MODE_COLORS,
+            box=True, template="plotly_white",
+        )
+        fig.update_layout(height=400, showlegend=False,
+                          yaxis_title="Individual Net Worth ($)")
+        st.plotly_chart(fig, use_container_width=True)
+        st.markdown(
+            "Under Monopolist rules, individual net worths range from **$98 to $2,117** "
+            "(typical spread ~$1,500). Under Prosperity, they cluster between "
+            "**$1,006 and $1,376** (spread ~$200). Same agents. Same board."
+        )
+
+    # Chart 4: Rounds
+    st.markdown("### Time to Completion")
+    rounds_rows = []
+    for g in phase1_games:
+        if g.get("result"):
+            rounds_rows.append({"Rule Set": g["mode"], "Rounds": g["result"]["rounds"]})
+    if rounds_rows:
+        df_r = pd.DataFrame(rounds_rows)
+        fig = px.box(
+            df_r, x="Rule Set", y="Rounds", color="Rule Set",
+            color_discrete_map=MODE_COLORS,
+            template="plotly_white",
+        )
         fig.update_layout(height=350, showlegend=False)
         st.plotly_chart(fig, use_container_width=True)
 
 
 # ═══════════════════════════════════════════════════
-#  PAGE 2: STRATEGY PERFORMANCE
+#  PAGE 3: WHEN AGENTS VOTE
 # ═══════════════════════════════════════════════════
 
-elif page == "Strategy Performance":
-    st.title("Strategy Performance")
+elif page == "When Agents Vote":
+    st.title("When Agents Vote")
+    st.markdown(
+        "What happens when agents can **propose to change the rules** mid-game? "
+        "We enabled voting and ran **13 more games** on Base Sepolia."
+    )
 
-    df_perf = strategy_performance(games)
-    if df_perf.empty:
-        st.warning("No result data available.")
-        st.stop()
+    # Voting metrics (computed from turn logs)
+    total_votes = count_actions(phase2_games, "vote")
+    total_proposals = count_actions(phase2_games, "proposeModeSwitch")
+    total_switches = count_mode_switches(phase2_games)  # proposalPassed = actual mode switch
 
-    # Net worth by strategy (grouped bars)
-    st.subheader("Mean Net Worth by Strategy")
-    df_agg = df_perf.groupby(["strategy", "mode"])["netWorth"].mean().reset_index()
-    fig = px.bar(df_agg, x="strategy", y="netWorth", color="mode", barmode="group",
-                 color_discrete_map={"Monopolist": "#e74c3c", "Prosperity": "#2ecc71"},
-                 template="plotly_white")
-    fig.update_layout(height=400)
-    st.plotly_chart(fig, use_container_width=True)
+    col1, col2, col3 = st.columns(3)
+    col1.metric("Total Votes Cast", f"{total_votes:,}")
+    col2.metric("Proposals Made", f"{total_proposals:,}")
+    col3.metric("Mode Switches", f"{total_switches:,}")
 
-    # Twin divergence (horizontal bars)
-    st.subheader("Twin Divergence (Prosperity - Monopolist Net Worth)")
-    with st.expander("What is twin divergence?"):
-        st.markdown(METRIC_EXPLANATIONS["twin_divergence"][1])
-    mono_means = df_perf[df_perf["mode"] == "Monopolist"].groupby("strategy")["netWorth"].mean()
-    pros_means = df_perf[df_perf["mode"] == "Prosperity"].groupby("strategy")["netWorth"].mean()
-    all_strats = sorted(set(mono_means.index) | set(pros_means.index))
-    divergence = []
-    for s in all_strats:
-        m = mono_means.get(s, 0)
-        p = pros_means.get(s, 0)
-        divergence.append({"strategy": s, "divergence": p - m})
-    df_div = pd.DataFrame(divergence).sort_values("divergence")
-    fig = px.bar(df_div, y="strategy", x="divergence", orientation="h",
-                 color="divergence", color_continuous_scale=["#e74c3c", "#f0f0f0", "#2ecc71"],
-                 color_continuous_midpoint=0, template="plotly_white")
-    fig.update_layout(height=350, coloraxis_showscale=False)
-    st.plotly_chart(fig, use_container_width=True)
+    # Convergence comparison
+    st.markdown("### Voting Collapses the Gap by 79%")
 
-    # Rankings table
-    st.subheader("Strategy Rankings")
-    rank_data = []
-    for mode_name, group in df_perf.groupby("mode"):
-        means = group.groupby("strategy")["netWorth"].mean().sort_values(ascending=False)
-        for rank, (strat, nw) in enumerate(means.items(), 1):
-            rank_data.append({"Mode": mode_name, "Rank": rank, "Strategy": strat, "Mean NW": f"${nw:.0f}"})
-    st.dataframe(pd.DataFrame(rank_data), use_container_width=True, hide_index=True)
+    p1_mono_ginis = [g["result"]["giniCoefficient"] for g in p1_mono if g.get("result")]
+    p1_pros_ginis = [g["result"]["giniCoefficient"] for g in p1_pros if g.get("result")]
+    p2_mono_ginis = [g["result"]["giniCoefficient"] for g in p2_mono if g.get("result")]
+    p2_pros_ginis = [g["result"]["giniCoefficient"] for g in p2_pros if g.get("result")]
 
+    if p1_mono_ginis and p1_pros_ginis and p2_mono_ginis and p2_pros_ginis:
+        p1_div = sum(p1_mono_ginis)/len(p1_mono_ginis) - sum(p1_pros_ginis)/len(p1_pros_ginis)
+        p2_m_mean = sum(p2_mono_ginis)/len(p2_mono_ginis)
+        p2_p_mean = sum(p2_pros_ginis)/len(p2_pros_ginis)
+        p2_div = p2_m_mean - p2_p_mean
+        reduction = (p1_div - p2_div) / p1_div * 100
 
-# ═══════════════════════════════════════════════════
-#  PAGE 3: GAME DYNAMICS
-# ═══════════════════════════════════════════════════
+        conv_data = pd.DataFrame([
+            {"Phase": "Phase 1 (no voting)", "Divergence": p1_div},
+            {"Phase": "Phase 2 (voting)", "Divergence": p2_div},
+        ])
+        fig = px.bar(
+            conv_data, x="Phase", y="Divergence",
+            color="Phase",
+            color_discrete_sequence=[MONO_COLOR, PROS_COLOR],
+            template="plotly_white",
+            labels={"Divergence": "Gini Divergence (M \u2212 P)"},
+        )
+        fig.update_layout(height=350, showlegend=False)
+        st.plotly_chart(fig, use_container_width=True)
 
-elif page == "Game Dynamics":
-    st.title("Game Dynamics")
+        st.markdown(
+            f"Phase 1 divergence: **{p1_div:.4f}**. "
+            f"Phase 2 divergence: **{p2_div:.4f}**. "
+            f"A **{reduction:.0f}% reduction.**"
+        )
 
-    # Event counts
-    st.subheader("Action Counts by Strategy")
-    col1, col2 = st.columns(2)
-    for col, mode_games, mode_name in [(col1, mono_games, "Monopolist"), (col2, pros_games, "Prosperity")]:
-        with col:
-            st.markdown(f"**{mode_name}**")
-            df_events = extract_event_counts(mode_games)
-            if not df_events.empty:
-                key_actions = ["buy", "build", "jailWait", "jailBuyout", "proposeModeSwitch"]
-                df_key = df_events[df_events["action"].isin(key_actions)]
-                if not df_key.empty:
-                    fig = px.bar(df_key, x="strategy", y="count", color="action", barmode="group",
-                                 template="plotly_white", height=350)
-                    st.plotly_chart(fig, use_container_width=True)
+    # Convergence detail
+    st.markdown("### Convergence From Both Directions")
+    if p1_mono_ginis and p2_mono_ginis:
+        p1_m = sum(p1_mono_ginis)/len(p1_mono_ginis)
+        p1_p = sum(p1_pros_ginis)/len(p1_pros_ginis)
 
-    # Treasury curve (Prosperity only)
-    st.subheader("Treasury Over Rounds (Prosperity)")
-    with st.expander("What is the Public Treasury?"):
-        st.markdown(METRIC_EXPLANATIONS["treasury"][1])
-    treasury_rows = []
-    for game in pros_games:
-        for row in compute_treasury_timeseries(game):
-            treasury_rows.append({**row, "gameId": game["gameId"]})
-    if treasury_rows:
-        df_treas = pd.DataFrame(treasury_rows)
-        df_treas_mean = df_treas.groupby("round")["treasury"].mean().reset_index()
-        fig = px.area(df_treas_mean, x="round", y="treasury", template="plotly_white",
-                      color_discrete_sequence=["#2ecc71"])
+        detail = pd.DataFrame([
+            {"Metric": "Monopolist Gini", "Phase 1": p1_m, "Phase 2": p2_m_mean,
+             "Change": f"{(p2_m_mean - p1_m)/p1_m*100:+.0f}%"},
+            {"Metric": "Prosperity Gini", "Phase 1": p1_p, "Phase 2": p2_p_mean,
+             "Change": f"{(p2_p_mean - p1_p)/p1_p*100:+.0f}%"},
+        ])
+        st.dataframe(
+            detail.style.format({"Phase 1": "{:.4f}", "Phase 2": "{:.4f}"}),
+            use_container_width=True, hide_index=True,
+        )
+        st.markdown(
+            "Both modes converge. Monopolist Gini **drops 48%**. "
+            "Prosperity Gini **rises 94%**. "
+            "In absolute Gini points, Monopolist moves 2.9x more. "
+            "In percentage terms, Prosperity's shift is proportionally larger. "
+            "**Both are substantial.**"
+        )
+
+    # Mode switching flow
+    st.markdown("### 6 of 7 Monopolist Games Voted Themselves Into Prosperity")
+
+    df_flow = get_mode_flow(phase2_games)
+    if not df_flow.empty:
+        # Build flow summary
+        flow_summary = df_flow.groupby(["startMode", "endMode"]).size().reset_index(name="count")
+        fig = px.bar(
+            flow_summary, x="startMode", y="count", color="endMode",
+            barmode="stack",
+            color_discrete_map=MODE_COLORS,
+            template="plotly_white",
+            labels={"startMode": "Starting Rule Set", "count": "Games",
+                    "endMode": "Ending Rule Set"},
+        )
         fig.update_layout(height=350)
         st.plotly_chart(fig, use_container_width=True)
+        st.markdown(
+            "Nobody told the agents to prefer Prosperity. "
+            "They figured it out through self-interest: agents losing under Monopolist rules "
+            "proposed switches, and the majority \u2014 also losing \u2014 voted yes."
+        )
 
-    # Rounds to completion
-    st.subheader("Rounds to Completion")
-    with st.expander("What does rounds to completion measure?"):
-        st.markdown(METRIC_EXPLANATIONS["rounds"][1])
-    rounds_rows = []
-    for g in games:
+    # Phase 2 Gini distribution
+    st.markdown("### Phase 2 Gini Distribution (by starting mode)")
+    p2_gini_rows = []
+    for g in phase2_games:
         if g.get("result"):
-            rounds_rows.append({"mode": g["mode"], "rounds": g["result"]["rounds"]})
-    if rounds_rows:
-        df_rounds = pd.DataFrame(rounds_rows)
-        fig = px.box(df_rounds, x="mode", y="rounds", color="mode",
-                     color_discrete_map={"Monopolist": "#e74c3c", "Prosperity": "#2ecc71"},
-                     template="plotly_white")
-        fig.update_layout(height=350, showlegend=False)
+            p2_gini_rows.append({
+                "Starting Mode": g["mode"],
+                "Gini": g["result"]["giniCoefficient"],
+            })
+    if p2_gini_rows:
+        df_p2g = pd.DataFrame(p2_gini_rows)
+        fig = px.box(
+            df_p2g, x="Starting Mode", y="Gini", color="Starting Mode",
+            color_discrete_map=MODE_COLORS,
+            template="plotly_white",
+        )
+        fig.update_layout(height=350, showlegend=False,
+                          yaxis_title="Gini Coefficient")
         st.plotly_chart(fig, use_container_width=True)
+        st.markdown(
+            "Compare this to Phase 1's clean separation. "
+            "With voting, the distributions overlap \u2014 the structural gap "
+            "nearly disappears because agents change the rules from within."
+        )
 
 
 # ═══════════════════════════════════════════════════
-#  PAGE 4: SINGLE GAME EXPLORER
+#  PAGE 4: ABOUT
 # ═══════════════════════════════════════════════════
 
-elif page == "Single Game Explorer":
-    st.title("Single Game Explorer")
+elif page == "About This Experiment":
+    st.title("About This Experiment")
 
-    game_options = {f"Game {g['gameId']} ({g['mode']})": g for g in games}
-    selected_label = st.selectbox("Select Game", list(game_options.keys()))
-    game = game_options[selected_label]
+    st.markdown("### What We Built")
+    st.markdown(
+        "An economic board game as a **smart contract on Base blockchain**, "
+        "inspired by Elizabeth Magie's 1904 Landlord's Game \u2014 the game that became Monopoly. "
+        "Magie designed her game with two rule sets to make a political point: "
+        "**the same game produces wildly different outcomes depending on the rules.**"
+    )
+    st.markdown(
+        "We rebuilt that experiment with AI agents. Five agent strategies \u2014 "
+        "Extractive, Generative, Conditional, FreeRider, and Pavlov \u2014 "
+        "compete on a 40-space board. Every move is an on-chain transaction. "
+        "Every outcome is verifiable."
+    )
 
-    result = game.get("result", {})
-    if result:
-        cols = st.columns(4)
-        cols[0].metric("Mode", game["mode"])
-        cols[1].metric("Rounds", result.get("rounds", "?"))
-        cols[2].metric("Gini", f"{result.get('giniCoefficient', 0):.4f}")
-        cols[3].metric("Treasury", f"${result.get('treasuryFinal', 0)}")
+    st.markdown("### The Data")
 
-    # Wealth over time
-    st.subheader("Net Worth Over Rounds")
-    df_wealth = compute_wealth_timeseries(game)
-    if not df_wealth.empty:
-        fig = px.line(df_wealth, x="round", y="netWorth", color="player",
-                      template="plotly_white", height=400)
-        st.plotly_chart(fig, use_container_width=True)
+    data_table = pd.DataFrame([
+        {"Phase": "Phase 1", "Games": 30, "Rule Sets": "15 Monopolist + 15 Prosperity",
+         "Voting": "Disabled", "Key Finding": "5.6x inequality ratio, zero overlap"},
+        {"Phase": "Phase 2", "Games": 13, "Rule Sets": "7 M-start + 6 P-start",
+         "Voting": "Enabled", "Key Finding": "79% divergence collapse via voting"},
+        {"Phase": "Inaugural Tournament", "Games": 18, "Rule Sets": "9 Monopolist + 9 Prosperity",
+         "Voting": "Enabled", "Key Finding": "LLM agents on Base mainnet (qualitative data)"},
+    ])
+    st.dataframe(data_table, use_container_width=True, hide_index=True)
 
-    # Final standings
-    st.subheader("Final Net Worths")
-    if result and "netWorths" in result:
-        final_data = []
-        for i, nw in enumerate(result["netWorths"]):
-            addr = game["playerAddresses"][i][:10] if i < len(game["playerAddresses"]) else f"P{i}"
-            final_data.append({"Player": f"Player {i} ({addr})", "Net Worth": nw})
-        df_final = pd.DataFrame(final_data).sort_values("Net Worth", ascending=False)
-        st.dataframe(df_final, use_container_width=True, hide_index=True)
+    st.markdown(
+        "The Inaugural Tournament (18 games on Base mainnet) used LLM-powered agents "
+        "who chose their own strategies and adapted across 3 rounds. "
+        "That data lives in agent markdown logs, not structured JSON, "
+        "so it's analyzed qualitatively rather than in this dashboard."
+    )
 
-    # Turn log
-    st.subheader("Turn Log")
-    turns = game.get("turns", [])
-    if turns:
-        df_turns = pd.DataFrame([
-            {"agent": t["agent"], "action": t["action"],
-             "details": json.dumps(t.get("details", {}), default=str)[:120]}
-            for t in turns
-        ])
-        # Filters
-        agents = ["All"] + sorted(df_turns["agent"].unique().tolist())
-        actions = ["All"] + sorted(df_turns["action"].unique().tolist())
-        fc1, fc2 = st.columns(2)
-        sel_agent = fc1.selectbox("Filter Agent", agents)
-        sel_action = fc2.selectbox("Filter Action", actions)
-        if sel_agent != "All":
-            df_turns = df_turns[df_turns["agent"] == sel_agent]
-        if sel_action != "All":
-            df_turns = df_turns[df_turns["action"] == sel_action]
-        st.dataframe(df_turns, use_container_width=True, hide_index=True, height=400)
+    st.markdown("### What the Metrics Mean")
+
+    st.markdown(
+        "**Gini Coefficient** \u2014 Measures wealth inequality on a scale from 0 (perfect equality) "
+        "to 1 (one player has everything). Developed by statistician Corrado Gini in 1912. "
+        "Comparing Gini between rule sets shows whether economic structure drives inequality."
+    )
+    st.markdown(
+        "**Public Treasury** \u2014 Under Prosperity rules, a portion of rent flows into a shared "
+        "treasury that distributes equal dividends to all players. "
+        "This mechanic \u2014 inspired by Georgist economics \u2014 "
+        "drives redistribution without requiring agent cooperation."
+    )
+    st.markdown(
+        "**Rounds to Completion** \u2014 Monopolist games end when any player's net worth crosses "
+        "a threshold (individual accumulation). Prosperity games end when the poorest player "
+        "crosses a threshold (collective floor)."
+    )
+
+    st.markdown("### Limitations")
+    st.markdown(
+        "This is a **hackathon experiment, not peer-reviewed research.** "
+        "30 games in Phase 1 and 13 in Phase 2 demonstrate directional patterns "
+        "but are insufficient for formal statistical inference. "
+        "We invite others to replicate, critique, and improve upon this work."
+    )
+
+    st.markdown("### Links")
+    st.markdown(
+        "- **GitHub**: [jeannie-synth/synthesis-hackathon](https://github.com/jeannie-synth/synthesis-hackathon)\n"
+        "- **Mainnet Contract**: [`0x496cf175126ce10728b75f02e457f144ffca275a`](https://basescan.org/address/0x496cf175126ce10728b75f02e457f144ffca275a)\n"
+        "- **Built by**: Goldi Horta (human) + Jeannie (Claude Code agent)"
+    )

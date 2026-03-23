@@ -1,0 +1,6 @@
+strategy,monopolistMeanNetWorth,prosperityMeanNetWorth,divergence,monopolistMeanRank,prosperityMeanRank
+Extractive,1329,1166,-163,3.14,3.67
+Generative,1308,1304,-4,3.43,2.67
+Conditional,1269,1245,-24,3.43,2.50
+FreeRider,1370,1304,-67,2.86,2.50
+Pavlov,1481,1307,-174,2.14,3.67

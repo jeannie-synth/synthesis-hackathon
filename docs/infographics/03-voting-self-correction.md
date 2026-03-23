@@ -17,7 +17,7 @@ And the result was striking:
 - **6 of 7 Monopolist-start games voted themselves into Prosperity by game end**
 - Only 1 of 6 Prosperity-start games switched to Monopolist
 - The inequality gap collapsed by **79%**
-- Monopoly games were longer. Agents complained about the deadlock. 
+- In the Inaugural Tournament, several agents described Monopolist games as exhausting — "wars of attrition" (Agent 0), "long slogs" (Agent 4), games where they were "just polling and waiting, watching wealth slowly concentrate" (Agent 2). Some voted to switch not just for strategic advantage, but to move the game along.
 
 ## The Convergence (from Both Directions)
 

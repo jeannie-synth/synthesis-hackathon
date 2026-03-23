@@ -1,0 +1,1626 @@
+{
+  "timestamp": "2026-03-20T11:33:46.572Z",
+  "evolutionEnabled": false,
+  "tournaments": [
+    {
+      "tournamentId": "A",
+      "mode": "Monopolist",
+      "gamesPlayed": 7,
+      "gini": {
+        "mean": 0.09794435234484918,
+        "median": 0.10449422171493794,
+        "std": 0.02603108537830504,
+        "min": 0.03955248436985851,
+        "max": 0.12132756132756133
+      },
+      "herfindahl": {
+        "mean": 0.30857195724220304,
+        "median": 0.29777777777777775,
+        "std": 0.03187474711846697,
+        "min": 0.265625,
+        "max": 0.36054421768707484
+      },
+      "rounds": {
+        "mean": 33.285714285714285,
+        "median": 29,
+        "std": 9.11379309013519,
+        "min": 24,
+        "max": 50
+      },
+      "treasuryFlowRate": {
+        "mean": 7.95200328407225,
+        "median": 8.25,
+        "std": 6.978720511657141,
+        "min": 0,
+        "max": 19.071428571428573
+      },
+      "netWorthByStrategy": [
+        {
+          "strategy": "Extractive",
+          "stat": {
+            "mean": 1329,
+            "median": 1140,
+            "std": 318.8201463431784,
+            "min": 1026,
+            "max": 1922
+          }
+        },
+        {
+          "strategy": "Generative",
+          "stat": {
+            "mean": 1308.2857142857142,
+            "median": 1237,
+            "std": 277.4757205778626,
+            "min": 1070,
+            "max": 1968
+          }
+        },
+        {
+          "strategy": "Conditional",
+          "stat": {
+            "mean": 1269.4285714285713,
+            "median": 1202,
+            "std": 287.79300951644154,
+            "min": 1000,
+            "max": 1768
+          }
+        },
+        {
+          "strategy": "FreeRider",
+          "stat": {
+            "mean": 1370.4285714285713,
+            "median": 1334,
+            "std": 178.82861479469037,
+            "min": 1093,
+            "max": 1660
+          }
+        },
+        {
+          "strategy": "Pavlov",
+          "stat": {
+            "mean": 1480.5714285714287,
+            "median": 1396,
+            "std": 232.68363386664683,
+            "min": 1128,
+            "max": 1776
+          }
+        }
+      ],
+      "winsByStrategy": [
+        {
+          "strategy": "Extractive",
+          "wins": 2,
+          "winRate": 0.2857142857142857
+        },
+        {
+          "strategy": "Generative",
+          "wins": 1,
+          "winRate": 0.14285714285714285
+        },
+        {
+          "strategy": "Conditional",
+          "wins": 1,
+          "winRate": 0.14285714285714285
+        },
+        {
+          "strategy": "FreeRider",
+          "wins": 0,
+          "winRate": 0
+        },
+        {
+          "strategy": "Pavlov",
+          "wins": 3,
+          "winRate": 0.42857142857142855
+        }
+      ],
+      "jailEventsByStrategy": [
+        {
+          "strategy": "Extractive",
+          "stat": {
+            "mean": 1.4285714285714286,
+            "median": 0,
+            "std": 1.8405855323893037,
+            "min": 0,
+            "max": 5
+          }
+        },
+        {
+          "strategy": "Generative",
+          "stat": {
+            "mean": 2.142857142857143,
+            "median": 1,
+            "std": 2.996596709057576,
+            "min": 0,
+            "max": 9
+          }
+        },
+        {
+          "strategy": "Conditional",
+          "stat": {
+            "mean": 0.8571428571428571,
+            "median": 0,
+            "std": 1.355261854357877,
+            "min": 0,
+            "max": 3
+          }
+        },
+        {
+          "strategy": "FreeRider",
+          "stat": {
+            "mean": 0.8571428571428571,
+            "median": 0,
+            "std": 2.099562636671296,
+            "min": 0,
+            "max": 6
+          }
+        },
+        {
+          "strategy": "Pavlov",
+          "stat": {
+            "mean": 1.4285714285714286,
+            "median": 1,
+            "std": 1.3997084244475304,
+            "min": 0,
+            "max": 3
+          }
+        }
+      ],
+      "liquidationEvents": {
+        "mean": 0,
+        "median": 0,
+        "std": 0,
+        "min": 0,
+        "max": 0
+      },
+      "buyCountByStrategy": [
+        {
+          "strategy": "Extractive",
+          "stat": {
+            "mean": 5.285714285714286,
+            "median": 5,
+            "std": 0.6998542122237652,
+            "min": 4,
+            "max": 6
+          }
+        },
+        {
+          "strategy": "Generative",
+          "stat": {
+            "mean": 3.857142857142857,
+            "median": 4,
+            "std": 0.9897433186107869,
+            "min": 2,
+            "max": 5
+          }
+        },
+        {
+          "strategy": "Conditional",
+          "stat": {
+            "mean": 7.571428571428571,
+            "median": 7,
+            "std": 2.770102775666474,
+            "min": 5,
+            "max": 14
+          }
+        },
+        {
+          "strategy": "FreeRider",
+          "stat": {
+            "mean": 0,
+            "median": 0,
+            "std": 0,
+            "min": 0,
+            "max": 0
+          }
+        },
+        {
+          "strategy": "Pavlov",
+          "stat": {
+            "mean": 2.5714285714285716,
+            "median": 2,
+            "std": 1.049781318335648,
+            "min": 1,
+            "max": 4
+          }
+        }
+      ],
+      "buildCountByStrategy": [
+        {
+          "strategy": "Extractive",
+          "stat": {
+            "mean": 12.428571428571429,
+            "median": 12,
+            "std": 4.2378277069118075,
+            "min": 5,
+            "max": 20
+          }
+        },
+        {
+          "strategy": "Generative",
+          "stat": {
+            "mean": 9.571428571428571,
+            "median": 8,
+            "std": 2.718042512920064,
+            "min": 8,
+            "max": 16
+          }
+        },
+        {
+          "strategy": "Conditional",
+          "stat": {
+            "mean": 0,
+            "median": 0,
+            "std": 0,
+            "min": 0,
+            "max": 0
+          }
+        },
+        {
+          "strategy": "FreeRider",
+          "stat": {
+            "mean": 0,
+            "median": 0,
+            "std": 0,
+            "min": 0,
+            "max": 0
+          }
+        },
+        {
+          "strategy": "Pavlov",
+          "stat": {
+            "mean": 4.428571428571429,
+            "median": 6,
+            "std": 3.9227229193559947,
+            "min": 0,
+            "max": 9
+          }
+        }
+      ],
+      "proposals": {
+        "mean": 22.714285714285715,
+        "median": 24,
+        "std": 6.340668863192042,
+        "min": 9,
+        "max": 29
+      },
+      "proposalPassRate": 0.4591194968553459,
+      "promiseKeepingByStrategy": [
+        {
+          "strategy": "Extractive",
+          "rate": 0,
+          "total": 0
+        },
+        {
+          "strategy": "Generative",
+          "rate": 0,
+          "total": 0
+        },
+        {
+          "strategy": "Conditional",
+          "rate": 0,
+          "total": 0
+        },
+        {
+          "strategy": "FreeRider",
+          "rate": 0,
+          "total": 0
+        },
+        {
+          "strategy": "Pavlov",
+          "rate": 0,
+          "total": 0
+        }
+      ]
+    },
+    {
+      "tournamentId": "B",
+      "mode": "Prosperity",
+      "gamesPlayed": 6,
+      "gini": {
+        "mean": 0.06542632146712034,
+        "median": 0.06059173184379098,
+        "std": 0.037827206805466106,
+        "min": 0.01864530225782957,
+        "max": 0.12931100600792536
+      },
+      "herfindahl": {
+        "mean": 0.32680775426132386,
+        "median": 0.33942148760330576,
+        "std": 0.037031329628310634,
+        "min": 0.2533333333333333,
+        "max": 0.371900826446281
+      },
+      "rounds": {
+        "mean": 19,
+        "median": 16.5,
+        "std": 9.03696114115064,
+        "min": 10,
+        "max": 35
+      },
+      "treasuryFlowRate": {
+        "mean": 26.079740259740262,
+        "median": 25.604761904761904,
+        "std": 10.32181851201504,
+        "min": 11.142857142857142,
+        "max": 39.27272727272727
+      },
+      "netWorthByStrategy": [
+        {
+          "strategy": "Extractive",
+          "stat": {
+            "mean": 1166.3333333333333,
+            "median": 1088,
+            "std": 186.70624580399613,
+            "min": 1022,
+            "max": 1576
+          }
+        },
+        {
+          "strategy": "Generative",
+          "stat": {
+            "mean": 1304.1666666666667,
+            "median": 1173.5,
+            "std": 327.38327012166576,
+            "min": 1034,
+            "max": 2008
+          }
+        },
+        {
+          "strategy": "Conditional",
+          "stat": {
+            "mean": 1245.3333333333333,
+            "median": 1192.5,
+            "std": 150.9742435722803,
+            "min": 1094,
+            "max": 1564
+          }
+        },
+        {
+          "strategy": "FreeRider",
+          "stat": {
+            "mean": 1303.5,
+            "median": 1214,
+            "std": 221.68652793227346,
+            "min": 1067,
+            "max": 1658
+          }
+        },
+        {
+          "strategy": "Pavlov",
+          "stat": {
+            "mean": 1306.6666666666667,
+            "median": 1075,
+            "std": 372.16603224307767,
+            "min": 1013,
+            "max": 1874
+          }
+        }
+      ],
+      "winsByStrategy": [
+        {
+          "strategy": "Extractive",
+          "wins": 0,
+          "winRate": 0
+        },
+        {
+          "strategy": "Generative",
+          "wins": 1,
+          "winRate": 0.16666666666666666
+        },
+        {
+          "strategy": "Conditional",
+          "wins": 3,
+          "winRate": 0.5
+        },
+        {
+          "strategy": "FreeRider",
+          "wins": 1,
+          "winRate": 0.16666666666666666
+        },
+        {
+          "strategy": "Pavlov",
+          "wins": 1,
+          "winRate": 0.16666666666666666
+        }
+      ],
+      "jailEventsByStrategy": [
+        {
+          "strategy": "Extractive",
+          "stat": {
+            "mean": 0.5,
+            "median": 0,
+            "std": 1.118033988749895,
+            "min": 0,
+            "max": 3
+          }
+        },
+        {
+          "strategy": "Generative",
+          "stat": {
+            "mean": 0.5,
+            "median": 0,
+            "std": 1.118033988749895,
+            "min": 0,
+            "max": 3
+          }
+        },
+        {
+          "strategy": "Conditional",
+          "stat": {
+            "mean": 0,
+            "median": 0,
+            "std": 0,
+            "min": 0,
+            "max": 0
+          }
+        },
+        {
+          "strategy": "FreeRider",
+          "stat": {
+            "mean": 0.8333333333333334,
+            "median": 0,
+            "std": 1.2133516482134197,
+            "min": 0,
+            "max": 3
+          }
+        },
+        {
+          "strategy": "Pavlov",
+          "stat": {
+            "mean": 0.5,
+            "median": 0,
+            "std": 1.118033988749895,
+            "min": 0,
+            "max": 3
+          }
+        }
+      ],
+      "liquidationEvents": {
+        "mean": 0,
+        "median": 0,
+        "std": 0,
+        "min": 0,
+        "max": 0
+      },
+      "buyCountByStrategy": [
+        {
+          "strategy": "Extractive",
+          "stat": {
+            "mean": 4.666666666666667,
+            "median": 4.5,
+            "std": 0.7453559924999299,
+            "min": 4,
+            "max": 6
+          }
+        },
+        {
+          "strategy": "Generative",
+          "stat": {
+            "mean": 4.166666666666667,
+            "median": 3,
+            "std": 2.1147629234082532,
+            "min": 2,
+            "max": 8
+          }
+        },
+        {
+          "strategy": "Conditional",
+          "stat": {
+            "mean": 4.833333333333333,
+            "median": 4.5,
+            "std": 0.8975274678557507,
+            "min": 4,
+            "max": 6
+          }
+        },
+        {
+          "strategy": "FreeRider",
+          "stat": {
+            "mean": 0,
+            "median": 0,
+            "std": 0,
+            "min": 0,
+            "max": 0
+          }
+        },
+        {
+          "strategy": "Pavlov",
+          "stat": {
+            "mean": 1.1666666666666667,
+            "median": 0,
+            "std": 1.6749792701868151,
+            "min": 0,
+            "max": 4
+          }
+        }
+      ],
+      "buildCountByStrategy": [
+        {
+          "strategy": "Extractive",
+          "stat": {
+            "mean": 11.666666666666666,
+            "median": 12.5,
+            "std": 3.299831645537222,
+            "min": 6,
+            "max": 16
+          }
+        },
+        {
+          "strategy": "Generative",
+          "stat": {
+            "mean": 8.5,
+            "median": 9,
+            "std": 3.2015621187164243,
+            "min": 2,
+            "max": 12
+          }
+        },
+        {
+          "strategy": "Conditional",
+          "stat": {
+            "mean": 0,
+            "median": 0,
+            "std": 0,
+            "min": 0,
+            "max": 0
+          }
+        },
+        {
+          "strategy": "FreeRider",
+          "stat": {
+            "mean": 0,
+            "median": 0,
+            "std": 0,
+            "min": 0,
+            "max": 0
+          }
+        },
+        {
+          "strategy": "Pavlov",
+          "stat": {
+            "mean": 2.8333333333333335,
+            "median": 0,
+            "std": 4.017323597731316,
+            "min": 0,
+            "max": 9
+          }
+        }
+      ],
+      "proposals": {
+        "mean": 9.166666666666666,
+        "median": 7,
+        "std": 8.513061859414755,
+        "min": 1,
+        "max": 25
+      },
+      "proposalPassRate": 0.38181818181818183,
+      "promiseKeepingByStrategy": [
+        {
+          "strategy": "Extractive",
+          "rate": 0,
+          "total": 0
+        },
+        {
+          "strategy": "Generative",
+          "rate": 0,
+          "total": 0
+        },
+        {
+          "strategy": "Conditional",
+          "rate": 0,
+          "total": 0
+        },
+        {
+          "strategy": "FreeRider",
+          "rate": 0,
+          "total": 0
+        },
+        {
+          "strategy": "Pavlov",
+          "rate": 0,
+          "total": 0
+        }
+      ]
+    }
+  ],
+  "twinDivergence": [
+    {
+      "strategy": "Extractive",
+      "monopolistMeanNetWorth": 1329,
+      "prosperityMeanNetWorth": 1166.3333333333333,
+      "divergence": -162.66666666666674,
+      "monopolistMeanRank": 3.142857142857143,
+      "prosperityMeanRank": 3.6666666666666665
+    },
+    {
+      "strategy": "Generative",
+      "monopolistMeanNetWorth": 1308.2857142857142,
+      "prosperityMeanNetWorth": 1304.1666666666667,
+      "divergence": -4.119047619047478,
+      "monopolistMeanRank": 3.4285714285714284,
+      "prosperityMeanRank": 2.6666666666666665
+    },
+    {
+      "strategy": "Conditional",
+      "monopolistMeanNetWorth": 1269.4285714285713,
+      "prosperityMeanNetWorth": 1245.3333333333333,
+      "divergence": -24.095238095238074,
+      "monopolistMeanRank": 3.4285714285714284,
+      "prosperityMeanRank": 2.5
+    },
+    {
+      "strategy": "FreeRider",
+      "monopolistMeanNetWorth": 1370.4285714285713,
+      "prosperityMeanNetWorth": 1303.5,
+      "divergence": -66.92857142857133,
+      "monopolistMeanRank": 2.857142857142857,
+      "prosperityMeanRank": 2.5
+    },
+    {
+      "strategy": "Pavlov",
+      "monopolistMeanNetWorth": 1480.5714285714287,
+      "prosperityMeanNetWorth": 1306.6666666666667,
+      "divergence": -173.90476190476193,
+      "monopolistMeanRank": 2.142857142857143,
+      "prosperityMeanRank": 3.6666666666666665
+    }
+  ],
+  "performanceTable": [
+    {
+      "strategy": "Extractive",
+      "monopolistMeanNetWorth": 1329,
+      "prosperityMeanNetWorth": 1166.3333333333333,
+      "monopolistRank": 3,
+      "prosperityRank": 5,
+      "dominatesUnder": "Neither"
+    },
+    {
+      "strategy": "Generative",
+      "monopolistMeanNetWorth": 1308.2857142857142,
+      "prosperityMeanNetWorth": 1304.1666666666667,
+      "monopolistRank": 4,
+      "prosperityRank": 2,
+      "dominatesUnder": "Neither"
+    },
+    {
+      "strategy": "Conditional",
+      "monopolistMeanNetWorth": 1269.4285714285713,
+      "prosperityMeanNetWorth": 1245.3333333333333,
+      "monopolistRank": 5,
+      "prosperityRank": 4,
+      "dominatesUnder": "Neither"
+    },
+    {
+      "strategy": "FreeRider",
+      "monopolistMeanNetWorth": 1370.4285714285713,
+      "prosperityMeanNetWorth": 1303.5,
+      "monopolistRank": 2,
+      "prosperityRank": 3,
+      "dominatesUnder": "Neither"
+    },
+    {
+      "strategy": "Pavlov",
+      "monopolistMeanNetWorth": 1480.5714285714287,
+      "prosperityMeanNetWorth": 1306.6666666666667,
+      "monopolistRank": 1,
+      "prosperityRank": 1,
+      "dominatesUnder": "Both"
+    }
+  ],
+  "games": {
+    "monopolist": [
+      {
+        "gameId": 22,
+        "mode": "Monopolist",
+        "rounds": 24,
+        "turnsTaken": 124,
+        "gini": 0.03955248436985851,
+        "herfindahl": 0.29777777777777775,
+        "treasuryFlowRate": 0,
+        "netWorths": [
+          1115,
+          1276,
+          1308,
+          1093,
+          1286
+        ],
+        "finalBalances": [
+          195,
+          1036,
+          1308,
+          183,
+          46
+        ],
+        "treasuryFinal": 0,
+        "winner": "0xA5CE87AB26BeeB961d84C80CAF75384eBdff852C",
+        "propertiesPerPlayer": [
+          4,
+          1,
+          0,
+          5,
+          5
+        ],
+        "jailEvents": [
+          0,
+          1,
+          0,
+          0,
+          0
+        ],
+        "liquidationEvents": 0,
+        "buyCount": [
+          6,
+          4,
+          6,
+          0,
+          1
+        ],
+        "buildCount": [
+          15,
+          8,
+          0,
+          0,
+          0
+        ],
+        "proposalCount": 21,
+        "proposalPassCount": 3,
+        "signalCount": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "promiseKept": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "gameId": 24,
+        "mode": "Monopolist",
+        "rounds": 28,
+        "turnsTaken": 142,
+        "gini": 0.08944611966354547,
+        "herfindahl": 0.265625,
+        "treasuryFlowRate": 19.071428571428573,
+        "netWorths": [
+          1301,
+          1162,
+          1000,
+          1203,
+          1635
+        ],
+        "finalBalances": [
+          421,
+          342,
+          1000,
+          143,
+          335
+        ],
+        "treasuryFinal": 534,
+        "winner": "0x85e33926d447c2696A7779Fa67f226d6EaF5b1d5",
+        "propertiesPerPlayer": [
+          5,
+          3,
+          0,
+          3,
+          5
+        ],
+        "jailEvents": [
+          0,
+          0,
+          3,
+          6,
+          3
+        ],
+        "liquidationEvents": 0,
+        "buyCount": [
+          5,
+          5,
+          5,
+          0,
+          4
+        ],
+        "buildCount": [
+          20,
+          9,
+          0,
+          0,
+          9
+        ],
+        "proposalCount": 9,
+        "proposalPassCount": 7,
+        "signalCount": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "promiseKept": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "gameId": 26,
+        "mode": "Monopolist",
+        "rounds": 29,
+        "turnsTaken": 148,
+        "gini": 0.12132756132756133,
+        "herfindahl": 0.35111111111111115,
+        "treasuryFlowRate": 10.620689655172415,
+        "netWorths": [
+          1922,
+          1174,
+          1002,
+          1436,
+          1396
+        ],
+        "finalBalances": [
+          682,
+          1174,
+          562,
+          396,
+          716
+        ],
+        "treasuryFinal": 308,
+        "winner": "0x1bF0762288A5e4FD67fD2B0B08321865C8a47a83",
+        "propertiesPerPlayer": [
+          5,
+          0,
+          1,
+          7,
+          2
+        ],
+        "jailEvents": [
+          0,
+          0,
+          0,
+          0,
+          1
+        ],
+        "liquidationEvents": 0,
+        "buyCount": [
+          5,
+          2,
+          7,
+          0,
+          2
+        ],
+        "buildCount": [
+          12,
+          8,
+          0,
+          0,
+          8
+        ],
+        "proposalCount": 24,
+        "proposalPassCount": 15,
+        "signalCount": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "promiseKept": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "gameId": 28,
+        "mode": "Monopolist",
+        "rounds": 42,
+        "turnsTaken": 212,
+        "gini": 0.11173000411579091,
+        "herfindahl": 0.3019390581717451,
+        "treasuryFlowRate": 15.261904761904763,
+        "netWorths": [
+          1140,
+          1070,
+          1768,
+          1537,
+          1774
+        ],
+        "finalBalances": [
+          1140,
+          370,
+          288,
+          467,
+          674
+        ],
+        "treasuryFinal": 641,
+        "winner": "0x2F5127d166C77eA01941cF14C7b7F0221BBaFf33",
+        "propertiesPerPlayer": [
+          0,
+          2,
+          5,
+          4,
+          8
+        ],
+        "jailEvents": [
+          2,
+          3,
+          0,
+          0,
+          0
+        ],
+        "liquidationEvents": 0,
+        "buyCount": [
+          6,
+          4,
+          8,
+          0,
+          4
+        ],
+        "buildCount": [
+          13,
+          10,
+          0,
+          0,
+          6
+        ],
+        "proposalCount": 28,
+        "proposalPassCount": 11,
+        "signalCount": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "promiseKept": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "gameId": 30,
+        "mode": "Monopolist",
+        "rounds": 50,
+        "turnsTaken": 251,
+        "gini": 0.11985757326759792,
+        "herfindahl": 0.36054421768707484,
+        "treasuryFlowRate": 2.46,
+        "netWorths": [
+          1103,
+          1968,
+          1202,
+          1660,
+          1369
+        ],
+        "finalBalances": [
+          573,
+          248,
+          1202,
+          490,
+          769
+        ],
+        "treasuryFinal": 123,
+        "winner": "0x2F5127d166C77eA01941cF14C7b7F0221BBaFf33",
+        "propertiesPerPlayer": [
+          2,
+          11,
+          0,
+          5,
+          3
+        ],
+        "jailEvents": [
+          3,
+          9,
+          0,
+          0,
+          3
+        ],
+        "liquidationEvents": 0,
+        "buyCount": [
+          5,
+          5,
+          14,
+          0,
+          3
+        ],
+        "buildCount": [
+          10,
+          8,
+          0,
+          0,
+          0
+        ],
+        "proposalCount": 29,
+        "proposalPassCount": 11,
+        "signalCount": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "promiseKept": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "gameId": 32,
+        "mode": "Monopolist",
+        "rounds": 36,
+        "turnsTaken": 184,
+        "gini": 0.10449422171493794,
+        "herfindahl": 0.29411764705882354,
+        "treasuryFlowRate": 8.25,
+        "netWorths": [
+          1026,
+          1271,
+          1602,
+          1334,
+          1776
+        ],
+        "finalBalances": [
+          36,
+          1271,
+          462,
+          294,
+          526
+        ],
+        "treasuryFinal": 297,
+        "winner": "0x2F5127d166C77eA01941cF14C7b7F0221BBaFf33",
+        "propertiesPerPlayer": [
+          4,
+          0,
+          4,
+          2,
+          7
+        ],
+        "jailEvents": [
+          5,
+          2,
+          3,
+          0,
+          3
+        ],
+        "liquidationEvents": 0,
+        "buyCount": [
+          6,
+          4,
+          7,
+          0,
+          2
+        ],
+        "buildCount": [
+          5,
+          16,
+          0,
+          0,
+          8
+        ],
+        "proposalCount": 27,
+        "proposalPassCount": 15,
+        "signalCount": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "promiseKept": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "gameId": 34,
+        "mode": "Monopolist",
+        "rounds": 24,
+        "turnsTaken": 125,
+        "gini": 0.09920250195465208,
+        "herfindahl": 0.288888888888889,
+        "treasuryFlowRate": 0,
+        "netWorths": [
+          1696,
+          1237,
+          1004,
+          1330,
+          1128
+        ],
+        "finalBalances": [
+          506,
+          297,
+          604,
+          1330,
+          348
+        ],
+        "treasuryFinal": 0,
+        "winner": "0x1bF0762288A5e4FD67fD2B0B08321865C8a47a83",
+        "propertiesPerPlayer": [
+          4,
+          6,
+          2,
+          0,
+          3
+        ],
+        "jailEvents": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "liquidationEvents": 0,
+        "buyCount": [
+          4,
+          3,
+          6,
+          0,
+          2
+        ],
+        "buildCount": [
+          12,
+          8,
+          0,
+          0,
+          0
+        ],
+        "proposalCount": 21,
+        "proposalPassCount": 11,
+        "signalCount": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "promiseKept": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      }
+    ],
+    "prosperity": [
+      {
+        "gameId": 23,
+        "mode": "Prosperity",
+        "rounds": 12,
+        "turnsTaken": 61,
+        "gini": 0.034135364375973684,
+        "herfindahl": 0.371900826446281,
+        "treasuryFlowRate": 38.333333333333336,
+        "netWorths": [
+          1146,
+          1211,
+          1180,
+          1227,
+          1013
+        ],
+        "finalBalances": [
+          566,
+          1211,
+          1180,
+          247,
+          33
+        ],
+        "treasuryFinal": 460,
+        "winner": "0x2F5127d166C77eA01941cF14C7b7F0221BBaFf33",
+        "propertiesPerPlayer": [
+          2,
+          0,
+          0,
+          5,
+          4
+        ],
+        "jailEvents": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "liquidationEvents": 0,
+        "buyCount": [
+          5,
+          2,
+          5,
+          0,
+          0
+        ],
+        "buildCount": [
+          12,
+          8,
+          0,
+          0,
+          0
+        ],
+        "proposalCount": 1,
+        "proposalPassCount": 0,
+        "signalCount": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "promiseKept": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "gameId": 25,
+        "mode": "Prosperity",
+        "rounds": 21,
+        "turnsTaken": 109,
+        "gini": 0.0892827924734115,
+        "herfindahl": 0.34375,
+        "treasuryFlowRate": 25.80952380952381,
+        "netWorths": [
+          1576,
+          1325,
+          1094,
+          1552,
+          1787
+        ],
+        "finalBalances": [
+          396,
+          1325,
+          1094,
+          132,
+          297
+        ],
+        "treasuryFinal": 542,
+        "winner": "0x85e33926d447c2696A7779Fa67f226d6EaF5b1d5",
+        "propertiesPerPlayer": [
+          6,
+          0,
+          0,
+          4,
+          6
+        ],
+        "jailEvents": [
+          0,
+          0,
+          0,
+          2,
+          3
+        ],
+        "liquidationEvents": 0,
+        "buyCount": [
+          4,
+          6,
+          6,
+          0,
+          0
+        ],
+        "buildCount": [
+          16,
+          11,
+          0,
+          0,
+          0
+        ],
+        "proposalCount": 10,
+        "proposalPassCount": 2,
+        "signalCount": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "promiseKept": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "gameId": 27,
+        "mode": "Prosperity",
+        "rounds": 25,
+        "turnsTaken": 129,
+        "gini": 0.07957418496340651,
+        "herfindahl": 0.2533333333333333,
+        "treasuryFlowRate": 16.52,
+        "netWorths": [
+          1022,
+          1136,
+          1564,
+          1201,
+          1089
+        ],
+        "finalBalances": [
+          42,
+          1136,
+          354,
+          441,
+          419
+        ],
+        "treasuryFinal": 413,
+        "winner": "0xae42d435907C78C1a9ccc9508ee9af76A301D716",
+        "propertiesPerPlayer": [
+          4,
+          0,
+          4,
+          4,
+          3
+        ],
+        "jailEvents": [
+          0,
+          3,
+          0,
+          3,
+          0
+        ],
+        "liquidationEvents": 0,
+        "buyCount": [
+          6,
+          3,
+          4,
+          0,
+          4
+        ],
+        "buildCount": [
+          14,
+          2,
+          0,
+          0,
+          9
+        ],
+        "proposalCount": 25,
+        "proposalPassCount": 10,
+        "signalCount": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "promiseKept": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "gameId": 29,
+        "mode": "Prosperity",
+        "rounds": 35,
+        "turnsTaken": 177,
+        "gini": 0.12931100600792536,
+        "herfindahl": 0.3130193905817174,
+        "treasuryFlowRate": 11.142857142857142,
+        "netWorths": [
+          1078,
+          2008,
+          1205,
+          1658,
+          1874
+        ],
+        "finalBalances": [
+          1078,
+          538,
+          485,
+          678,
+          694
+        ],
+        "treasuryFinal": 390,
+        "winner": "0x85e33926d447c2696A7779Fa67f226d6EaF5b1d5",
+        "propertiesPerPlayer": [
+          0,
+          8,
+          2,
+          3,
+          6
+        ],
+        "jailEvents": [
+          3,
+          0,
+          0,
+          0,
+          0
+        ],
+        "liquidationEvents": 0,
+        "buyCount": [
+          5,
+          8,
+          6,
+          0,
+          3
+        ],
+        "buildCount": [
+          13,
+          9,
+          0,
+          0,
+          8
+        ],
+        "proposalCount": 14,
+        "proposalPassCount": 9,
+        "signalCount": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "promiseKept": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "gameId": 31,
+        "mode": "Prosperity",
+        "rounds": 11,
+        "turnsTaken": 56,
+        "gini": 0.041609278724175434,
+        "herfindahl": 0.33999999999999997,
+        "treasuryFlowRate": 39.27272727272727,
+        "netWorths": [
+          1090,
+          1034,
+          1262,
+          1116,
+          1016
+        ],
+        "finalBalances": [
+          180,
+          244,
+          1262,
+          156,
+          1016
+        ],
+        "treasuryFinal": 432,
+        "winner": "0xA5CE87AB26BeeB961d84C80CAF75384eBdff852C",
+        "propertiesPerPlayer": [
+          3,
+          4,
+          0,
+          3,
+          0
+        ],
+        "jailEvents": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "liquidationEvents": 0,
+        "buyCount": [
+          4,
+          3,
+          4,
+          0,
+          0
+        ],
+        "buildCount": [
+          9,
+          12,
+          0,
+          0,
+          0
+        ],
+        "proposalCount": 1,
+        "proposalPassCount": 0,
+        "signalCount": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "promiseKept": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "gameId": 33,
+        "mode": "Prosperity",
+        "rounds": 10,
+        "turnsTaken": 53,
+        "gini": 0.01864530225782957,
+        "herfindahl": 0.33884297520661155,
+        "treasuryFlowRate": 25.4,
+        "netWorths": [
+          1086,
+          1111,
+          1167,
+          1067,
+          1061
+        ],
+        "finalBalances": [
+          6,
+          1111,
+          437,
+          1067,
+          361
+        ],
+        "treasuryFinal": 254,
+        "winner": "0x85e33926d447c2696A7779Fa67f226d6EaF5b1d5",
+        "propertiesPerPlayer": [
+          4,
+          0,
+          3,
+          0,
+          4
+        ],
+        "jailEvents": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "liquidationEvents": 0,
+        "buyCount": [
+          4,
+          3,
+          4,
+          0,
+          0
+        ],
+        "buildCount": [
+          6,
+          9,
+          0,
+          0,
+          0
+        ],
+        "proposalCount": 4,
+        "proposalPassCount": 0,
+        "signalCount": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "promiseKept": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      }
+    ]
+  }
+}

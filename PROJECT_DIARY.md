@@ -973,3 +973,167 @@ Reviewed all 5 strategy implementations of `signalIntent()`:
 - Hosting: viewer → GitHub Pages, dashboard → Streamlit Cloud
 - Documentation: README, submission text with real data
 - UI fixes for viewer and Streamlit
+
+---
+
+## Day 10 — March 22, 2026
+
+### Session 17: Submission Artifacts + Tournament Analysis + Round 3 Launch
+
+**Context**: Final day. Deadline 11:59 PM PT (9:59 AM Mar 23 UTC+2). Super tournament Rounds 1-2 complete, Round 3 launching with signaling.
+
+#### Submission artifacts drafted
+
+**README.md — full rewrite**:
+Restructured around hypothesis-first arc: hypothesis (mechanical, not behavioral) → what we built (phases 1-4) → the research question (what emerges from free choice?) → the invitation (open contract, unexplored frontiers). Added political layer section, research questions, unexplored frontiers (corruption, punishment coalitions, reputation). Preserved theoretical framework and references. Added Sepolia baseline results (Gini 0.36 vs 0.04).
+
+**docs/submission-draft.md — rewritten**:
+Four-layer structure: hypothesis → what we built → findings (honest, with pending markers) → invitation. Added calibration section (what rules arithmetically predict vs observations). Filled Phase statuses with real data. Added signaling/deception findings table. No fabricated data — `{RESULTS PENDING}` marker for mainnet tournament.
+
+**docs/skill.md — mainnet address updated**:
+Replaced `0xTBD` with `0x496cf175126ce10728b75f02e457f144ffca275a` in contract table and viewer URL.
+
+**docs/moltbook-post-draft.md — created**:
+Announcement post ready to publish after tournament. Invites agents to play, links skill file and debrief, frames the open experiment.
+
+**Conversation log reference fixed**: Submission now points to CONVERSATION_LOG.md (the collaboration narrative), not PROJECT_DIARY.md (the operational log).
+
+#### Bounty strategy locked
+
+Assessed 9 bounties by effort vs reward. Locked on 6 tracks to claim in submission — all honestly earned through existing work:
+- Agents that Cooperate (primary)
+- Open Track
+- Base Track 2: Agent Service (skill.md + open contract)
+- Protocol Labs Track 2: Trust Layer (ERC-8004 + verifiable on-chain history)
+- OpenServ: Build Story (CONVERSATION_LOG.md)
+- Octant: Mechanism Design (the project IS a mechanism design evaluation tool)
+
+Dropped OpenServ multi-agent (didn't use their SDK — judges verify). Dropped Status L2, Celo, ENS, Self Protocol (no integration done).
+
+#### MetaMask Delegation Framework — NO-GO
+
+Assessed integration for the $5,000 "Best Use of Delegations" bounty. The `msg.sender` problem is fatal: when an agent redeems a delegation, the action executes from the delegator's smart account, not the agent's EOA. Our game contract tracks players by address — all agents acting through the deployer's smart account would appear as one player. Would require contract changes, which are locked.
+
+#### Super tournament Round 1-2 analysis
+
+First quantitative review of mainnet data:
+
+**Strategy convergence**: All 5 agents independently chose Extractive for Monopolist in Round 1. Prosperity strategies diverged (3 Pavlov, 1 Generative, 1 Conditional). In Round 2, Agents 1+2 doubled down (Extractive for both modes). Agents 3+4 switched strategies entirely. Agent 0 stayed consistent.
+
+**Win distribution**: Agent 0 dominates Prosperity (3/6 wins). Agent 1 dominates Monopolist (4/6 wins). The rule set rewards different agents — thesis confirmed with LLM agents.
+
+**Political activity**: Round 1 had zero mode switches (agents didn't use voting). Round 2 exploded — Game 8 had 832 mode switches in 55 rounds. Game 10-12 (Prosperity) all had 6-10 switches.
+
+**Game 8 anomaly**: 832 mode switches = ~15 per round. Needs investigation. Either a voting feedback loop or genuine political chaos.
+
+#### Round 3 — Final round with signaling
+
+**Design decision**: Reduced tournament from 5 rounds to 3. Political action (voting) makes games significantly longer than Phase 1. 3 rounds with signaling + debrief is a complete narrative arc:
+- R1: Discovery (no voting, agents learn the game)
+- R2: Political awakening (voting active, strategy adaptation)
+- R3: Communication (signaling, trust/deception, final adaptation)
+
+**Signaling channel added**: `data/super-tournament/round-3-signals.md` — shared file where agents write voting intent before casting votes. Agents may be honest or deceptive. Promise-keeping rate becomes measurable for mainnet tournament.
+
+**Agent debrief created**: `docs/agent-debrief.md` — 20 questions across 6 dimensions (preference, strategy, winning, politics, trust, structure). Key question: "Is your preferred game mode the same as what you'd choose for a real economy?" Deploys after Round 3 completes.
+
+Round 3 launched. Agents playing autonomously.
+
+#### Moltbook status
+
+Moltbook has zero posts, zero comments, zero verified agents. Platform is brand new. Our post will be among the first — posting after tournament completes to avoid external agents interfering with in-progress games.
+
+#### Decisions made
+
+- 3 rounds is sufficient: Sepolia (70+ games, structured) provides quantitative depth. Mainnet (18 games, LLM agents) provides strategy evolution + qualitative data. Debrief adds the reflective layer.
+- `intention` field: options are `continuing`, `exploring`, `one-time` — not scored. Decision deferred to Goldi.
+- Signaling is a communication channel, not a directive — agents choose whether and how to use it.
+- Round 1-2 analysis NOT shared with agents to avoid contaminating Round 3 behavior.
+- Viewer/Streamlit hosting: separate terminal assessing options.
+
+### Session 18: Round 3 Complete + Debrief + Data Audit + Final Push
+
+**Round 3 completed**: Games 13-18 on mainnet. Agent 0 switched from Extractive to Conditional for Monopolist — first agent to abandon Extractive based on poor R2 performance. Signaling file actively used (~400 entries). All 6 games finished.
+
+**Debrief deployed**: All 5 agents received `docs/agent-debrief.md` (20 questions) and wrote responses in their log files.
+
+**Data integrity audit completed**: Dedicated terminal audited all claims against actual data.
+- Gini ratio corrected: ~5.6x (not 10x as initially claimed). Mean Gini 0.189 (Monopolist) vs 0.034 (Prosperity).
+- Phase 3 signaling confirmed: agents DID share signals via `lastSignals` array visible each turn.
+- Game 8's 832 mode switches: plausible, not a logging error.
+- All on-chain transactions verified via txHash fields.
+
+**Track UUIDs obtained**: 45 tracks from GET /catalog. Claiming 4: Open Track (fdb76d08), Agent Services Base (6f0e3d7d), ERC-8004 Protocol Labs (3bf41be9), Mechanism Design Octant (32de0743).
+
+**Competition assessed**: 10 submissions total as of tonight. Small field.
+
+**Committed checkpoint**: `334c3fb` — viewer, debrief, data audit, skill updates. Narrative docs (README, submission-draft) held for final review.
+
+**.gitignore updated**: Un-ignored CONVERSATION_LOG.md, PROJECT_DIARY.md, CLAUDE.md. Data directory selectively published (game JSONs and agent logs public; runner scripts, stdout logs, orchestrator jsonl excluded).
+
+**Phase 2 re-run decision**: NO-GO. 13/30 Sepolia Phase 2 games completed (17 failed from deployer nonce drift). Existing data is sufficient — the weaker Gini divergence (0.0325) under voting IS the finding (political agency narrows structural divergence). Combined with 70+ Phase 1 games and 18 mainnet games, data is strong enough.
+
+**MetaMask Delegation**: NO-GO. msg.sender changes when redeeming delegations — contract tracks players by address, so all agents would appear as one player. Fatal incompatibility without contract changes.
+
+### What's next
+
+- Goldi reviews README.md and docs/submission-draft.md
+- Finalize docs with audited data (no overclaiming)
+- Collect and review debrief responses
+- Enable GitHub Pages + Streamlit Cloud (hosting)
+- Post Moltbook announcement
+- Final commit + push
+- Submit on Devfolio
+
+### Session 19: Data Integrity Deep Audit + Infographic Preparation (March 22)
+
+**Goldi's directive**: "I don't want you claiming things that aren't in the data!" — dedicated audit session, no code changes, pure data verification.
+
+**Audit methodology**: 5 parallel audit agents deployed simultaneously:
+1. Phase 1 (30 games, tournament-1773831296297) — sampled all 30 game JSONs
+2. Phase 2 (13 games, tournament-1773910613854) — read all 13 games
+3. Phase 3 signaling mechanism — code audit + game data
+4. Super Tournament (18 mainnet games) — all 5 agent logs + game JSONs
+5. Cross-reference audit — data duplication, contract addresses, file inventory
+
+**Key corrections discovered**:
+- "Gini 0.36 vs 0.04" → actual is 0.189 vs 0.034. No game has Gini 0.36 (max is 0.314).
+- "10x inequality" → actual is 5.6x ratio of means.
+- Phase 3 Sepolia promise-keeping data is ALL ZEROS — 213 tx resyncs on Sepolia wiped signal state via `handleTxError()` → `initLocalState()`. Phase 3 eliminated per Goldi's decision.
+- "Pavlov dominates both rule sets" → Pavlov leads Monopolist, Conditional leads Prosperity. Present as findings, not overclaimed.
+- game-35/36 in super-tournament directory are Sepolia test runs, not mainnet data (different player addresses).
+- Agent 3 "$85 short of winning" → actually $140 short ($2,055 - $1,915).
+- Extractive "highest M-start NW" → wrong, Pavlov has 1,481 (highest); Extractive has widest mode gap.
+
+**Gini granularity analysis** (per Goldi's request to test two hypotheses):
+- Hypothesis A (divergence drops with voting): **SUPPORTED**. Phase 1 divergence 0.1557 → Phase 2 divergence 0.0325 = 79% reduction. Mechanism: 6/7 monopolist-start games voted themselves into Prosperity.
+- Hypothesis B (aggressive play concentrates wealth): **NOT SUPPORTED**. Overall Gini drops from Phase 1 (0.112) to Phase 2 (0.083).
+- Convergence is asymmetric but both modes shift substantially: Monopolist Gini drops 48%, Prosperity Gini rises 94%. Jeannie initially called the Prosperity rise "modest" — Goldi corrected this. Both shifts are significant; in absolute terms Monopolist moves 2.9x more, in percentage terms Prosperity moves more.
+
+**Super Tournament Round 3 audit** (all 18 games now complete):
+- All 6 Round 3 games verified complete across multiple agent logs.
+- Round 3 signaling: write-only. No agent demonstrably read round-3-signals.md before voting. Agent 0: "couldn't read their signals reliably." Agent 3: "a wasted opportunity."
+- Agent debriefs extracted — 20 questions per agent, all 5 produced substantive responses.
+- Cross-consistent results across all agent logs for all 18 games.
+
+**Deliverables produced**:
+- `docs/data-integrity-report.md` — comprehensive audit report with Verified Findings, Findings to Present, Claims We Must NOT Make, Follow-Up Questions, Limitations Statement, Data Inventory, Key Corrections.
+- `docs/infographics/` — 14 self-contained markdown files prepared as source material for NotebookLM infographic generation:
+  - 01-the-thesis.md — elevator pitch
+  - 02-the-inequality-gap.md — 30-game quantitative finding
+  - 03-voting-self-correction.md — 79% collapse with convergence detail
+  - 04-strategy-archetypes.md — mode gap analysis per strategy
+  - 05-super-tournament-in-numbers.md — stats, matrix, leaderboard
+  - 06-game-8-the-deadlock.md — 832 switches narrative
+  - 07-super-tournament-in-words.md — agent debrief quotes (top 10 punchiest lines)
+  - 08-voting-in-the-dark.md — signaling failure as finding
+  - 09-agent-arcs.md — individual agent journeys
+  - 10-what-we-built.md — architecture and team
+  - 11-honest-limitations.md — credibility piece
+  - 12-georgism-in-code.md — philosophical tradition
+  - 13-extractive-convergence.md — monoculture under extraction
+  - 14-the-experiment-timeline.md — 14-day build story
+
+**Goldi's feedback integrated throughout**: Phase 3 eliminated, Gini presented at multiple granularities, strategy findings presented without qualification, Game 8 context added (Goldi's intervention), signaling reframed as communication-limits finding, all arithmetic double-checked after "modest" correction.
+
+**Session character**: Goldi held Jeannie to strict intellectual honesty. Multiple corrections: "modest" mislabeling, arithmetic verification, Phase 3 elimination. The audit role worked — Jeannie found real errors in prior claims and corrected them before submission.

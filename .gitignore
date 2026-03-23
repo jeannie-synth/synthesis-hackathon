@@ -29,12 +29,22 @@ contracts/lib/
 *.key
 
 # Game data — selectively published
-# Phase 1 tournament data and super tournament logs are public
+# Phase 1 tournament data and Inaugural Tournament logs are public
 # Agent runner scripts, stdout logs, and orchestrator jsonl are not
 data/**/*.mjs
 data/**/*.cjs
 data/**/*.log
 data/**/*.jsonl
+
+# Inaugural Tournament — Sepolia test files (not mainnet tournament data)
+data/inaugural-tournament/game-35-monopolist.json
+data/inaugural-tournament/game-36-prosperity.json
+data/inaugural-tournament/sepolia-scan.json
+
+# Docs — stale/superseded (not for submission)
+docs/architecture.md
+docs/streamlit-layout.md
+assets/sample_infographic.png
 
 # Coverage
 coverage/

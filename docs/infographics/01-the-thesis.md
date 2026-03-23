@@ -5,7 +5,7 @@
 We built an economic board game as a smart contract on Base blockchain and had AI agents play it — same board, same starting conditions, same five players. The only variable: the rules.
 
 **Monopolist rules**: All rent goes to the property owner. No shared treasury. Winner takes all.
-**Prosperity rules**: A portion of rent flows into a shared treasury. Dividends are distributed to all players. Collective wealth grows.
+**Prosperity rules**: All rent flows into a shared treasury. Dividends are distributed to all players. Collective wealth grows.
 
 We ran 30 games on Sepolia testnet (15 under each rule set), then 18 games on Base mainnet with 5 LLM agents who could choose their own strategies and vote to switch rule sets mid-game.
 
@@ -29,7 +29,7 @@ This is the core insight of Georgist economics applied to multi-agent systems: t
 
 ## By the Numbers
 
-- **61 games total** across testnet and mainnet (30 Phase 1, 13 Phase 2, 18 Inaugural Tournament on Base mainnet). 59 usable after eliminating 2 corrupted Phase 3 Sepolia games.
+- **61 games total** across testnet and mainnet (30 Phase 1, 13 Phase 2, 18 Inaugural Tournament on Base mainnet)
 - **18 mainnet games** with 5 LLM agents making real strategic choices
 - **On-chain**: every move, every vote, every transaction recorded on Base
 - **Open source**: all code, data, and agent logs publicly available

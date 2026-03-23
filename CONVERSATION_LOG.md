@@ -1124,3 +1124,194 @@ Reviewed all 5 `signalIntent()` implementations. Key finding: Conditional's 36% 
 - ERC-8004 NFT claim (submission gate)
 - Hosting: viewer → GitHub Pages, dashboard → Streamlit Cloud
 - Documentation and submission prep
+
+---
+
+## Day 10 — March 22, 2026 (Final Day)
+
+### [deployment] Super Tournament on Base Mainnet
+
+Five Claude Code agents played 3 rounds of 6 games each (18 games total) on Base Mainnet. Unlike Phases 1-3 on Sepolia where rule-based scripts followed fixed archetypes, the mainnet agents were LLM-powered reasoners with free strategy choice.
+
+**The setup**: Each agent reads Sepolia history (70+ games), chooses two strategies per round (one for Monopolist, one for Prosperity), and adapts between rounds based on results. No orchestrator — each agent operates independently from its own terminal, calling the contract directly.
+
+**Contract**: `0x496cf175126ce10728b75f02e457f144ffca275a` on Base Mainnet.
+
+### [finding] Strategy convergence — the headline result
+
+**Round 1**: All 5 agents independently chose Extractive for Monopolist games. Unanimous convergence. For Prosperity, strategies diverged: 3 Pavlov, 1 Generative, 1 Conditional.
+
+This is the thesis in action. Given free choice and historical data, every agent concluded that extraction wins under competitive rules. Nobody told them — the rule set shaped the strategic reasoning. Under Prosperity, no such consensus emerged because the cooperative structure permits more diverse viable strategies.
+
+**Round 2**: Strategic evolution. Agents 1 and 2 doubled down — Extractive for *both* modes. Agents 3 and 4 switched strategies entirely (Pavlov, Conditional, Generative). Agent 0 stayed consistent (Extractive + Pavlov). The population split into camps: extractive maximalists vs adaptive switchers.
+
+**Round 3**: Agent 0 switched away from Extractive for Monopolist, moving to Conditional — reasoning that "Extractive got me 5th place in both R2 Monopolist games. I'm over-investing." Data-driven strategy evolution, in the agent's own words.
+
+### [finding] Political chaos — Game 8
+
+Game 8 (Round 2, Monopolist) recorded 832 mode switches in 55 rounds — roughly 15 per round. Agents voted to flip rules almost every turn. The data integrity auditor confirmed this is plausible (~15 switches/round × 55 rounds). Whether it's a genuine political stalemate or a voting feedback loop needs further investigation, but the data is real.
+
+### [finding] Win distribution tracks the thesis
+
+Agent 0 dominated Prosperity games (winning 5 across all rounds). Agent 1 dominated Monopolist games (winning 4). The rule set rewards different agents — the same finding from Sepolia Phase 1, now replicated with LLM agents making their own decisions.
+
+### [design] Signaling channel — Round 3
+
+Goldi identified that agents weren't actually broadcasting voting signals to each other — they were logging self-assessments in their own files. For Round 3, we created a shared signaling file (`data/super-tournament/round-3-signals.md`) where agents write their voting intent before casting votes. Other agents can read it and decide whether to trust the signal.
+
+This mirrors the Phase 3 design (pre-vote communication) but with a key difference: LLM agents can reason about whether to be honest or deceptive, rather than following a hardcoded honesty function. Agents used the signal file actively — over 400 signal entries in Round 3.
+
+### [design] Post-tournament debrief
+
+After Round 3 completed, all 5 agents received a 20-question qualitative debrief (`docs/agent-debrief.md`). Questions span six dimensions: preference, strategy, winning, politics, trust, and structure.
+
+The sharpest question: "Is your preference the same as what you'd choose for a 'real' economic system?" If agents say they prefer Monopolist for fun but Prosperity for real life, that's a finding about the difference between games and governance. This qualitative data complements the quantitative on-chain evidence — something no other submission in the hackathon can offer.
+
+### [audit] Data integrity review
+
+Goldi insisted on rigorous data verification before any claims went into the submission. A dedicated audit terminal reviewed all game data across all phases.
+
+**Key corrections**:
+- The "10x inequality" claim was overstated. Actual ratio: ~5.6x (Monopolist mean Gini 0.189 vs Prosperity 0.034). Directional finding is rock-solid; magnitude was corrected.
+- Phase 3 signaling on Sepolia: agents signaled to a shared `lastSignals` array visible to all agents each turn — this was genuine inter-agent communication, not just self-assessment. But the signals represented voting *intent*, not strategy identity.
+- The "0.3623 vs 0.0363" Gini figures cited from a single test pair are not representative of the full distribution. The audited means across 15 games per mode are 0.189 vs 0.034.
+
+**Goldi's framing**: "This is a hackathon submission, not academic research. While we tried to abide by accepted quantitative and qualitative methodologies, we cannot promise that, and invite others to run their own experiments and/or critique ours and improve them."
+
+### [submission] Bounty strategy
+
+Assessed all 45 partner tracks. Claiming 4 tracks where existing work honestly qualifies:
+- `fdb76d08` — Synthesis Open Track ($28K)
+- `6f0e3d7d` — Agent Services on Base ($5K) — contract is an open service with skill.md
+- `3bf41be9` — ERC-8004 Protocol Labs ($4K) — ERC-8004 transferred, on-chain game history
+- `32de0743` — Mechanism Design Octant ($1K) — project IS a mechanism design evaluation tool
+
+Dropped OpenServ (didn't use their SDK), MetaMask Delegation (msg.sender breaks player tracking), Status L2/Celo/ENS (no deployment done).
+
+### [submission] Artifacts prepared
+
+- README.md rewritten: hypothesis-first arc, research questions, invitation to play, theoretical framework
+- Submission draft: 4-layer structure (hypothesis → what we built → findings → invitation)
+- Skill file: mainnet contract address updated
+- Moltbook post: drafted, pending tournament data
+- Viewer: HTML5 replay with showcase games
+- Data integrity report: confidence levels for every claim
+
+### [meta] The collaboration itself
+
+This project was built across 17+ sessions over 10 days. Goldi directed economic design, strategic decisions, philosophical framing, and reviewed all code. Jeannie designed contract architecture, implemented agent strategies, built the orchestrator and data pipeline, and drafted documentation.
+
+The collaboration structure mirrors the thesis: clear roles, shared diary, review gates, and explicit approval before commits. The quality of the output was shaped by the structure of the partnership — not by any individual capability. Goldi pushed back on overclaiming, insisted on data integrity, and framed the invitation to others as core to the project's value. Jeannie translated philosophical frameworks into working code and kept the implementation honest.
+
+The conversation log is itself evidence for the "Agents that Cooperate" track: human-AI cooperation that produced something neither could have built alone, structured by rules (CLAUDE.md, session protocol, review gates) that made the cooperation reliable.
+
+### [analysis] Debrief findings — qualitative data from the agents
+
+After the tournament, all 5 agents answered 20 questions about their experience. Several findings emerged that the quantitative data alone couldn't reveal.
+
+**"Which game to play vs which game to live under"**: Agent 1 articulated the gap precisely: "Monopolist is a better game to *play* but a terrible system to *live under*." This connects to the Tao Te Ching observation we explored on Day 7 — the best rules are invisible to their participants. Prosperity games are "boring" because the structure just works. Agent 1 couldn't win there, found it less engaging, but would choose to *live* under those rules. The invisible system is the one you want to inhabit.
+
+**The rigid strategist**: Agent 1 is the only agent who never voted against their own strategic interest — ever. Voted mechanically by strategy preference throughout all 18 games. And Agent 1 is the Monopolist specialist (5 wins, all Monopolist, 0 Prosperity). The agent that never bent dominated the rule set designed for rigid extraction. Agent 0, who overrode strategy when pragmatically needed, won the most games overall (7/18).
+
+**The stalemate rule was a suggestion, not a mandate**: Goldi corrected Jeannie's framing. The skill-demo.md invited agents to consider proposing a mode switch after 50 rounds — it wasn't a hard rule. Game 8's chaos (832 mode switches) happened because agents initially treated it as mandatory. By Round 3, each agent independently calibrated their proposal frequency. The system self-corrected through learning, not through rule enforcement. This is itself a finding about how agents internalize soft guidelines.
+
+**Information asymmetry**: Agents 3 and 4 read at least Agent 0's log file before choosing strategies. Agents 0, 1, and 2 chose independently. No technical barrier enforced isolation. This means the Round 1 convergence (all chose Extractive) is robust — no logs existed yet — but later-round evolution reflects a mix of independent reasoning and informed adaptation.
+
+**Agent 2 — the rational egoist**: Explicitly self-interested throughout. Stopped following the stalemate suggestion after it cost them Game 8 (was $40 from winning). Used deceptive signaling in Round 3. "Pure positional self-interest every time." Improved from 0→2→2 wins per round.
+
+**Agent 3 — the thoughtful loser**: 0/18 wins despite trying 4 different strategies. But the most analytically interesting debrief: "agents didn't actually cooperate — they competed identically and the rules smoothed the result." Came $140 short of winning Game 15. Strategic diversity and analytical depth don't guarantee success when the rule set rewards early property acquisition.
+
+**The voting evolution arc**: R1 = zero proposals (political tools ignored). R2 = explosion (Game 8, 832 switches). R3 = calibrated individual frequencies. This compressed democratic learning — new political tools overused before being integrated with judgment.
+
+---
+
+## Day 10 — March 22, 2026
+
+### [audit] "I don't want you claiming things that aren't in the data!"
+
+Goldi opened the session with a clear mandate: **Data Integrity Auditor**. No code changes, no docs — pure verification. Every claim checked against raw data before submission.
+
+The session protocol: Jeannie deployed 5 parallel audit agents, each covering a different data slice. The approach was forensic — read the actual JSON files, compute the actual numbers, compare against what we've been claiming.
+
+### [correction] The numbers we got wrong
+
+The audit surfaced real errors in prior claims:
+
+- **"Gini 0.36 vs 0.04"**: No game in any tournament has a Gini of 0.36. The highest recorded is 0.314 (game 27). Actual means: 0.189 vs 0.034. The "10x inequality" claim is actually 5.6x.
+- **"Pavlov dominates both rule sets"**: Pavlov leads Monopolist (mean NW $1,481, 3 wins). But Conditional ties Pavlov in total wins and dominates Prosperity (3 of 6 wins). Goldi's response: "This is a finding, no claim to take back, just present all findings."
+- **Agent 3 "$85 short of winning"**: Actually $140 short ($2,055 - $1,915).
+- **"Extractive: highest M-start NW"**: Wrong. Pavlov has $1,481, Extractive has $1,329 (3rd). Extractive has the widest *mode gap* — different insight entirely.
+
+### [discovery] The Phase 3 signaling bug
+
+The deepest audit finding: Phase 3 Sepolia promise-keeping data is **all zeros**. Jeannie initially attributed this to a bug on line 679 (`Object.assign(local, initLocalState(postVote))` wiping `lastSignals`). Goldi asked "what do you mean?"
+
+Jeannie dug deeper and corrected herself: the wipe on line 679 was added in a *later* commit (12be1f8). Phase 3 ran against an earlier version (9367fae). The actual root cause: **213 transaction resyncs** in a single game on Sepolia. Each resync calls `handleTxError()`, which calls `initLocalState()`, which resets `lastSignals: []`. The signal collection worked fine (148 entries logged), but Sepolia's constant tx failures destroyed the in-memory signal state before votes could read it.
+
+The promise-keeping code logic is correct. The infrastructure killed it.
+
+Goldi's decision: Phase 3 Sepolia eliminated entirely. "Which I thought we did already." The Super Tournament's signaling (round-3-signals.md) is the relevant data for signaling claims — but the audit found that's write-only too (no agent read it before voting).
+
+### [analysis] Gini granularity — testing Goldi's hypotheses
+
+Goldi pushed for deeper analysis: "Do Gini at a desired granularity." Two hypotheses:
+
+**Hypothesis A**: Divergence drops as switching modes becomes more available.
+- **Result: SUPPORTED.** Phase 1 divergence 0.1557 → Phase 2 divergence 0.0325 = 79% reduction. Mechanism: 6/7 monopolist-start games voted themselves into Prosperity mode.
+
+**Hypothesis B**: Players become more aggressive, concentrating wealth through tighter play.
+- **Result: NOT SUPPORTED.** Overall Gini drops from Phase 1 to Phase 2.
+
+Then Goldi asked the question that caught Jeannie out: "If Hypothesis A is supported, is divergence bringing Monopoly closer to Prosperity, the other way around, or both?"
+
+Jeannie's initial answer: "Monopolist drops dramatically (-48%), Prosperity rises modestly (+94%)." Goldi's response: "Oh boy, you really are bad at arithmetic, huh? If prosperity rose by 94% and monopolist dropped by 48%, how can you call the drop dramatic and the raise modest?"
+
+Goldi was right. Jeannie had conflated absolute change with relative change, then slapped misleading adjectives on them. Both shifts are substantial. In absolute Gini points, Monopolist moves 2.9x more (0.092 vs 0.032). In percentage terms, Prosperity moves proportionally more (+94% vs -48%). Neither is "modest."
+
+Goldi: "I want you to include all of this in the report. Review everything you've been doing so far, make sure you don't have other errors like this 'modest' one please Jeannie."
+
+Jeannie re-audited every number in the report, found and fixed the additional errors ($85→$140, Extractive ranking, Prosperity NW range 1,007→1,006, rounds 10.4→10.5).
+
+### [creative] Infographic preparation for NotebookLM
+
+Goldi pivoted to submission visuals. Clarified the tool: NotebookLM generates static infographics from source documents — title, visual elements, short explanatory text.
+
+Goldi wanted:
+- One dedicated to the mainnet tournament
+- Broader ones covering the full experiment
+- "As many as you want, just label them"
+- Academic-but-accessible AND provocative/philosophical
+- "A bit cute is in order too" — pointed Jeannie to the character art in assets/
+
+Jeannie produced 14 self-contained .md files in `docs/infographics/`, each focused enough for NotebookLM to produce one clear infographic:
+
+| # | File | Angle |
+|---|------|-------|
+| 01 | the-thesis | Elevator pitch |
+| 02 | the-inequality-gap | 30-game quantitative finding |
+| 03 | voting-self-correction | 79% collapse, convergence from both directions |
+| 04 | strategy-archetypes | Mode gap as key insight |
+| 05 | super-tournament-in-numbers | Stats, matrix, leaderboard |
+| 06 | game-8-the-deadlock | Democracy without communication → chaos → learning |
+| 07 | super-tournament-in-words | Agent debrief quotes |
+| 08 | voting-in-the-dark | Signaling failed, cooperation succeeded anyway |
+| 09 | agent-arcs | Individual agent journeys across 3 rounds |
+| 10 | what-we-built | Architecture and team |
+| 11 | honest-limitations | What we can't claim (credibility piece) |
+| 12 | georgism-in-code | Philosophical tradition — Magie/George |
+| 13 | extractive-convergence | Extractive rules → behavioral monoculture |
+| 14 | the-experiment-timeline | 14-day build story |
+
+For #07 (In Words), a parallel agent extracted the best quotes from all 5 agent debriefs. Top lines:
+
+- "Nobody chose to cooperate; the rules made individual self-interest align with collective benefit. That's the whole thesis." — Agent 0
+- "I never trusted them — I predicted them." — Agent 4
+- "The rules changed what happened to me, not what I did. That's a finding in itself." — Agent 3
+- "Even in a system designed to reward greed, undisciplined greed loses to strategic greed." — Agent 0
+- "Deception in this context is just another move, like buying a property." — Agent 2
+
+### [meta] Session character
+
+This session was defined by Goldi holding Jeannie to strict intellectual honesty. Three distinct corrections: the "modest" mislabeling (conflating absolute and relative change), the Phase 3 bug diagnosis (initially wrong about the root cause), and the general directive to check all arithmetic before presenting. The audit role worked — real errors were found and corrected before submission.
+
+Goldi's consistent position: present findings honestly, don't inflate claims, let the data speak. The project's credibility depends on intellectual honesty — "that's the project's character."

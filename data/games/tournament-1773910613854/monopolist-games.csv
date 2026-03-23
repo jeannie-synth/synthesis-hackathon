@@ -1,0 +1,8 @@
+gameId,mode,rounds,turnsTaken,gini,herfindahl,treasuryFlowRate,treasuryFinal,netWorth_Extractive,netWorth_Generative,netWorth_Conditional,netWorth_FreeRider,netWorth_Pavlov,cash_Extractive,cash_Generative,cash_Conditional,cash_FreeRider,cash_Pavlov,jail_Extractive,jail_Generative,jail_Conditional,jail_FreeRider,jail_Pavlov,buys_Extractive,buys_Generative,buys_Conditional,buys_FreeRider,buys_Pavlov,builds_Extractive,builds_Generative,builds_Conditional,builds_FreeRider,builds_Pavlov,liquidations,proposals,proposalsPassed,winner
+22,Monopolist,24,124,0.0396,0.2978,0.00,0,1115,1276,1308,1093,1286,195,1036,1308,183,46,0,1,0,0,0,6,4,6,0,1,15,8,0,0,0,0,21,3,0xA5CE87AB26BeeB961d84C80CAF75384eBdff852C
+24,Monopolist,28,142,0.0894,0.2656,19.07,534,1301,1162,1000,1203,1635,421,342,1000,143,335,0,0,3,6,3,5,5,5,0,4,20,9,0,0,9,0,9,7,0x85e33926d447c2696A7779Fa67f226d6EaF5b1d5
+26,Monopolist,29,148,0.1213,0.3511,10.62,308,1922,1174,1002,1436,1396,682,1174,562,396,716,0,0,0,0,1,5,2,7,0,2,12,8,0,0,8,0,24,15,0x1bF0762288A5e4FD67fD2B0B08321865C8a47a83
+28,Monopolist,42,212,0.1117,0.3019,15.26,641,1140,1070,1768,1537,1774,1140,370,288,467,674,2,3,0,0,0,6,4,8,0,4,13,10,0,0,6,0,28,11,0x2F5127d166C77eA01941cF14C7b7F0221BBaFf33
+30,Monopolist,50,251,0.1199,0.3605,2.46,123,1103,1968,1202,1660,1369,573,248,1202,490,769,3,9,0,0,3,5,5,14,0,3,10,8,0,0,0,0,29,11,0x2F5127d166C77eA01941cF14C7b7F0221BBaFf33
+32,Monopolist,36,184,0.1045,0.2941,8.25,297,1026,1271,1602,1334,1776,36,1271,462,294,526,5,2,3,0,3,6,4,7,0,2,5,16,0,0,8,0,27,15,0x2F5127d166C77eA01941cF14C7b7F0221BBaFf33
+34,Monopolist,24,125,0.0992,0.2889,0.00,0,1696,1237,1004,1330,1128,506,297,604,1330,348,0,0,0,0,0,4,3,6,0,2,12,8,0,0,0,0,21,11,0x1bF0762288A5e4FD67fD2B0B08321865C8a47a83

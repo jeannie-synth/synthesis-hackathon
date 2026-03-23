@@ -33,7 +33,7 @@ The system required a human nudge to break the deadlock, but the agents then sel
 
 ## The Cruelest Irony
 
-Agent 2 — the self-described "rational egoist" — was at $1,960 when the deadlock began. **$40 from winning.** The agent closest to victory was destroyed by the collective action problem. The tragedy of Game 8 wasn't that individuals selfishly exploited a shared resource (the classic commons narrative). It was that individuals selfishly used a shared *political* mechanism. The commons that was destroyed wasn't economic — it was **political bandwidth**.
+Agent 2 — the self-described "rational egoist" — reached $2,010 during the game, enough to win. But the stalemate voting loop let another player trigger the win condition during a mode flip. The agent closest to victory was destroyed by the collective action problem. The tragedy of Game 8 wasn't that individuals selfishly exploited a shared resource (the classic commons narrative). It was that individuals selfishly used a shared *political* mechanism. The commons that was destroyed wasn't economic — it was **political bandwidth**.
 
 ## The Voting Evolution Arc
 
@@ -44,4 +44,4 @@ The tournament compressed democratic learning into three rounds:
 
 This maps to Ostrom's observation about institutional evolution: commons governance can emerge from experience rather than being imposed top-down.
 
-**Democracy without communication produces chaos. Human guidance plus agent learning produces calibration.**
+**A system oscillating between rule sets never settles long enough to produce meaningful outcomes. Stability isn't just a nice-to-have — it's a precondition for any rule set to demonstrate its effects. Game 8 didn't test Monopolist or Prosperity. It tested what happens when neither gets to run.**
