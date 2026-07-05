@@ -64,14 +64,15 @@ def apply_layout(fig, height: int = 420, **overrides):
     Enforces the declutter rules: white template, faint gridlines,
     no borders, scaled fonts. Views add chart-specific layout via overrides.
     """
-    fig.update_layout(
+    layout = dict(
         template="plotly_white",
         height=int(height * 1.15) if is_presentation() else height,
         font=dict(size=font_px(14)),
         title=None,  # titles live in markdown headers, not in the figure
         margin=dict(t=30, r=20),
-        **overrides,
     )
+    layout.update(overrides)
+    fig.update_layout(**layout)
     fig.update_xaxes(gridcolor="rgba(0,0,0,0.08)", zerolinecolor="rgba(0,0,0,0.15)")
     fig.update_yaxes(gridcolor="rgba(0,0,0,0.08)", zerolinecolor="rgba(0,0,0,0.15)")
     return fig
