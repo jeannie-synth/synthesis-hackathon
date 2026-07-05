@@ -21,8 +21,9 @@ def render():
         "different rule sets**. Under one, rent makes property owners richer "
         "until a single winner holds everything. Under the other, rent flows "
         "into a shared pot that pays everyone a dividend. "
-        "Her point was political, and the game later became — stripped of its "
-        "second rule set — the Monopoly you grew up with."
+        "She designed it to make an argument about land economics, and the "
+        "game later became — stripped of its second rule set — the Monopoly "
+        "you grew up with."
     )
     st.markdown(
         "A century later, we rebuilt her experiment with **five AI agents "

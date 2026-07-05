@@ -183,9 +183,9 @@ def render():
         c2.metric("Prosperity", f"{core.mean(pros_rounds):.0f} rounds",
                   help="Average across 15 games")
         core.finding_text(
-            "Prosperity ends when the poorest player reaches security — "
-            "and shared wealth reaches everyone faster than a monopoly "
-            "starves its last competitor."
+            "Prosperity ends when the poorest player crosses its security "
+            "threshold; Monopolist ends when the last competitor goes "
+            "bankrupt. A rising floor turns out to be the faster finish line."
         )
 
     # Strategy dumbbell

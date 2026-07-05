@@ -121,7 +121,7 @@ def render():
         f"{len(m_switched)} of {len(m_start)} Monopolist-start games ended under "
         f"Prosperity rules; {len(p_switched)} of {len(p_start)} went the other "
         "way. Nobody told the agents to prefer Prosperity — self-interest, "
-        "under the right structure, pointed there on its own."
+        "under this structure, pointed there on its own."
     )
     core.caption(core.PHASE2_DISCLAIMER)
 

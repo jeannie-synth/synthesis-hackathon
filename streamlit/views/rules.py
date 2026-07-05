@@ -92,21 +92,20 @@ def render():
             "to every player. The Georgist mechanism, on-chain."
         )
 
-    st.markdown("## The victory condition is itself a moral argument")
+    st.markdown("## Even the win condition is a structural choice")
     c1, c2 = st.columns(2)
     with c1:
         core.finding_card(
-            "Monopolist wins by elimination",
+            "Monopolist ends by concentration",
             "The game ends when one player's net worth crosses the domination "
-            "threshold — or everyone else is broke. Success is defined as "
-            "everyone else's failure.",
+            "threshold — or everyone else is bankrupt.",
             accent=MONO_COLOR,
         )
     with c2:
         core.finding_card(
-            "Prosperity wins by floor, not ceiling",
-            "The game ends when the poorest player crosses a security "
-            "threshold. Nobody wins until everybody's basic position is safe.",
+            "Prosperity ends by threshold",
+            "The game ends when the poorest player's net worth crosses a "
+            "security threshold.",
             accent=PROS_COLOR,
         )
 
