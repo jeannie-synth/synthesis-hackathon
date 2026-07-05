@@ -8,7 +8,7 @@ Landing → Rules → Divergence → Vote → Frontier → Ledger.
 import streamlit as st
 
 import core
-from views import divergence, frontier, landing, ledger, rules, vote
+from views import divergence, frontier, landing, ledger, rules, vote, welcome
 
 st.set_page_config(
     page_title="The Landlord's Game",
@@ -17,26 +17,30 @@ st.set_page_config(
 )
 
 pages = {
-    "landing": st.Page(
-        landing.render, title="Same Board, Two Rules",
+    "welcome": st.Page(
+        welcome.render, title="The Landlord's Game",
         icon="\U0001f3b2", url_path="home", default=True,
     ),
+    "landing": st.Page(
+        landing.render, title="1 · The Evidence",
+        icon="\U0001f4a1", url_path="evidence",
+    ),
     "rules": st.Page(
-        rules.render, title="1 · The Rules", icon="⚖️", url_path="rules",
+        rules.render, title="2 · The Rules", icon="⚖️", url_path="rules",
     ),
     "divergence": st.Page(
-        divergence.render, title="2 · The Divergence",
+        divergence.render, title="3 · The Divergence",
         icon="\U0001f4c8", url_path="divergence",
     ),
     "vote": st.Page(
-        vote.render, title="3 · The Vote", icon="\U0001f5f3️", url_path="vote",
+        vote.render, title="4 · The Vote", icon="\U0001f5f3️", url_path="vote",
     ),
     "frontier": st.Page(
-        frontier.render, title="4 · The Frontier",
+        frontier.render, title="5 · The Frontier",
         icon="\U0001f52d", url_path="frontier",
     ),
     "ledger": st.Page(
-        ledger.render, title="5 · The Ledger", icon="⛓️", url_path="ledger",
+        ledger.render, title="6 · The Ledger", icon="⛓️", url_path="ledger",
     ),
 }
 core.PAGES.update(pages)
