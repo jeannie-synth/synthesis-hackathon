@@ -896,11 +896,14 @@ Brief: `docs/streamlit-redesign-brief.md` — build in a dedicated session with 
 
 - [x] Chartosaur critique of current app
 - [x] Design brief written and approved direction set
-- [ ] Restructure tabs → multipage narrative (Landing / Rules / Divergence / Vote / Frontier / Ledger)
-- [ ] Landing page with zero-overlap hero chart
-- [ ] Conclusion-titles + declutter + one-job-color pass on all charts
-- [ ] Live on-chain panel (RPC via Alchemy) + Basescan verification links
-- [ ] Frontier page (open research problems + how to play)
-- [ ] Ledger page (explorer + live contract state)
-- [ ] Presentation mode toggle
-- [ ] Pre-ship critique-checklist pass (chartosaur references/critique-checklist.md)
+- [x] Restructure tabs → multipage narrative (Landing / Rules / Divergence / Vote / Frontier / Ledger)
+- [x] Landing page with zero-overlap hero chart
+- [x] Conclusion-titles + declutter + one-job-color pass on all charts
+- [x] Live on-chain panel (public RPC, Alchemy key optional) + Basescan verification links
+- [x] Frontier page (open research problems + how to play)
+- [x] Ledger page (explorer + live contract state)
+- [x] Presentation mode toggle
+- [x] Pre-ship critique-checklist pass + AppTest smoke test (13/13)
+- [ ] Visual pass on live app (aesthetics — AppTest can't judge those)
+- [ ] Merge `dashboard-redesign` → main, confirm Streamlit Cloud redeploy
+- [ ] Reconcile README Sepolia game count (chain says 38, README says 39)

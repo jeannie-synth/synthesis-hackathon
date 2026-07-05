@@ -1252,3 +1252,20 @@ Key new findings:
 - Artifact stays neutral — stands alone, references no external context
 - JSON logs remain the analytical backbone; on-chain layer proves the substrate rather than replacing the analysis
 - Phase 3 stays excluded by default (standing Day-11 decision); charting it requires explicit approval or a clean re-run
+
+### Session 23: Dashboard v2 built and verified (July 5–6)
+
+**Continued in-session at Goldi's request** rather than a fresh session. Work moved to branch `dashboard-redesign` with molecular tagged commits (main reset to origin, untouched). Milestone tags: `redesign/brief`, `redesign/multipage`, `redesign/ship`.
+
+**Built**: full six-page rewrite of the Streamlit app per the brief — `core.py` (data, metrics, design system, presentation scaling), `onchain.py` (isolated JSON-RPC seam), `views/` (landing, rules, divergence, vote, frontier, ledger), `st.navigation` entrypoint with presentation toggle. Old 790-line tabbed `app.py` replaced.
+
+**Data integrity catches** (chartosaur checklist 5.2 earns its keep):
+- Old app displayed "Monopolist spread ~$1,500"; actual is **$2,019** ($98–$2,117). All figures now computed from data, never hardcoded.
+- Planned dumbbell title "Extraction only pays under extractive rules" was **indefensible** — Pavlov has the widest mode gap (+$404), Extractive nearly the narrowest (+$124). Retitled to the supported (and stronger) claim: Prosperity compresses strategy outcomes to a $56 span vs $249 under Monopolist — strategy choice stops mattering when rules redistribute.
+- Live chain reads report **38 games** on the Sepolia contract; README says 39. Unreconciled — check the README figure.
+
+**Verification**: `streamlit/test_smoke.py` (AppTest) renders all six pages in both display modes plus the entrypoint — 13/13 pass. It caught one real bug pre-ship (margin kwarg collision in `apply_layout`). Live RPC verified against public endpoints: mainnet 18 games, Sepolia 38, no API key required (Alchemy key optional via env).
+
+**Infrastructure blocker**: Colima VM fails to start (guest agent never reports running; two attempts). The jeannie-dev container is unreachable — smoke test ran in a disposable scratchpad venv instead. Colima likely needs `colima delete` + recreate, which destroys the container: **Goldi's call**.
+
+**Not done / next**: visual pass on the live app (deploy branch or run locally — AppTest verifies execution, not aesthetics); hero-chart iteration if needed after first visual look; Streamlit Cloud deployment switch to the new entrypoint (same path `streamlit/app.py`, should be automatic once merged); README game-count reconciliation.
