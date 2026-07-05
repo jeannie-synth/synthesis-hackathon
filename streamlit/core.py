@@ -75,6 +75,13 @@ def apply_layout(fig, height: int = 420, **overrides):
     fig.update_layout(**layout)
     fig.update_xaxes(gridcolor="rgba(0,0,0,0.08)", zerolinecolor="rgba(0,0,0,0.15)")
     fig.update_yaxes(gridcolor="rgba(0,0,0,0.08)", zerolinecolor="rgba(0,0,0,0.15)")
+    # Streamlit's plotly theme renders literal "undefined" on axes whose
+    # title object exists without text — pin every axis to an explicit title.
+    for name in fig.layout:
+        if name.startswith(("xaxis", "yaxis")):
+            axis = fig.layout[name]
+            if axis.title.text is None:
+                axis.title.text = ""
     return fig
 
 
