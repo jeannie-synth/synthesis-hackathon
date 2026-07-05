@@ -96,11 +96,12 @@ def render():
         ratio = core.mean(mono_ginis) / max(core.mean(pros_ginis), 0.001)
         m_start = [g for g in data["phase2"] if g.get("mode") == "Monopolist"]
         m_switched = [g for g in m_start if core.end_mode(g) == "Prosperity"]
+        n_pairs = min(len(mono_ginis), len(pros_ginis))
 
         c1, c2, c3 = st.columns(3)
         c1.metric("Inequality ratio", f"{ratio:.1f}×",
                   help="Mean Monopolist Gini ÷ mean Prosperity Gini, 30 games")
-        c2.metric("Pairs diverged", f"{min(len(mono_ginis), len(pros_ginis))}/15",
+        c2.metric("Pairs diverged", f"{n_pairs} of {n_pairs}",
                   help="Paired games, same agents. Zero exceptions.")
         c3.metric("Voted themselves out", f"{len(m_switched)} of {len(m_start)}",
                   help="Monopolist-start games that voted into Prosperity "

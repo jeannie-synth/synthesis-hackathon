@@ -116,7 +116,8 @@ def render():
         )
         fig.update_traces(jitter=0.4, marker=dict(size=7, opacity=0.65))
         core.apply_layout(fig, height=400, showlegend=False,
-                          yaxis_title="Individual net worth ($)")
+                          yaxis=dict(title="Individual net worth ($)",
+                                     rangemode="tozero"))
         st.plotly_chart(fig, use_container_width=True)
         core.finding_text(
             "Each dot is one player's final net worth. "
@@ -197,8 +198,13 @@ def render():
         if {"Monopolist", "Prosperity"} <= set(df_pivot.columns):
             df_pivot["Gap"] = df_pivot["Monopolist"] - df_pivot["Prosperity"]
             df_pivot = df_pivot.sort_values("Gap")
+            m_span = df_pivot["Monopolist"].max() - df_pivot["Monopolist"].min()
+            p_span = df_pivot["Prosperity"].max() - df_pivot["Prosperity"].min()
 
-            st.markdown("## Extraction only pays under extractive rules")
+            st.markdown(
+                "## Under Prosperity rules, strategy choice barely matters — "
+                "under Monopolist rules, it decides the outcome"
+            )
             fig = go.Figure()
             for _, row in df_pivot.iterrows():
                 fig.add_trace(go.Scatter(
@@ -225,18 +231,23 @@ def render():
                     xshift=-12 if anchor == "right" else 12,
                     font=dict(size=core.font_px(12), color=color),
                 )
-            core.apply_layout(fig, height=350,
-                              xaxis_title="Mean net worth ($)", yaxis_title="")
+            core.apply_layout(fig, height=350, yaxis_title="",
+                              xaxis=dict(title="Mean net worth ($)",
+                                         rangemode="tozero"))
             st.plotly_chart(fig, use_container_width=True)
 
-            widest, narrowest = df_pivot.iloc[-1], df_pivot.iloc[0]
+            widest = df_pivot.iloc[-1]
             core.finding_text(
-                f"<strong>{widest['Strategy']}</strong> gains the most from "
-                f"extractive rules (+${widest['Gap']:,.0f}); "
-                f"<strong>{narrowest['Strategy']}</strong> the least "
-                f"(+${narrowest['Gap']:,.0f}). The rule set decides which "
-                "strategy 'works'."
+                f"Across the five strategies, Prosperity outcomes span just "
+                f"<strong>${p_span:,.0f}</strong>; Monopolist outcomes span "
+                f"<strong>${m_span:,.0f}</strong>. "
+                f"<strong>{widest['Strategy']}</strong> is the most sensitive "
+                f"to the rule set (+${widest['Gap']:,.0f} under Monopolist)."
             )
-            core.caption(core.SAMPLE_DISCLAIMER)
+            core.caption(
+                core.SAMPLE_DISCLAIMER + " Monopolist averages run higher "
+                "overall because those games last ~4× longer (more salary "
+                "rounds) — the signal is the spread, not the level."
+            )
 
     core.next_page("The Vote — when agents can change the rules", "vote")
