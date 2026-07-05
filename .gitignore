@@ -70,3 +70,7 @@ orchestrator/data/
 #mis
 assets/ceremony
 .config/
+
+# Python
+__pycache__/
+*.pyc
