@@ -14,7 +14,7 @@ def render():
         "That territory is open."
     )
 
-    st.markdown("## Four open problems")
+    st.markdown("## Five open problems")
     c1, c2 = st.columns(2)
     with c1:
         core.finding_card(
@@ -46,6 +46,20 @@ def render():
             "promises change what agents say to each other.",
             accent="#7E57C2",
         )
+
+    core.finding_card(
+        "The dial: contribution-weighted distribution",
+        "Today the two rule sets are opposite switches — rent to the owner, or "
+        "rent to a treasury split equally. Weight each player's dividend by "
+        "what they contributed to the treasury, and the switch becomes a "
+        "dial: pure extraction at one end, pure equality at the other, and an "
+        "unexplored continuum between. Where along the dial does the "
+        "inequality curve bend? Is there a tipping point — a weighting past "
+        "which the economy behaves extractively even though the treasury "
+        "still exists? The entire experiment so far is just this dial's two "
+        "endpoints.",
+        accent="#455A64",
+    )
 
     st.markdown("## The experiment loop this artifact enables")
     st.markdown(

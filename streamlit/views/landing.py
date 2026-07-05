@@ -80,6 +80,12 @@ def render():
 
     if mono_ginis and pros_ginis:
         st.markdown(
+            "To compare whole games instead of single players, we score each "
+            "game's ending with one number — the **Gini coefficient**: "
+            "**0** means everyone finished with equal wealth, **1** means one "
+            "player finished with everything. Each dot below is one game's score."
+        )
+        st.markdown(
             "## Every Monopolist economy ended more unequal "
             "than every Prosperity economy"
         )
