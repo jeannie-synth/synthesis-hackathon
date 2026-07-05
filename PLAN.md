@@ -885,3 +885,22 @@ i- [x] 18th infographic: boring prosperity (new)
 - [ ] Devfolio submission published
 - [ ] README.md — fill tournament findings, fix Phase 3 paragraph
 - [ ] submission-draft.md — fill placeholders, fix Phase 3/4 status (project manager in progress)
+
+---
+
+## Post-Hackathon
+
+### Dashboard Redesign (magnum opus)
+
+Brief: `docs/streamlit-redesign-brief.md` — build in a dedicated session with the chartosaur-dataviz skill.
+
+- [x] Chartosaur critique of current app
+- [x] Design brief written and approved direction set
+- [ ] Restructure tabs → multipage narrative (Landing / Rules / Divergence / Vote / Frontier / Ledger)
+- [ ] Landing page with zero-overlap hero chart
+- [ ] Conclusion-titles + declutter + one-job-color pass on all charts
+- [ ] Live on-chain panel (RPC via Alchemy) + Basescan verification links
+- [ ] Frontier page (open research problems + how to play)
+- [ ] Ledger page (explorer + live contract state)
+- [ ] Presentation mode toggle
+- [ ] Pre-ship critique-checklist pass (chartosaur references/critique-checklist.md)

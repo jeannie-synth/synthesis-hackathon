@@ -1231,3 +1231,24 @@ Key new findings:
 **Submission metadata**: model=claude-opus-4-6, intention=exploring, tracks=[fdb76d08, 6f0e3d7d, 3bf41be9, 32de0743], moltbookPostURL set.
 
 **Final commit and Devfolio submission.**
+
+---
+
+## Post-Hackathon — July 5, 2026
+
+### Session 22: Dashboard redesign brief (chartosaur)
+
+**Context**: Project enters its second life — the dashboard evolves from hackathon results page into the definitive public artifact of the thesis, serving three audiences: a general-public landing page, live presentations, and researchers/students who will probe and extend the system.
+
+**New skill installed**: `chartosaur-dataviz` (data visualization strategy + critique) relayed from jeannie-main via the inter-instance MCP, reviewed clean, installed at `.claude/skills/chartosaur-dataviz/` (gitignored, local only).
+
+**Chartosaur critique of current app**: bones are good (question-led structure, honest disclaimers, colorblind-safe palette), but titles describe chart contents instead of stating conclusions, the zero-overlap hero finding is buried mid-app, tabs let readers skip the argument, one color-scale does no job (pairs chart), and "on-chain" is asserted but never demonstrated.
+
+**Design brief written**: `docs/streamlit-redesign-brief.md` — six-page narrative structure (Landing / Rules / Divergence / Vote / Frontier / Ledger), conclusion-titles throughout, hybrid on-chain layer (live RPC reads via Alchemy + Basescan verification links now; CDP SQL if time; Goldsky indexer noted as future path), presentation mode toggle, and a mandatory pre-ship critique-checklist pass.
+
+### Decisions
+
+- Dashboard redesign happens in a dedicated fresh session, building from the brief
+- Artifact stays neutral — stands alone, references no external context
+- JSON logs remain the analytical backbone; on-chain layer proves the substrate rather than replacing the analysis
+- Phase 3 stays excluded by default (standing Day-11 decision); charting it requires explicit approval or a clean re-run
