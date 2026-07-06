@@ -55,7 +55,7 @@ with st.sidebar:
     st.markdown("---")
     st.markdown(
         "Built with \U0001f49c by [Fractall](https://fractall.xyz) "
-        "for [The Synthesis](https://www.thesynthesis.ai/)"
+        "for [The Synthesis](https://synthesis-md.devfolio.co/overview)"
     )
 
 st.navigation(list(pages.values())).run()

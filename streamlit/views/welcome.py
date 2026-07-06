@@ -1,9 +1,15 @@
-"""Page 0 — the on-ramp. No jargon, no metrics a stranger doesn't know."""
+"""Page 0 — the on-ramp. Explainable to a fifth grader, boards first."""
+
+from pathlib import Path
 
 import plotly.express as px
 import streamlit as st
 
 import core
+
+BOARDS_DIR = Path(__file__).parent.parent.parent / "assets" / "boards"
+MONO_BOARD = BOARDS_DIR / "Monopoly (1600 x 1600 px) (1).png"
+PROS_BOARD = BOARDS_DIR / "Prosperity (1600 x 1600 px).png"
 
 
 def render():
@@ -11,26 +17,54 @@ def render():
 
     st.title("The Landlord's Game")
     core.question_panel(
-        "Can the rules of an economy — not the players — decide "
-        "who ends up rich and who ends up poor?"
+        "Can the rules of a game — not the players — decide "
+        "who gets rich and who goes broke?"
     )
 
     st.markdown(
-        "In **1903**, a game designer named Elizabeth Magie built a board game "
-        "with a trick in it: the same board could be played under **two "
-        "different rule sets**. Under one, rent makes property owners richer "
-        "until a single winner holds everything. Under the other, rent flows "
-        "into a shared pot that pays everyone a dividend. "
-        "She designed it to make an argument about land economics, and the "
-        "game later became — stripped of its second rule set — the Monopoly "
-        "you grew up with."
+        "In **1903**, a game designer named Elizabeth Magie made a board game "
+        "with a secret: it came with **two rulebooks**. "
+        "Same board, same streets, same prices, same dice — "
+        "but the two rulebooks disagree about one thing: "
+        "**what happens to rent after it's paid.**"
+    )
+
+    col1, col2 = st.columns(2)
+    with col1:
+        if MONO_BOARD.exists():
+            st.image(str(MONO_BOARD), use_container_width=True)
+        st.markdown(
+            f"### <span style='color:{core.MONO_COLOR}'>Monopolist rules</span>",
+            unsafe_allow_html=True,
+        )
+        st.markdown(
+            "Land on my street, you pay **me**. I use your rent to buy more "
+            "streets. The game ends when one player has everything."
+        )
+    with col2:
+        if PROS_BOARD.exists():
+            st.image(str(PROS_BOARD), use_container_width=True)
+        st.markdown(
+            f"### <span style='color:{core.PROS_COLOR}'>Prosperity rules</span>",
+            unsafe_allow_html=True,
+        )
+        st.markdown(
+            "Land on my street, you pay **the town pot**. The pot gets split "
+            "evenly between everyone. The game ends when even the poorest "
+            "player is doing okay."
+        )
+
+    st.markdown(
+        "One of these rulebooks was later dropped, and the game you grew up "
+        "with kept the other one: that's **Monopoly**."
     )
     st.markdown(
-        "A century later, we rebuilt her experiment with **five AI agents "
-        "playing on a public blockchain**, where every move is a recorded "
-        "transaction that nobody — including us — can quietly edit. "
-        "The agents don't know they're in an experiment. They just play "
-        "to win, under whichever rules the board gives them."
+        "A century later, we rebuilt her experiment. We gave the board to "
+        "**five computer players** and let them play it both ways — for real "
+        "tokens, on a public ledger (a blockchain), where every move is "
+        "recorded and nobody can quietly change the results. Not even us. "
+        "The players don't know they're in an experiment. They just try "
+        "to win."
     )
 
     df_nw = core.net_worth_rows(data["phase1"])
@@ -52,7 +86,6 @@ def render():
         )
         fig.update_traces(jitter=0.4, marker=dict(size=8, opacity=0.65),
                           hovertemplate="$%{y:,.0f}<extra></extra>")
-        # Annotate the extremes — the whole story in two dots
         fig.add_annotation(
             x="Monopolist", y=stats["Monopolist"][1],
             text=f"richest: ${stats['Monopolist'][1]:,.0f}",
@@ -74,17 +107,16 @@ def render():
         st.plotly_chart(fig, use_container_width=True)
         core.finding_text(
             "Every dot is one player's final wealth in one game — "
-            "150 player-endings across 30 games. The same five agents, "
-            "playing just as hard, under two rule sets."
+            "150 player-endings across 30 games. The same five players, "
+            "trying just as hard, under two rulebooks."
         )
         core.caption(core.SAMPLE_DISCLAIMER)
 
     st.markdown(
         "Nothing about the players changes between the two columns. "
-        "Not their strategies, not their starting money, not their luck — "
-        "the dice are the same. **The only thing that changes is what "
-        "happens to rent after it's paid.** The rest of this site walks "
-        "through how that one difference builds two different worlds."
+        "Not their strategies, not their starting money, not their dice. "
+        "**The only thing that changes is where rent goes.** The rest of "
+        "this site walks through how that one difference plays out."
     )
 
     core.next_page("The evidence — every game, one picture", "landing")
