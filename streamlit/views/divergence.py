@@ -95,36 +95,64 @@ def render():
         core.caption(core.SAMPLE_DISCLAIMER)
         core.verify_expander(p1_mono + p1_pros)
 
-    # Wealth spread in dollars
-    df_nw = core.net_worth_rows(data["phase1"])
-    if not df_nw.empty:
-        spreads = {
-            m: df_nw[df_nw["Rule Set"] == m]["Net Worth ($)"].agg(["min", "max"])
-            for m in ("Monopolist", "Prosperity")
-        }
-        m_spread = spreads["Monopolist"]["max"] - spreads["Monopolist"]["min"]
-        p_spread = spreads["Prosperity"]["max"] - spreads["Prosperity"]["min"]
+    # Rich-poor span inside each individual game
+    span_rows = []
+    for g in data["phase1"]:
+        if g.get("result"):
+            nw = g["result"]["netWorths"]
+            span_rows.append({
+                "game": f"Game {g['gameId']}", "mode": g["mode"],
+                "lo": min(nw), "hi": max(nw), "span": max(nw) - min(nw),
+            })
+    if span_rows:
+        span_rows.sort(key=lambda r: r["span"])
+        m_spans = [r["span"] for r in span_rows if r["mode"] == "Monopolist"]
+        p_spans = [r["span"] for r in span_rows if r["mode"] == "Prosperity"]
 
         st.markdown(
-            f"## A ${m_spread:,.0f} spread versus a ${p_spread:,.0f} spread — "
-            "same agents, same board"
+            f"## Inside every single game, the same gap: the narrowest "
+            f"Monopolist rich-poor spread (${min(m_spans):,.0f}) is "
+            f"{min(m_spans) / max(p_spans):.0f}× the widest Prosperity one "
+            f"(${max(p_spans):,.0f})"
         )
-        fig = px.strip(
-            df_nw, x="Rule Set", y="Net Worth ($)", color="Rule Set",
-            color_discrete_map=core.MODE_COLORS,
-            stripmode="overlay", hover_data=["Strategy", "Game"],
+        fig = go.Figure()
+        for i, r in enumerate(span_rows):
+            color = core.MODE_COLORS[r["mode"]]
+            fig.add_trace(go.Scatter(
+                x=[r["lo"], r["hi"]], y=[i, i], mode="lines+markers",
+                line=dict(color=color, width=core.line_w(3)),
+                marker=dict(size=5, color=color), showlegend=False,
+                hovertemplate=(
+                    f"<b>{r['game']} ({r['mode']})</b><br>"
+                    f"poorest ${r['lo']:,.0f} — richest ${r['hi']:,.0f}"
+                    f"<br>gap ${r['span']:,.0f}<extra></extra>"
+                ),
+            ))
+        # Direct labels on the extremes of each cluster
+        top = span_rows[-1]
+        bottom = span_rows[0]
+        fig.add_annotation(
+            x=top["hi"], y=len(span_rows) - 1, text="<b>Monopolist</b>",
+            showarrow=False, xanchor="left", xshift=8,
+            font=dict(size=core.font_px(12), color=core.MONO_COLOR),
         )
-        fig.update_traces(jitter=0.4, marker=dict(size=7, opacity=0.65))
-        core.apply_layout(fig, height=400, showlegend=False,
-                          yaxis=dict(title="Individual net worth ($)",
-                                     rangemode="tozero"))
+        fig.add_annotation(
+            x=bottom["hi"], y=0, text="<b>Prosperity</b>",
+            showarrow=False, xanchor="left", xshift=8,
+            font=dict(size=core.font_px(12), color=core.PROS_COLOR),
+        )
+        core.apply_layout(
+            fig, height=480,
+            xaxis=dict(title="Poorest to richest player, per game ($)",
+                       rangemode="tozero"),
+            yaxis=dict(visible=False),
+        )
         st.plotly_chart(fig, use_container_width=True)
         core.finding_text(
-            "Each dot is one player's final net worth. "
-            f"Monopolist: ${spreads['Monopolist']['min']:,.0f} to "
-            f"${spreads['Monopolist']['max']:,.0f}. "
-            f"Prosperity: ${spreads['Prosperity']['min']:,.0f} to "
-            f"${spreads['Prosperity']['max']:,.0f}."
+            "Each line is one game, from its poorest player's final net worth "
+            "to its richest, all 30 games sorted by gap size. The two rule "
+            "sets form two separate blocks — no Prosperity game ever opened "
+            "a gap as wide as any Monopolist game."
         )
         core.caption(core.SAMPLE_DISCLAIMER)
 
