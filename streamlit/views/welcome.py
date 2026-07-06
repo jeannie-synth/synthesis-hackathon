@@ -65,6 +65,43 @@ def render():
         "to win."
     )
 
+    st.markdown("## Meet the players")
+    st.markdown(
+        "Five agents, five fixed personalities — the same starting lineup "
+        "in every game, drawn from a century of research on how people "
+        "actually play economic games."
+    )
+    lineup = [
+        ("Extractive", "The Shark",
+         "Buys everything it can afford, always. Never cooperates."),
+        ("Generative", "The Builder",
+         "Buys only with money to spare. Keeps reserves. Cooperates by default."),
+        ("Conditional", "The Mirror",
+         "Treats you the way you treated everyone last round."),
+        ("FreeRider", "The Passenger",
+         "Buys almost nothing. Rides on dividends and salary."),
+        ("Pavlov", "The Streak",
+         "Repeats whatever made money last turn. Changes when it loses."),
+    ]
+    cols = st.columns(5)
+    for col, (name, nick, blurb) in zip(cols, lineup):
+        color = core.STRATEGY_COLORS[name]
+        col.markdown(
+            f'<div style="border-top: 4px solid {color}; background: #f8f9fa; '
+            f'border-radius: 0 0 8px 8px; padding: 0.8rem; height: 100%;">'
+            f'<div style="font-weight: 700; color: {color};">{name}</div>'
+            f'<div style="font-size: 0.85rem; color: #888; '
+            f'font-style: italic;">"{nick}"</div>'
+            f'<div style="font-size: 0.85rem; color: #444; '
+            f'margin-top: 0.4rem;">{blurb}</div></div>',
+            unsafe_allow_html=True,
+        )
+    core.caption(
+        "Archetypes from the cooperation literature — Kelly, "
+        "Fischbacher–Gächter–Fehr, Axelrod, Nowak & Sigmund. "
+        "Full behavior specs on The Rules page."
+    )
+
     st.markdown(f"### ▶ [Watch a replay of a real game]({VIEWER_URL})")
     core.caption(
         "Opens the game viewer in a new tab — every move in the replay "
