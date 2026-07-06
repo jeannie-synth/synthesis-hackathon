@@ -68,7 +68,10 @@ def apply_layout(fig, height: int = 420, **overrides):
         template="plotly_white",
         height=int(height * 1.15) if is_presentation() else height,
         font=dict(size=font_px(14)),
-        title=None,  # titles live in markdown headers, not in the figure
+        # Titles live in markdown headers, not in the figure. Explicit empty
+        # text — None leaves a text-less title object that Streamlit's
+        # plotly theme renders as a literal "undefined".
+        title=dict(text=""),
         margin=dict(t=30, r=20),
     )
     layout.update(overrides)
