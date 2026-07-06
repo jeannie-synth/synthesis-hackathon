@@ -87,6 +87,29 @@
   @keyframes annotFade { 0%{opacity:1} 70%{opacity:1} 100%{opacity:0} }
   @keyframes spaceGlow { 0%{opacity:.4} 50%{opacity:.15} 100%{opacity:0} }
 
+  /* ─── Action toast (what the player just did) ─── */
+  .action-toast {
+    position: absolute; top: calc(50% + 52px); left: 50%; transform: translateX(-50%);
+    max-width: 75%; padding: 7px 16px; border-radius: 6px; z-index: 49;
+    background: rgba(15,15,26,0.94); border: 1px solid var(--border);
+    font-size: 14px; font-weight: 600; text-align: center; pointer-events: none;
+    opacity: 0; transition: opacity 0.15s; white-space: nowrap;
+    overflow: hidden; text-overflow: ellipsis;
+  }
+  .action-toast.visible { opacity: 1; }
+  .action-toast .toast-agent { font-weight: 700; }
+
+  /* ─── First-visit tip ─── */
+  .intro-tip {
+    position: absolute; top: 14px; left: 50%; transform: translateX(-50%);
+    z-index: 60; max-width: 420px; padding: 10px 14px; border-radius: 8px;
+    background: rgba(15,15,26,0.96); border: 1px solid var(--gold);
+    box-shadow: 0 0 24px rgba(221,160,48,0.2);
+    font-size: 12.5px; line-height: 1.5; color: var(--text); cursor: pointer;
+  }
+  .intro-tip .tip-close { float: right; color: var(--dim); margin-left: 10px; font-weight: 700; }
+  .intro-tip:hover .tip-close { color: var(--text); }
+
   /* ─── Sidebar ─── */
   .sidebar {
     width: 320px; background: var(--panel); border-left: 1px solid var(--border);
@@ -247,6 +270,7 @@
       <div class="dice-face" id="dice-1">-</div>
       <div class="dice-face" id="dice-2">-</div>
     </div>
+    <div class="action-toast" id="action-toast"></div>
   </div>
   <div class="sidebar">
     <div class="player-cards" id="player-cards"></div>
@@ -576,10 +600,8 @@ function updateCards(){
   }
 }
 
-function addTicker(turn,hl=false){
-  const tk=document.getElementById('ticker'), en=document.createElement('div');
-  const pi=findPlayer(turn.agent), col=pi>=0?PLAYER_COLORS[pi]:'#888';
-  let txt='',hi=hl;
+function turnText(turn){
+  let txt='',hi=false;
   switch(turn.action){
     case 'roll':{const d=turn.details;const dc=d.dice?'['+d.dice[0]+'+'+d.dice[1]+']':'';txt=dc+' lands on '+(d.spaceName||'pos '+d.position);break;}
     case 'buy':txt='buys '+(BOARD[turn.details.position]?.name||'pos '+turn.details.position)+' ($'+turn.details.price+')';hi=true;break;
@@ -593,9 +615,45 @@ function addTicker(turn,hl=false){
     case 'jailBuyoutFailed':txt='buyout failed';break;
     default:txt=turn.action;
   }
-  en.className='ticker-entry'+(hi?' highlight':'');
+  return {txt,hi};
+}
+
+function addTicker(turn,hl=false){
+  const tk=document.getElementById('ticker'), en=document.createElement('div');
+  const pi=findPlayer(turn.agent), col=pi>=0?PLAYER_COLORS[pi]:'#888';
+  const {txt,hi}=turnText(turn);
+  en.className='ticker-entry'+((hi||hl)?' highlight':'');
   en.innerHTML='<span class="agent-name" style="color:'+col+'">'+turn.agent+'</span> '+txt;
   tk.appendChild(en); tk.scrollTop=tk.scrollHeight;
+}
+
+// ─── Action toast: what the player just did, center-board ───
+let toastTimer=null;
+function showActionToast(turn){
+  const el=document.getElementById('action-toast'); if(!el)return;
+  const pi=findPlayer(turn.agent), col=pi>=0?PLAYER_COLORS[pi]:'#e06040';
+  const {txt}=turnText(turn);
+  el.innerHTML='<span class="toast-agent" style="color:'+col+'">'+turn.agent+'</span> '+txt;
+  el.style.borderColor=col;
+  el.classList.add('visible');
+  if(toastTimer)clearTimeout(toastTimer);
+  const dur=speed>20?450:speed>10?900:1800;
+  toastTimer=setTimeout(()=>{el.classList.remove('visible');toastTimer=null;},dur);
+}
+
+// ─── First-visit tip ───
+function showIntroTip(){
+  try{if(localStorage.getItem('llg-tip-seen'))return;}catch(e){}
+  if(document.querySelector('.intro-tip'))return;
+  const bc=document.querySelector('.board-container'); if(!bc)return;
+  const tip=document.createElement('div'); tip.className='intro-tip';
+  tip.innerHTML='<span class="tip-close">&#10005;</span>&#128161; <b>How to watch:</b> '
+    +'press &#9654; and keep your eyes on the center of the board — first the dice, '
+    +'then a banner shows what the player did with their turn. '
+    +'The cards on the right track everyone\'s money and streets.';
+  tip.addEventListener('click',()=>{tip.remove();try{localStorage.setItem('llg-tip-seen','1');}catch(e){}});
+  bc.appendChild(tip);
+  setTimeout(()=>{if(tip.parentNode)tip.remove();},20000);
 }
 
 function updateControls(){
@@ -609,9 +667,11 @@ function updateControls(){
 // ─── Playback ───
 function goToTurn(idx){
   if(!gameData)return; idx=Math.max(-1,Math.min(idx,gameData.turns.length-1));
+  const wasAt=turnIndex;
   if(idx<turnIndex){initState();document.getElementById('ticker').innerHTML='';hideDice();turnIndex=-1;
     for(let i=0;i<=idx;i++){turnIndex=i;applyTurn(gameData.turns[i]);addTicker(gameData.turns[i]);}
   } else {while(turnIndex<idx){turnIndex++;applyTurn(gameData.turns[turnIndex]);addTicker(gameData.turns[turnIndex]);}}
+  if(idx>wasAt&&idx>=0)showActionToast(gameData.turns[idx]);
   updateBoard();updateCards();updateControls();
 }
 function nextTurn(){if(turnIndex>=gameData.turns.length-1){stopPlay();return;}goToTurn(turnIndex+1);}
@@ -624,6 +684,7 @@ function tick(){if(!playing)return;playTimer=setTimeout(()=>{nextTurn();if(playi
 // ─── Load ───
 function loadGame(data){
   gameData=data;turnIndex=-1;stopPlay();hideDice();initState();
+  showIntroTip();
   document.getElementById('load-screen').style.display='none';
   document.getElementById('game-viewer').style.display='flex';
   renderBoard(document.getElementById('board-svg'), data.mode || 'Monopolist');
