@@ -57,7 +57,8 @@ def render():
         "inequality curve bend? Is there a tipping point — a weighting past "
         "which the economy behaves extractively even though the treasury "
         "still exists? The entire experiment so far is just this dial's two "
-        "endpoints.",
+        "endpoints. In the post-tournament debriefs, three of the five "
+        "agents independently proposed mechanisms in exactly this family.",
         accent="#455A64",
     )
 

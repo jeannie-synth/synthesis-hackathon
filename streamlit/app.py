@@ -8,7 +8,8 @@ Landing → Rules → Divergence → Vote → Frontier → Ledger.
 import streamlit as st
 
 import core
-from views import divergence, frontier, landing, ledger, rules, vote, welcome
+from views import (debrief, divergence, frontier, landing, ledger, rules,
+                   vote, welcome)
 
 st.set_page_config(
     page_title="The Landlord's Game",
@@ -35,12 +36,16 @@ pages = {
     "vote": st.Page(
         vote.render, title="4 · The Vote", icon="\U0001f5f3️", url_path="vote",
     ),
+    "debrief": st.Page(
+        debrief.render, title="5 · The Interviews",
+        icon="\U0001f3a4", url_path="interviews",
+    ),
     "frontier": st.Page(
-        frontier.render, title="5 · The Frontier",
+        frontier.render, title="6 · The Frontier",
         icon="\U0001f52d", url_path="frontier",
     ),
     "ledger": st.Page(
-        ledger.render, title="6 · The Ledger", icon="⛓️", url_path="ledger",
+        ledger.render, title="7 · The Ledger", icon="⛓️", url_path="ledger",
     ),
 }
 core.PAGES.update(pages)

@@ -149,4 +149,5 @@ def render():
                               yaxis_title="Final Gini coefficient")
             st.plotly_chart(fig, use_container_width=True)
 
-    core.next_page("The Frontier — what nobody has explored yet", "frontier")
+    core.next_page("The Interviews — what the players said afterwards",
+                   "debrief")
