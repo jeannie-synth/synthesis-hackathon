@@ -4,6 +4,7 @@ from pathlib import Path
 
 import plotly.express as px
 import streamlit as st
+import streamlit.components.v1 as components
 
 import core
 
@@ -65,6 +66,21 @@ def render():
         "recorded and nobody can quietly change the results. Not even us. "
         "The players don't know they're in an experiment. They just try "
         "to win."
+    )
+
+    st.markdown("## Watch a real game")
+    st.markdown(
+        "This is a replay of an actual recorded game — every move below "
+        "happened on-chain. Pick a game, press play."
+    )
+    components.iframe(
+        "https://jeannie-synth.github.io/synthesis-hackathon/viewer/",
+        height=680, scrolling=True,
+    )
+    core.caption(
+        "Embedded from the [game replay viewer]"
+        "(https://jeannie-synth.github.io/synthesis-hackathon/viewer/) — "
+        "opens standalone if the frame doesn't load."
     )
 
     df_nw = core.net_worth_rows(data["phase1"])
