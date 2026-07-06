@@ -1,5 +1,6 @@
 """Page 0 — the on-ramp. Story and boards only; the results start on page 1."""
 
+import os
 from pathlib import Path
 
 import streamlit as st
@@ -9,7 +10,10 @@ import core
 BOARDS_DIR = Path(__file__).parent.parent.parent / "assets" / "boards"
 MONO_BOARD = BOARDS_DIR / "Monopoly (1600 x 1600 px) (1).png"
 PROS_BOARD = BOARDS_DIR / "Prosperity (1600 x 1600 px).png"
-VIEWER_URL = "https://jeannie-synth.github.io/synthesis-hackathon/viewer/"
+# Overridable for local review (the deployed viewer only updates on merge)
+VIEWER_URL = os.environ.get(
+    "VIEWER_URL", "https://jeannie-synth.github.io/synthesis-hackathon/viewer/"
+)
 
 
 def render():
