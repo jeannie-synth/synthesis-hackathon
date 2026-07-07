@@ -194,11 +194,12 @@ def render():
         m_spans = [r["span"] for r in span_rows if r["mode"] == "Monopolist"]
         p_spans = [r["span"] for r in span_rows if r["mode"] == "Prosperity"]
 
+        # Escaped dollars: a $...$ pair in markdown renders as LaTeX math.
         st.markdown(
             f"## Inside every single game, the same gap: the narrowest "
-            f"Monopolist rich-poor spread (${min(m_spans):,.0f}) is "
+            f"Monopolist rich-poor spread (\\${min(m_spans):,.0f}) is "
             f"{min(m_spans) / max(p_spans):.1f}× the widest Prosperity one "
-            f"(${max(p_spans):,.0f})"
+            f"(\\${max(p_spans):,.0f})"
         )
         fig = go.Figure()
         for i, r in enumerate(span_rows):

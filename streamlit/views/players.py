@@ -6,12 +6,17 @@ season records don't hide anymore: the podiums live on this page, and the
 per-game verification table lives on The Tournament.
 """
 
+import base64
+from pathlib import Path
+
 import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
 
 import core
 from core import MONO_COLOR, PROS_COLOR
+
+FIGURINES_DIR = Path(__file__).parent.parent / "assets" / "figurines"
 
 LINEUP = [
     ("Extractive", "The Shark",
@@ -32,6 +37,15 @@ LINEUP = [
 ]
 
 _MEDALS = ["\U0001f947", "\U0001f948", "\U0001f949"]
+
+
+@st.cache_data
+def _figurine_uri(name: str) -> str | None:
+    """Pixel-art token as a data URI, so it can live inside the card's HTML."""
+    path = FIGURINES_DIR / f"{name.lower()}.png"
+    if not path.exists():
+        return None
+    return "data:image/png;base64," + base64.b64encode(path.read_bytes()).decode()
 
 
 def _season_records(data: dict) -> dict[str, dict[str, list[dict]]]:
@@ -183,9 +197,16 @@ def render():
             f'margin-top: 0.5rem; font-weight: 600;">'
             f'{wins} wins in {total_games} games</div>'
         ) if total_games else ""
+        uri = _figurine_uri(name)
+        token = (
+            f'<div style="text-align: center; margin-bottom: 0.4rem;">'
+            f'<img src="{uri}" width="72" alt="{name} token" '
+            f'style="image-rendering: pixelated;"/></div>'
+        ) if uri else ""
         col.markdown(
             f'<div style="border-top: 4px solid {color}; background: #f8f9fa; '
             f'border-radius: 0 0 8px 8px; padding: 0.8rem; height: 100%;">'
+            f'{token}'
             f'<div style="font-weight: 700; color: {color};">{name}</div>'
             f'<div style="font-size: 0.85rem; color: #888; '
             f'font-style: italic;">"{nick}"</div>'

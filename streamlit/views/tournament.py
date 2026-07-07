@@ -107,22 +107,35 @@ def render():
     )
 
     data = core.load_all()
-    tx_count = sum(
-        1 for g in data["phase1"] + data["phase2"]
-        for t in g.get("turns", []) if t.get("txHash")
-    )
+    buys_m = core.count_actions(data["p1_mono"], "buy")
+    buys_p = core.count_actions(data["p1_pros"], "buy")
+    builds_m = core.count_actions(data["p1_mono"], "build")
+    builds_p = core.count_actions(data["p1_pros"], "build")
+    rounds_m = sum(g["result"]["rounds"] for g in data["p1_mono"]
+                   if g.get("result"))
+    rounds_p = sum(g["result"]["rounds"] for g in data["p1_pros"]
+                   if g.get("result"))
+
     c1, c2, c3, c4 = st.columns(4)
-    c1.metric("Phase 1 — fixed rules", "30 games",
-              help="15 twin pairs on Base Sepolia; the rule set never changes "
-              "mid-game")
-    c2.metric("Phase 2 — voting enabled", "13 games",
-              help="Same board, but the players can propose and vote on "
-              "switching the rule set mid-game")
-    c3.metric("Inaugural — Base mainnet", "18 games",
-              help="LLM agents choosing their own strategies across 3 rounds; "
-              "source of The Interviews page")
-    c4.metric("On-chain moves logged", f"{tx_count:,}",
-              help="Transactions recorded across Phases 1–2")
+    c1.metric("Streets bought · Monopolist", f"{buys_m}",
+              help="Phase 1, 15 fixed-rule games under Monopolist rules")
+    c2.metric("Streets bought · Prosperity", f"{buys_p}",
+              help="Phase 1, 15 fixed-rule games under Prosperity rules")
+    c3.metric("Houses built · Monopolist", f"{builds_m}",
+              help="Phase 1, 15 fixed-rule games under Monopolist rules")
+    c4.metric("Houses built · Prosperity", f"{builds_p}",
+              help="Phase 1, 15 fixed-rule games under Prosperity rules")
+    if rounds_m and rounds_p and buys_m and buys_p:
+        core.finding_text(
+            "Raw totals favor Monopolist only because its games last "
+            f"{rounds_m / rounds_p:.0f}× longer ({rounds_m:,} rounds "
+            f"vs {rounds_p:,}); per round of play, Prosperity players "
+            "bought and built <strong>more</strong>. The mix flips too: "
+            f"Monopolist play produced {builds_m / buys_m:.1f} houses "
+            f"per street bought, Prosperity {builds_p / buys_p:.1f} — "
+            "acquisition-heavy play in one world, development-heavy "
+            "play in the other."
+        )
 
     st.markdown("## The chain is the lab notebook")
     st.markdown(
