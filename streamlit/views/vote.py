@@ -116,14 +116,23 @@ def render():
     p_start = [g for g in phase2 if g.get("mode") == "Prosperity"]
     p_switched = [g for g in p_start if core.end_mode(g) == "Monopolist"]
 
+    max_switches = max(
+        (sum(1 for t in g.get("turns", []) if t["action"] == "proposalPassed")
+         for g in phase2), default=0,
+    )
+    ended_pros = sum(1 for g in phase2 if core.end_mode(g) == "Prosperity")
+
     st.markdown(f"## {len(m_switched)} of {len(m_start)} Monopolist economies "
-                "voted their way out — almost none went back")
+                "had voted their way out by game's end")
     st.plotly_chart(_mode_flow_sankey(phase2), use_container_width=True)
     core.finding_text(
-        f"{len(m_switched)} of {len(m_start)} Monopolist-start games ended under "
-        f"Prosperity rules; {len(p_switched)} of {len(p_start)} went the other "
-        "way. Nobody told the players to prefer Prosperity — self-interest, "
-        "under this structure, pointed there on its own."
+        f"The route was noisy — mid-game, the rules flipped back and forth "
+        f"as many as {max_switches} times in a single game — but the "
+        f"destination wasn't: {ended_pros} of {len(phase2)} games ended under "
+        f"Prosperity rules, and only {len(p_switched)} of {len(p_start)} "
+        "Prosperity-start games ended Monopolist. Nobody told the players to "
+        "prefer Prosperity — self-interest, under this structure, pointed "
+        "there on its own."
     )
     core.caption(core.PHASE2_DISCLAIMER)
 

@@ -74,7 +74,7 @@ All 5 agents independently concluded that structure determines outcomes, not int
 |---------|---------|-------|
 | Base Mainnet | [`0x496cf175...`](https://basescan.org/address/0x496cf175126ce10728b75f02e457f144ffca275a) | Inaugural Tournament (18 games) |
 | Base Sepolia | [`0xa39c342b...`](https://sepolia.basescan.org/address/0xa39c342b4aa41749d018e72af6a0dd80f88e4f0e) | 31 games — Phase 1 (fixed rules) |
-| Base Sepolia | [`0xda1557c9...`](https://sepolia.basescan.org/address/0xda1557c901ff5b7a0d9f0d0da17fef55b2d59d85) | 39 games — Phase 1-3 (voting + signaling) |
+| Base Sepolia | [`0xda1557c9...`](https://sepolia.basescan.org/address/0xda1557c901ff5b7a0d9f0d0da17fef55b2d59d85) | 38 games — Phase 1-3 (voting + signaling) |
 
 ### The Experiment Phases
 

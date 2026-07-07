@@ -22,6 +22,14 @@ PHASE1_TOURNAMENT = "tournament-1773831296297"
 PHASE2_TOURNAMENT = "tournament-1773910613854"
 
 SEPOLIA_TX = "https://sepolia.basescan.org/tx/"
+SEPOLIA_ADDRESS = "https://sepolia.basescan.org/address/"
+MAINNET_ADDRESS = "https://basescan.org/address/"
+
+# Where each season's games live on-chain (verified via creation-tx receipts
+# and getFullState() calls against the contracts).
+PHASE1_CONTRACT = "0xa39c342b4aa41749d018e72af6a0dd80f88e4f0e"   # Base Sepolia
+PHASE2_CONTRACT = "0xda1557c901ff5b7a0d9f0d0da17fef55b2d59d85"   # Base Sepolia
+MAINNET_CONTRACT = "0x496cf175126ce10728b75f02e457f144ffca275a"  # Base Mainnet
 
 SAMPLE_DISCLAIMER = "Based on 15 games per condition. Directional, not statistically conclusive."
 PHASE2_DISCLAIMER = "Based on 13 games (7 Monopolist-start, 6 Prosperity-start). Directional, not statistically conclusive."
@@ -200,6 +208,12 @@ def end_mode(game: dict) -> str:
         if t["action"] == "proposalPassed":
             current = t.get("details", {}).get("newMode", current)
     return current
+
+
+def champion(game: dict) -> str | None:
+    """The winning player's strategy name, from the game's own log."""
+    winner = (game.get("result") or {}).get("winner")
+    return addr_to_strategy(game).get(winner)
 
 
 def creation_tx(game: dict) -> str | None:

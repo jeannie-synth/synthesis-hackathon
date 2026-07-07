@@ -87,7 +87,7 @@ def render():
           "finding in itself.", "on whether it ever adapted"),
          ("It produced equal outcomes, not cooperative behavior… The thesis "
           "should be: 'Economic structure determines distribution, not "
-          "cooperation.'", "amending the project's own thesis")],
+          "intention.'", "amending the project's own thesis")],
         "#7E57C2",
     )
     _interview_card(
@@ -115,9 +115,10 @@ def render():
         )
         core.finding_card(
             "Unanimous: the thesis, with qualifications",
-            "All five endorse 'structure determines cooperation' — and all "
-            "five qualify it the same way: structure sets the range, "
-            "strategy picks the spot within it.",
+            "All five endorse 'structure determines cooperation' — and four "
+            "of the five qualify it the same way: structure sets the range, "
+            "strategy picks the spot within it. The fifth qualification is "
+            "the dissent, opposite.",
             accent="#3498db",
         )
     with c2:
@@ -132,7 +133,7 @@ def render():
             "The dissent",
             "Agent 3 — winless — argues the data shows equal outcomes, not "
             "cooperative behavior, and would rename the thesis "
-            "'distribution, not cooperation.'",
+            "'distribution, not intention.'",
             accent="#7E57C2",
         )
 

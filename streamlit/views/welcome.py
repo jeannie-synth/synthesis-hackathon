@@ -84,7 +84,8 @@ def render():
     )
 
     st.markdown(
-        "In **1903**, a game designer named Elizabeth Magie made a board game with **two rulebooks**. "
+        "In **1903**, a game designer named Elizabeth Magie made a board game "
+        "about rent. In its later editions, the game shipped with **two rulebooks**. "
         "Same board, same streets, same prices, same dice, "
         "but one crucial difference: "
         "**what happens to rent after it's paid.**"

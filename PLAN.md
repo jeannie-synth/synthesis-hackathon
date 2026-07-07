@@ -908,5 +908,8 @@ Brief: `docs/streamlit-redesign-brief.md` — build in a dedicated session with 
 - [x] Content review vs data/logs/history — 21 findings, fixes pending approval (PROJECT_DIARY.md Session 25)
 - [x] Visual pass on live app — Goldi's cosmetic copy pass (July 6–7)
 - [x] Merge `dashboard-redesign` → main, confirm Streamlit Cloud redeploy (commit 6a7962a, app serving July 7)
-- [ ] Apply approved fixes from the content review (top: Agent 3 quote — "not intention", not "not cooperation")
-- [ ] Reconcile README Sepolia game count (chain re-verified Jul 7: 38; README and onchain.py fallback say 39)
+- [x] Apply approved fixes from the content review, items 1–7 (Session 26: Agent 3 quote → "not intention", four-of-five qualification, 1903 two-rulebook fusion, divergence 2.8×/"averages never cross", vote churn honesty, onchain.py fallback 38, FreeRider "never buys")
+- [x] Players page results layer: total-wins badges + Season Records block (champions podium per board, voting season counted per game, ballot/no-forum block) — Session 26
+- [x] Tournament page viewing station: one 61-row table (Phases 1–2 + Inaugural mainnet) with per-game viewer replay links + Basescan links; replaces single replay link + network metrics section — Session 26
+- [x] Reconcile Sepolia game count — chain re-verified live Jul 7 (nextGameId 0x27 → 38); README and onchain.py fallback both fixed (Session 26)
+- [ ] Remaining content-review items (8–21: quote-trim markings, tone items — list in PROJECT_DIARY.md Session 25)

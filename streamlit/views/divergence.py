@@ -166,13 +166,16 @@ def render():
         c3.metric("Inequality ratio", f"{mean_m / max(mean_p, 0.001):.1f}×")
         core.caption("Gini: 0 = perfect equality, 1 = one player holds everything.")
 
-    st.markdown("## The two worlds separate immediately — and never touch")
+    st.markdown("## The two worlds separate immediately — "
+                "and the averages never cross")
     fig = _gini_over_rounds(p1_mono, p1_pros)
     if fig:
         st.plotly_chart(fig, use_container_width=True)
         core.finding_text(
             "The gap isn't gradual — it opens in Round 1 and widens. "
-            "Shaded bands show the full range across 15 games per rule set."
+            "Shaded bands show the full range across 15 games per rule set; "
+            "individual games' ranges brush against each other, the "
+            "averages never do."
         )
         core.caption(core.SAMPLE_DISCLAIMER)
         core.verify_expander(p1_mono + p1_pros)
@@ -194,7 +197,7 @@ def render():
         st.markdown(
             f"## Inside every single game, the same gap: the narrowest "
             f"Monopolist rich-poor spread (${min(m_spans):,.0f}) is "
-            f"{min(m_spans) / max(p_spans):.0f}× the widest Prosperity one "
+            f"{min(m_spans) / max(p_spans):.1f}× the widest Prosperity one "
             f"(${max(p_spans):,.0f})"
         )
         fig = go.Figure()

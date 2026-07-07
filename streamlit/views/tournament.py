@@ -1,20 +1,89 @@
 """Page 2 — the experiment. Twin-game design, the chain as lab notebook.
 
 The method page: how the one-variable comparison was actually run, and why
-the record can be trusted before a single result is shown.
+the record can be trusted before a single result is shown. Ends in the
+viewing station: every game of every season, each with its own replay and
+its own on-chain record — one table, both networks.
 """
 
+import json
 import os
 
+import pandas as pd
 import streamlit as st
 
 import core
-import onchain
 
 # Overridable for local review (the deployed viewer only updates on merge)
 VIEWER_URL = os.environ.get(
     "VIEWER_URL", "https://jeannie-synth.github.io/synthesis-hackathon/viewer/"
 )
+
+INAUGURAL_DIR = core.DATA_ROOT.parent / "inaugural-tournament"
+
+
+def _replay_link(game: dict, season_dir: str) -> str:
+    """Full replay (control bar + turn banner): the viewer loads the game's
+    JSON log, published alongside it under the viewer's games/ directory."""
+    fname = f"game-{game['gameId']}-{game['mode'].lower()}.json"
+    return f"{VIEWER_URL}?game=games/{season_dir}/{fname}"
+
+
+def _live_link(contract: str, game_id: int, chain: str) -> str:
+    """Viewer live mode: rebuilds the board from the contract's current
+    state. No replay timeline — used where no turn log exists (mainnet)."""
+    return f"{VIEWER_URL}?contract={contract}&gameId={game_id}&chain={chain}"
+
+
+@st.cache_data
+def _mainnet_games() -> list[dict]:
+    """The Inaugural Tournament's game list: on-chain game IDs per round."""
+    games = []
+    for f in sorted(INAUGURAL_DIR.glob("round-*-games.json")):
+        with open(f) as fp:
+            r = json.load(fp)
+        for mode in ("monopolist", "prosperity"):
+            for gid in r.get(mode, []):
+                games.append({"gameId": gid, "round": r.get("round"),
+                              "mode": mode.capitalize()})
+    games.sort(key=lambda g: g["gameId"])
+    return games
+
+
+def _viewing_station(data: dict) -> pd.DataFrame:
+    rows = []
+    for g in data["phase1"]:
+        tx = core.creation_tx(g)
+        rows.append({
+            "Game": f"Game {g['gameId']}",
+            "Season": "Phase 1 — fixed rules",
+            "Board": g["mode"],
+            "Champion": core.champion(g) or "—",
+            "Replay": _replay_link(g, "phase1"),
+            "On-chain": (f"{core.SEPOLIA_TX}{tx}" if tx
+                         else f"{core.SEPOLIA_ADDRESS}{core.PHASE1_CONTRACT}"),
+        })
+    for g in data["phase2"]:
+        end = core.end_mode(g)
+        rows.append({
+            "Game": f"Game {g['gameId']}",
+            "Season": "Phase 2 — voting",
+            "Board": (g["mode"] if end == g["mode"]
+                      else f"{g['mode']} → {end}"),
+            "Champion": core.champion(g) or "—",
+            "Replay": _replay_link(g, "phase2"),
+            "On-chain": f"{core.SEPOLIA_ADDRESS}{core.PHASE2_CONTRACT}",
+        })
+    for g in _mainnet_games():
+        rows.append({
+            "Game": f"Game {g['gameId']}",
+            "Season": "Inaugural — mainnet",
+            "Board": g["mode"],
+            "Champion": "—",
+            "Replay": _live_link(core.MAINNET_CONTRACT, g["gameId"], "base"),
+            "On-chain": f"{core.MAINNET_ADDRESS}{core.MAINNET_CONTRACT}",
+        })
+    return pd.DataFrame(rows)
 
 
 def render():
@@ -64,22 +133,28 @@ def render():
         "public timestamp on every line — anyone can re-derive every chart "
         "in this dashboard from the raw record."
     )
-    counts = onchain.live_game_counts()
-    cols = st.columns(len(onchain.NETWORKS))
-    for col, (name, net) in zip(cols, onchain.NETWORKS.items()):
-        count = counts.get(name)
-        if count is not None:
-            col.metric(f"{name} — games created", f"{count:,}",
-                       help="Read live from the contract just now")
-        else:
-            col.metric(f"{name} — games created", "—",
-                       help=f"RPC unreachable. Last verified: {net['fallback_note']}")
-        col.markdown(f"[View contract on Basescan]({net['explorer']})")
 
-    st.markdown(f"### ▶ [Watch a replay of a real game]({VIEWER_URL})")
+    st.markdown("### Every game: watch the replay, check the chain")
+    df = _viewing_station(data)
+    st.dataframe(
+        df, use_container_width=True, hide_index=True, height=420,
+        column_config={
+            "Replay": st.column_config.LinkColumn(
+                "Replay", display_text="▶ Watch"),
+            "On-chain": st.column_config.LinkColumn(
+                "On-chain", display_text="Basescan"),
+        },
+    )
     core.caption(
-        "Opens the game viewer in a new tab — every move in the replay "
-        "happened on-chain."
+        "Replay links open the game viewer with the full turn-by-turn "
+        "replay — play, pause, and a banner narrating each move. Inaugural "
+        "games have no published turn log, so their links open the "
+        "viewer's live mode: the board as the mainnet contract holds it "
+        "now, without a timeline. On-chain links open Basescan: Phase 1 "
+        "games open their first logged transaction; Phase 2 and Inaugural "
+        "games open their contract, whose event log holds the full "
+        "history. Champions are named for the scripted seasons; the "
+        "mainnet agents' records are on The Interviews."
     )
 
     core.caption(

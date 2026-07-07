@@ -34,7 +34,7 @@ NETWORKS = {
         ),
         "contract": "0xda1557c901ff5b7a0d9f0d0da17fef55b2d59d85",
         "explorer": "https://sepolia.basescan.org/address/0xda1557c901ff5b7a0d9f0d0da17fef55b2d59d85",
-        "fallback_note": "39 games (Phases 1–3, verified Mar 2026)",
+        "fallback_note": "38 games (Phases 1–3, verified Jul 2026)",
     },
 }
 
