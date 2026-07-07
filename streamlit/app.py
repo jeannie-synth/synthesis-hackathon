@@ -8,6 +8,7 @@ own account — with the frontier and the ledger as appendices.
 """
 
 import streamlit as st
+import streamlit.components.v1 as components
 
 import core
 from views import (debrief, divergence, frontier, ledger, players, reading,
@@ -72,3 +73,20 @@ with st.sidebar:
     )
 
 st.navigation(list(pages.values())).run()
+
+# Microsoft Clarity. Streamlit only runs scripts inside a component iframe;
+# the iframe is same-origin (srcdoc), so install the tag on the parent page —
+# recordings capture the app itself, not the empty iframe. Guarded so
+# Streamlit reruns don't stack duplicate tags.
+components.html(
+    """<script type="text/javascript">
+    (function (c, l, a, r, i, t, y) {
+        if (l.getElementById("ms-clarity")) return;
+        c[a] = c[a] || function () { (c[a].q = c[a].q || []).push(arguments); };
+        t = l.createElement(r); t.async = 1; t.id = "ms-clarity";
+        t.src = "https://www.clarity.ms/tag/" + i;
+        y = l.getElementsByTagName(r)[0]; y.parentNode.insertBefore(t, y);
+    })(window.parent, window.parent.document, "clarity", "script", "vj3h2cw0yo");
+    </script>""",
+    height=0,
+)
