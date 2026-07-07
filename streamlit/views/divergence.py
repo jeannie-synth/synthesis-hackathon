@@ -1,5 +1,7 @@
 """Page 3 — Phase 1 results. The divergence, led by the one unforgettable chart."""
 
+from pathlib import Path
+
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
@@ -7,6 +9,9 @@ import streamlit as st
 
 import core
 from core import GREY, MONO_COLOR, PROS_COLOR
+
+POSTER = (Path(__file__).parent.parent.parent / "docs" / "infographics"
+          / "02-the-inequality-gap.png")
 
 
 def _hero_chart(mono_ginis: list[float], pros_ginis: list[float]) -> go.Figure:
@@ -287,5 +292,23 @@ def render():
             "<strong>Zero exceptions.</strong>"
         )
         core.caption(core.SAMPLE_DISCLAIMER)
+
+    if POSTER.exists():
+        st.markdown("## Rules matter more than players")
+        st.markdown(
+            "Everything this page just showed, on one poster: the two "
+            "worlds, the gap between them, and the speed at which the "
+            "cooperative one gets where it's going."
+        )
+        st.image(str(POSTER), use_container_width=True)
+        # st.caption (not core.caption): the correction must stay
+        # visible in presentation mode whenever the poster is.
+        st.caption(
+            "Verified against the game logs: mean Gini 0.19 vs 0.03, zero "
+            "overlap, 10.5 average rounds to finish under Prosperity, "
+            "~4× faster completion. One number overshoots: \"typical "
+            "wealth spread ~\\$1,500\" — the logs say ~\\$1,335 "
+            "(median \\$1,310)."
+        )
 
     core.next_page("The Vote — when the players can change the rules", "vote")
