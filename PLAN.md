@@ -39,9 +39,9 @@ Agent strategies are drawn from experimental economics and game theory:
 - **Marjorie Kelly** — Owning Our Future (2012). Five dimensions of extractive vs generative ownership: Purpose, Membership, Governance, Finance, Networks.
 - **Elinor Ostrom** — Governing the Commons (1990). Conditional cooperators vs rational egoists. Institutional rules determine which type dominates.
 - **Robert Axelrod** — The Evolution of Cooperation (1984). Tit-for-Tat wins iterated prisoner's dilemma. Properties of winning strategies: nice, provocable, forgiving, clear.
-- **Fischbacher, Gachter & Fehr** — "Are People Conditionally Cooperative?" (2001). Empirical behavioral types in public goods games: conditional cooperators (~50%), free riders (~30%), hump cooperators (~14%).
-- **Nowak & Sigmund** — "A strategy of win-stay, lose-shift that outperforms tit-for-tat" (1993). Pavlov as dominant adaptive strategy.
-- **Ernst Fehr & Simon Gachter** — "Altruistic punishment in humans" (Nature, 2002). Humans pay personal costs to punish free riders.
+- **Fischbacher, Gachter & Fehr** — Are People Conditionally Cooperative? (2001). Empirical behavioral types in public goods games: conditional cooperators (~50%), free riders (~30%), hump cooperators (~14%).
+- **Nowak & Sigmund** — A strategy of win-stay, lose-shift that outperforms tit-for-tat (1993). Pavlov as dominant adaptive strategy.
+- **Ernst Fehr & Simon Gachter** — Altruistic punishment in humans (Nature, 2002). Humans pay personal costs to punish free riders.
 
 ### References
 

@@ -77,7 +77,6 @@ def _flow_figure(mode: str) -> go.Figure:
 
 
 def render():
-    core.act_chip("The establishing shot · 1903")
     st.title("The Landlord's Game")
     core.question_panel(
         "Can the rules of a game — not the players — decide "
@@ -85,10 +84,9 @@ def render():
     )
 
     st.markdown(
-        "In **1903**, a game designer named Elizabeth Magie made a board game "
-        "with a secret: it came with **two rulebooks**. "
-        "Same board, same streets, same prices, same dice — "
-        "but the two rulebooks disagree about one thing: "
+        "In **1903**, a game designer named Elizabeth Magie made a board game with **two rulebooks**. "
+        "Same board, same streets, same prices, same dice, "
+        "but one crucial difference: "
         "**what happens to rent after it's paid.**"
     )
 
@@ -152,7 +150,7 @@ def render():
     )
     st.markdown(
         "A century later, we rebuilt Magie's experiment. We gave the board to "
-        "**five computer players** and let them play it both ways — for real "
+        "**five AI agents**, assigned each one a strategy, and let them play it both ways — for real "
         "tokens, on a public ledger (a blockchain), where every move is "
         "recorded and nobody can quietly change the results. Not even us. "
         "The players don't know they're in an experiment. They just try "
