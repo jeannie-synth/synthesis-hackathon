@@ -13,8 +13,8 @@ from pathlib import Path
 from streamlit.testing.v1 import AppTest
 
 APP_DIR = Path(__file__).parent.resolve()
-VIEWS = ["welcome", "landing", "rules", "divergence", "vote", "debrief",
-         "frontier", "ledger"]
+VIEWS = ["welcome", "players", "tournament", "divergence", "vote", "reading",
+         "debrief", "frontier", "ledger"]
 
 
 def main() -> int:

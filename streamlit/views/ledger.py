@@ -65,15 +65,15 @@ def _explorer(games: list[dict], tournament_label: str):
     turns = game.get("turns", [])
     if turns:
         df_t = pd.DataFrame([{
-            "Turn": t["turnNumber"], "Agent": t["agent"], "Action": t["action"],
+            "Turn": t["turnNumber"], "Player": t["agent"], "Action": t["action"],
             "Tx": f"{SEPOLIA_TX}{t['txHash']}" if t.get("txHash") else None,
         } for t in turns])
-        agents = st.multiselect("Filter by agent", sorted(df_t["Agent"].unique()),
-                                key=f"agents-{tournament_label}")
+        players = st.multiselect("Filter by player", sorted(df_t["Player"].unique()),
+                                 key=f"players-{tournament_label}")
         actions = st.multiselect("Filter by action", sorted(df_t["Action"].unique()),
                                  key=f"actions-{tournament_label}")
-        if agents:
-            df_t = df_t[df_t["Agent"].isin(agents)]
+        if players:
+            df_t = df_t[df_t["Player"].isin(players)]
         if actions:
             df_t = df_t[df_t["Action"].isin(actions)]
         st.dataframe(
@@ -86,6 +86,7 @@ def _explorer(games: list[dict], tournament_label: str):
 
 
 def render():
+    core.act_chip("Appendix · verification")
     st.title("The Ledger — Nothing Here Is Taken on Faith")
     core.question_panel(
         "Every chart on this dashboard summarizes transactions that anyone can "
@@ -128,7 +129,7 @@ def render():
 
     core.caption(
         "Structured game logs from Base Sepolia. The mainnet Inaugural "
-        "Tournament (18 games, LLM-driven agents) produced qualitative "
+        "Tournament (18 games, LLM agents) produced qualitative "
         "transcripts rather than structured JSON — its quantitative shadow "
         "is the live contract state above."
     )

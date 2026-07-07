@@ -33,6 +33,7 @@ def _interview_card(agent: str, record: str, quotes: list[tuple[str, str]],
 
 
 def render():
+    core.act_chip("The debrief")
     st.title("The Post-Match Interviews")
     core.question_panel(
         "After the Inaugural Tournament on Base mainnet — 18 games where "
@@ -153,4 +154,5 @@ def render():
         "earlier pages."
     )
 
-    core.next_page("The Frontier — the next season's open problems", "frontier")
+    core.next_page("Appendix: The Frontier — the next season's open problems",
+                   "frontier")

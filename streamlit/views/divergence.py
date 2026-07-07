@@ -1,4 +1,4 @@
-"""Page 2 — Phase 1 evidence. Inequality is a policy outcome."""
+"""Page 3 — Phase 1 results. The divergence, led by the one unforgettable chart."""
 
 import pandas as pd
 import plotly.express as px
@@ -7,6 +7,65 @@ import streamlit as st
 
 import core
 from core import GREY, MONO_COLOR, PROS_COLOR
+
+
+def _hero_chart(mono_ginis: list[float], pros_ginis: list[float]) -> go.Figure:
+    """All 30 final Ginis on one axis. Two clusters. A gap nothing crosses."""
+    fig = go.Figure()
+
+    # Deterministic vertical jitter so coincident values stay visible
+    def jitter(i: int) -> float:
+        return ((i % 5) - 2) * 0.09
+
+    for values, color, name in [
+        (pros_ginis, PROS_COLOR, "Prosperity"),
+        (mono_ginis, MONO_COLOR, "Monopolist"),
+    ]:
+        fig.add_trace(go.Scatter(
+            x=values,
+            y=[jitter(i) for i in range(len(values))],
+            mode="markers",
+            marker=dict(color=color, size=15 if core.is_presentation() else 12,
+                        opacity=0.85, line=dict(width=1, color="#fff")),
+            hovertemplate=f"<b>{name}</b><br>Final Gini: %{{x:.3f}}<extra></extra>",
+            showlegend=False,
+        ))
+
+    gap_left, gap_right = max(pros_ginis), min(mono_ginis)
+
+    # The gap is the finding — shade it and say so
+    fig.add_vrect(
+        x0=gap_left, x1=gap_right,
+        fillcolor="rgba(0,0,0,0.05)", line_width=0,
+    )
+    fig.add_annotation(
+        x=(gap_left + gap_right) / 2, y=0.75,
+        text="<b>The gap</b><br>no game ever landed here",
+        showarrow=False, font=dict(size=core.font_px(13), color="#555"),
+    )
+
+    # Direct cluster labels — no legend
+    fig.add_annotation(
+        x=sum(pros_ginis) / len(pros_ginis), y=-0.62,
+        text=f"<b>Prosperity</b> · {len(pros_ginis)} games",
+        showarrow=False, font=dict(size=core.font_px(13), color=PROS_COLOR),
+    )
+    fig.add_annotation(
+        x=sum(mono_ginis) / len(mono_ginis), y=-0.62,
+        text=f"<b>Monopolist</b> · {len(mono_ginis)} games",
+        showarrow=False, font=dict(size=core.font_px(13), color=MONO_COLOR),
+    )
+
+    core.apply_layout(
+        fig, height=300,
+        xaxis=dict(
+            title="Final Gini coefficient (0 = perfect equality)",
+            range=[-0.005, max(mono_ginis) * 1.12],
+        ),
+        yaxis=dict(visible=False, range=[-1, 1]),
+        margin=dict(t=10, b=40, l=20, r=20),
+    )
+    return fig
 
 
 def _gini_over_rounds(p1_mono, p1_pros) -> go.Figure | None:
@@ -68,15 +127,38 @@ def render():
     data = core.load_all()
     p1_mono, p1_pros = data["p1_mono"], data["p1_pros"]
 
-    st.title("Inequality Is a Policy Outcome — Visible by Round 1")
+    core.act_chip("The results · part I")
+    st.title("Same Board. Two Rules. Opposite Worlds.")
     core.question_panel(
-        "30 games, 15 under each rule set, the same five agents. "
-        "Does economic structure alone determine wealth distribution?"
+        "30 games, 15 under each rule set, the same five players in the same "
+        "turn order. Does economic structure alone determine wealth "
+        "distribution?"
     )
 
     mono_ginis = core.final_ginis(p1_mono)
     pros_ginis = core.final_ginis(p1_pros)
+
     if mono_ginis and pros_ginis:
+        st.markdown(
+            "To compare whole games instead of single players, we score each "
+            "game's ending with one number — the **Gini coefficient**: "
+            "**0** means everyone finished with equal wealth, **1** means one "
+            "player finished with everything. Each dot below is one game's score."
+        )
+        st.markdown(
+            "## Every Monopolist economy ended more unequal "
+            "than every Prosperity economy"
+        )
+        st.plotly_chart(_hero_chart(mono_ginis, pros_ginis),
+                        use_container_width=True)
+        core.finding_text(
+            "Each dot is one complete game's final inequality. "
+            "<strong>No overlap:</strong> the most equal Monopolist game "
+            f"(Gini {min(mono_ginis):.3f}) is more unequal than the most unequal "
+            f"Prosperity game (Gini {max(pros_ginis):.3f})."
+        )
+        core.caption(core.SAMPLE_DISCLAIMER)
+
         mean_m, mean_p = core.mean(mono_ginis), core.mean(pros_ginis)
         c1, c2, c3 = st.columns(3)
         c1.metric("Monopolist mean Gini", f"{mean_m:.3f}")
@@ -158,7 +240,10 @@ def render():
 
     # Per-pair divergence — grey bars, the length is the message
     st.markdown("## All 15 pairs, one direction, zero exceptions")
-    st.markdown("Games ran in pairs: one Monopolist, one Prosperity, same agents.")
+    st.markdown(
+        "Twin games: one board under each rule set, same players, "
+        "same turn order."
+    )
     mono_map = {g["gameId"]: g["result"]["giniCoefficient"]
                 for g in p1_mono if g.get("result")}
     pros_map = {g["gameId"]: g["result"]["giniCoefficient"]
@@ -199,83 +284,4 @@ def render():
         )
         core.caption(core.SAMPLE_DISCLAIMER)
 
-    # Duration
-    mono_rounds = [g["result"]["rounds"] for g in p1_mono if g.get("result")]
-    pros_rounds = [g["result"]["rounds"] for g in p1_pros if g.get("result")]
-    if mono_rounds and pros_rounds:
-        speed = core.mean(mono_rounds) / max(core.mean(pros_rounds), 0.1)
-        st.markdown(f"## Prosperity games end {speed:.0f}× sooner")
-        c1, c2 = st.columns(2)
-        c1.metric("Monopolist", f"{core.mean(mono_rounds):.0f} rounds",
-                  help="Average across 15 games")
-        c2.metric("Prosperity", f"{core.mean(pros_rounds):.0f} rounds",
-                  help="Average across 15 games")
-        core.finding_text(
-            "Prosperity ends when the poorest player crosses its security "
-            "threshold; Monopolist ends when the last competitor goes "
-            "bankrupt. A rising floor turns out to be the faster finish line."
-        )
-
-    # Strategy dumbbell
-    df_nw_all = core.net_worth_rows(data["phase1"])
-    if not df_nw_all.empty:
-        df_agg = (df_nw_all.groupby(["Strategy", "Rule Set"])["Net Worth ($)"]
-                  .mean().reset_index())
-        df_pivot = df_agg.pivot(index="Strategy", columns="Rule Set",
-                                values="Net Worth ($)").reset_index()
-        if {"Monopolist", "Prosperity"} <= set(df_pivot.columns):
-            df_pivot["Gap"] = df_pivot["Monopolist"] - df_pivot["Prosperity"]
-            df_pivot = df_pivot.sort_values("Gap")
-            m_span = df_pivot["Monopolist"].max() - df_pivot["Monopolist"].min()
-            p_span = df_pivot["Prosperity"].max() - df_pivot["Prosperity"].min()
-
-            st.markdown(
-                "## Under Prosperity rules, strategy choice barely matters — "
-                "under Monopolist rules, it decides the outcome"
-            )
-            fig = go.Figure()
-            for _, row in df_pivot.iterrows():
-                fig.add_trace(go.Scatter(
-                    x=[row["Prosperity"], row["Monopolist"]],
-                    y=[row["Strategy"], row["Strategy"]],
-                    mode="lines", line=dict(color="#ccc", width=core.line_w()),
-                    showlegend=False, hoverinfo="skip",
-                ))
-            for mode, color in [("Prosperity", PROS_COLOR), ("Monopolist", MONO_COLOR)]:
-                fig.add_trace(go.Scatter(
-                    x=df_pivot[mode], y=df_pivot["Strategy"],
-                    mode="markers", showlegend=False,
-                    marker=dict(color=color, size=14, line=dict(width=1, color="#fff")),
-                    hovertemplate=f"<b>%{{y}}</b> under {mode}"
-                    "<br>Mean net worth: $%{x:,.0f}<extra></extra>",
-                ))
-            # Direct labels on the top row's dots — no legend
-            top = df_pivot.iloc[-1]
-            for mode, color, anchor in [("Prosperity", PROS_COLOR, "right"),
-                                        ("Monopolist", MONO_COLOR, "left")]:
-                fig.add_annotation(
-                    x=top[mode], y=top["Strategy"], text=f"<b>{mode}</b>",
-                    showarrow=False, xanchor=anchor,
-                    xshift=-12 if anchor == "right" else 12,
-                    font=dict(size=core.font_px(12), color=color),
-                )
-            core.apply_layout(fig, height=350, yaxis_title="",
-                              xaxis=dict(title="Mean net worth ($)",
-                                         rangemode="tozero"))
-            st.plotly_chart(fig, use_container_width=True)
-
-            widest = df_pivot.iloc[-1]
-            core.finding_text(
-                f"Across the five strategies, Prosperity outcomes span just "
-                f"<strong>${p_span:,.0f}</strong>; Monopolist outcomes span "
-                f"<strong>${m_span:,.0f}</strong>. "
-                f"<strong>{widest['Strategy']}</strong> is the most sensitive "
-                f"to the rule set (+${widest['Gap']:,.0f} under Monopolist)."
-            )
-            core.caption(
-                core.SAMPLE_DISCLAIMER + " Monopolist averages run higher "
-                "overall because those games last ~4× longer (more salary "
-                "rounds) — the signal is the spread, not the level."
-            )
-
-    core.next_page("The Vote — when agents can change the rules", "vote")
+    core.next_page("The Vote — when the players can change the rules", "vote")

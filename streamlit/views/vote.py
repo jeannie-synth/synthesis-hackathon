@@ -75,10 +75,12 @@ def render():
     data = core.load_all()
     phase2 = data["phase2"]
 
+    core.act_chip("The results · part II")
     st.title("Given Political Agency, Economies Choose Prosperity")
     core.question_panel(
-        "Phase 1 showed that rules determine outcomes. But what if agents can "
-        "change the rules? We gave them a voting mechanism and ran 13 more games."
+        "The Divergence showed that the rule set decides the outcome. But "
+        "what if the players can change the rules? We gave them a voting "
+        "mechanism and ran 13 more games."
     )
 
     c1, c2, c3 = st.columns(3)
@@ -97,7 +99,7 @@ def render():
         reduction = ((p1_m - p1_p) - (p2_m - p2_p)) / (p1_m - p1_p) * 100
 
         st.markdown(f"## The inequality gap collapses {reduction:.0f}% "
-                    "when agents can vote")
+                    "when the players can vote")
         st.plotly_chart(_slope_chart(p1_m, p1_p, p2_m, p2_p),
                         use_container_width=True)
         core.finding_text(
@@ -114,13 +116,13 @@ def render():
     p_start = [g for g in phase2 if g.get("mode") == "Prosperity"]
     p_switched = [g for g in p_start if core.end_mode(g) == "Monopolist"]
 
-    st.markdown(f"## {len(m_switched)} of {len(m_start)} extractive economies "
+    st.markdown(f"## {len(m_switched)} of {len(m_start)} Monopolist economies "
                 "voted their way out — almost none went back")
     st.plotly_chart(_mode_flow_sankey(phase2), use_container_width=True)
     core.finding_text(
         f"{len(m_switched)} of {len(m_start)} Monopolist-start games ended under "
         f"Prosperity rules; {len(p_switched)} of {len(p_start)} went the other "
-        "way. Nobody told the agents to prefer Prosperity — self-interest, "
+        "way. Nobody told the players to prefer Prosperity — self-interest, "
         "under this structure, pointed there on its own."
     )
     core.caption(core.PHASE2_DISCLAIMER)
@@ -149,5 +151,4 @@ def render():
                               yaxis_title="Final Gini coefficient")
             st.plotly_chart(fig, use_container_width=True)
 
-    core.next_page("The Interviews — what the players said afterwards",
-                   "debrief")
+    core.next_page("The Interpretation — what these results say", "reading")

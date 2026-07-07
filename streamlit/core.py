@@ -24,7 +24,7 @@ PHASE2_TOURNAMENT = "tournament-1773910613854"
 SEPOLIA_TX = "https://sepolia.basescan.org/tx/"
 
 SAMPLE_DISCLAIMER = "Based on 15 games per condition. Directional, not statistically conclusive."
-PHASE2_DISCLAIMER = "Based on 13 games (7 M-start, 6 P-start). Directional, not statistically conclusive."
+PHASE2_DISCLAIMER = "Based on 13 games (7 Monopolist-start, 6 Prosperity-start). Directional, not statistically conclusive."
 
 # ─── Design system ───
 # One job per chart: color encodes the rule set, everywhere.
@@ -211,6 +211,17 @@ def creation_tx(game: dict) -> str | None:
 
 
 # ─── UI helpers ───
+
+
+def act_chip(text: str):
+    """Small uppercase act label above the page title — the storyline marker."""
+    size = 0.95 if is_presentation() else 0.78
+    st.markdown(
+        f'<div style="letter-spacing: 0.18em; font-size: {size}rem; '
+        f'font-weight: 600; color: #8a8a8a; text-transform: uppercase; '
+        f'margin-bottom: -0.3rem;">{text}</div>',
+        unsafe_allow_html=True,
+    )
 
 
 def question_panel(text: str):

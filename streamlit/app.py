@@ -1,15 +1,17 @@
 """
 The Landlord's Game — the public artifact.
 
-Same board, two rule sets, opposite worlds. Six pages, one argument:
-Landing → Rules → Divergence → Vote → Frontier → Ledger.
+One storyline, told once, in order:
+establishing shot (the world and its two rulebooks) → the cast →
+the experiment → results I & II → the interpretation → the players'
+own account — with the frontier and the ledger as appendices.
 """
 
 import streamlit as st
 
 import core
-from views import (debrief, divergence, frontier, landing, ledger, rules,
-                   vote, welcome)
+from views import (debrief, divergence, frontier, ledger, players, reading,
+                   tournament, vote, welcome)
 
 st.set_page_config(
     page_title="The Landlord's Game",
@@ -22,12 +24,13 @@ pages = {
         welcome.render, title="The Landlord's Game",
         icon="\U0001f3b2", url_path="home", default=True,
     ),
-    "landing": st.Page(
-        landing.render, title="1 · The Evidence",
-        icon="\U0001f4a1", url_path="evidence",
+    "players": st.Page(
+        players.render, title="1 · The Players",
+        icon="\U0001f3ad", url_path="players",
     ),
-    "rules": st.Page(
-        rules.render, title="2 · The Rules", icon="⚖️", url_path="rules",
+    "tournament": st.Page(
+        tournament.render, title="2 · The Tournament",
+        icon="\U0001f3ac", url_path="tournament",
     ),
     "divergence": st.Page(
         divergence.render, title="3 · The Divergence",
@@ -36,16 +39,21 @@ pages = {
     "vote": st.Page(
         vote.render, title="4 · The Vote", icon="\U0001f5f3️", url_path="vote",
     ),
+    "reading": st.Page(
+        reading.render, title="5 · The Interpretation",
+        icon="\U0001f52c", url_path="interpretation",
+    ),
     "debrief": st.Page(
-        debrief.render, title="5 · The Interviews",
+        debrief.render, title="6 · The Interviews",
         icon="\U0001f3a4", url_path="interviews",
     ),
     "frontier": st.Page(
-        frontier.render, title="6 · The Frontier",
+        frontier.render, title="Appendix · The Frontier",
         icon="\U0001f52d", url_path="frontier",
     ),
     "ledger": st.Page(
-        ledger.render, title="7 · The Ledger", icon="⛓️", url_path="ledger",
+        ledger.render, title="Appendix · The Ledger",
+        icon="⛓️", url_path="ledger",
     ),
 }
 core.PAGES.update(pages)

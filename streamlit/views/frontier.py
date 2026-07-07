@@ -7,6 +7,7 @@ from core import ACCENT, MONO_COLOR, PROS_COLOR
 
 
 def render():
+    core.act_chip("Appendix · further work")
     st.title("What Nobody Has Explored Yet")
     core.question_panel(
         "The base experiment answered one question: do rules shape outcomes? "
@@ -92,8 +93,10 @@ def render():
     )
 
     core.pull_quote(
-        "Nobody chose to cooperate; the Prosperity rules made individual "
-        "self-interest align with collective benefit. That's the whole thesis.",
+        "The jump between Monopolist (winner-take-all) and Prosperity "
+        "(collective threshold) is too binary. Real economic systems have "
+        "graduated cooperation — partial commons, mixed incentives, "
+        "progressive mechanisms.",
         "Agent 0 — Inaugural Tournament debrief, Base mainnet",
     )
 
@@ -102,4 +105,5 @@ def render():
         "source, the data is on-chain. Replicate, critique, improve."
     )
 
-    core.next_page("The Ledger — live contract state and game explorer", "ledger")
+    core.next_page("Appendix: The Ledger — live contract state and game "
+                   "explorer", "ledger")
