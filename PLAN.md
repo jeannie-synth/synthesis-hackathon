@@ -904,6 +904,9 @@ Brief: `docs/streamlit-redesign-brief.md` — build in a dedicated session with 
 - [x] Ledger page (explorer + live contract state)
 - [x] Presentation mode toggle
 - [x] Pre-ship critique-checklist pass + AppTest smoke test (13/13)
-- [ ] Visual pass on live app (aesthetics — AppTest can't judge those)
-- [ ] Merge `dashboard-redesign` → main, confirm Streamlit Cloud redeploy
-- [ ] Reconcile README Sepolia game count (chain says 38, README says 39)
+- [x] One-storyline restructure: 9-page narrative + micro-copy pass (commit 5697553)
+- [x] Content review vs data/logs/history — 21 findings, fixes pending approval (PROJECT_DIARY.md Session 25)
+- [x] Visual pass on live app — Goldi's cosmetic copy pass (July 6–7)
+- [x] Merge `dashboard-redesign` → main, confirm Streamlit Cloud redeploy (commit 6a7962a, app serving July 7)
+- [ ] Apply approved fixes from the content review (top: Agent 3 quote — "not intention", not "not cooperation")
+- [ ] Reconcile README Sepolia game count (chain re-verified Jul 7: 38; README and onchain.py fallback say 39)

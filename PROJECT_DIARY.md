@@ -1269,3 +1269,28 @@ Key new findings:
 **Infrastructure blocker**: Colima VM fails to start (guest agent never reports running; two attempts). The jeannie-dev container is unreachable — smoke test ran in a disposable scratchpad venv instead. Colima likely needs `colima delete` + recreate, which destroys the container: **Goldi's call**.
 
 **Not done / next**: visual pass on the live app (deploy branch or run locally — AppTest verifies execution, not aesthetics); hero-chart iteration if needed after first visual look; Streamlit Cloud deployment switch to the new entrypoint (same path `streamlit/app.py`, should be automatic once merged); README game-count reconciliation.
+
+### Session 24: One-storyline restructure + micro-copy pass (July 6)
+
+*(Entry written retroactively in Session 25 — Session 24 closed without its diary entry.)*
+
+**Restructure** (commit `5697553`, plus `e9782a2`, `27ca19b`, `740e527`, `fea3700`): the six-page app became a nine-page single storyline — Home (establishing shot: the world and its two rulebooks), 1 · The Players (starting-lineup cards), 2 · The Tournament (method + chain-as-lab-notebook), 3 · The Divergence (Phase 1 results), 4 · The Vote (Phase 2 results), 5 · The Interpretation (mechanism reading), 6 · The Interviews (new page built from the agent debriefs), plus The Frontier and The Ledger as appendices. Micro-copy pass throughout; viewer consolidated at `docs/viewer` with an env-overridable link for local review.
+
+### Session 25: Content review + ship for presentation (July 6–7)
+
+**Deep content review** of the redesigned dashboard ahead of Goldi's class presentation to a university vice dean. Everything recomputed from data inside the Docker container (`landlords-dashboard`, python:3.12-slim) using the app's own `core.py`; every quote checked verbatim against `data/inaugural-tournament/agent-*-log.md`; history checked against the 1904 patent record.
+
+**Verified clean**: all Phase 1/2 numbers (30/15/15; 13 = 7 M-start + 6 P-start; "43 times"; 5.6× Gini ratio; no-overlap hero claim, min mono 0.107 > max pros 0.055; 15 pairs all-positive; spans $250/$56; Pavlov +$404; speed 3.85 ≈ "4×"; 79% gap collapse; 48%/94%; 6-of-7 switched). All citation years (George 1879, Ostrom 1990, Nowak & Sigmund 1993, Axelrod 1984, Fischbacher–Gächter–Fehr 2001, Kelly 2012, Hurwicz Nobel 2007). All win records — they sum exactly to 18 (A0=7 incl. 5/9 P; A1=5/9 M + 0/9 P; A2=4; A3=0; A4=1M+1P). The 3–2 playing split and 5–0 real-economy vote. Agent 2 as the only deceiver (other four explicitly signaled honestly). Three-of-five trading request; three-of-five "dial" family. Seams and terminology conventions hold across pages. Smoke test passes, all 9 pages × 2 modes.
+
+**Findings (21-item list delivered, fixes pending Goldi's approval)** — top items:
+1. **Agent 3 misquote**: dashboard quotes "…distribution, not *cooperation*"; log says "…distribution, not **intention**" (agent-3-log.md:10136). Two places in debrief.py.
+2. "All five qualify it the same way" → actually four of five (Agent 3's qualification is the dissent).
+3. 1903 history: the 1904 patent contains ONE rule set; two named rulebooks are later editions ("Prosperity" attested 1932). Home page fuses them.
+4. divergence.py "3×" displays 2.77; "never touch" contradicted by band overlap in 12/13 rounds.
+5. vote.py "almost none went back" vs heavy mid-game churn (up to 15 switches/game); honest claim is end states (11/13 ended Prosperity).
+6. onchain.py Sepolia fallback says 39; chain says 38 (re-verified live today).
+7. FreeRider "buys almost nothing" → code never buys. Plus quote-trim markings, tone items, players.py table → markdown proposal.
+
+**Ship**: Goldi did a cosmetic pass (footer names the hackathon, 1903 paragraph reworded — "secret" dropped, act chip removed, PLAN.md paper-title quote marks stripped, home page now says "five AI agents") and called ship-as-is for tonight. Commit `6a7962a` on `dashboard-redesign`, fast-forward merged to `main`, pushed from `jeannie-dev` (Colima recovered; container restarted after 13h down). Streamlit Cloud serving 200 at the-landlords-game.streamlit.app.
+
+**Open**: apply approved fixes from the review list (misquote first); note Goldi's "five AI agents" wording on Home collides with the players/agents terminology convention — flagged, his call; README + onchain.py game-count reconciliation (38).
