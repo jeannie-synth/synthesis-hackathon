@@ -70,8 +70,10 @@ with st.sidebar:
     st.markdown(
         "Built with \U0001f49c by [Fractall](https://fractall.xyz) "
         "for [The Synthesis Hackathon](https://synthesis-md.devfolio.co/overview) "
-        "Readme [in github](https://github.com/jeannie-synth/synthesis-hackathon/blob/main/README.md)"
     )
+    st.markdown("---")
+    st.markdown("Readme [in github](https://github.com/jeannie-synth/synthesis-hackathon/blob/main/README.md)"
+        )
 
 st.navigation(list(pages.values())).run()
 
